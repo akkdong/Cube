@@ -1,0 +1,6 @@
+[submodule "refs/ESP32-S3-HMI-V3"]
+	path = refs/ESP32-S3-HMI-V3
+	url = https://github.com/W00ng/ESP32-S3-HMI-V3.git
+[submodule "refs/LVGL8-WT32-SC01-Arduino"]
+	path = refs/LVGL8-WT32-SC01-Arduino
+	url = https://github.com/sukesh-ak/LVGL8-WT32-SC01-Arduino.git

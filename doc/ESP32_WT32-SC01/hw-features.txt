@@ -1,0 +1,27 @@
+PCB：WT32-SC01
+
+SOC：ESP32-WROVER-B(4MB) with TELEC 211-180419。
+Display：3.5″ 320×480 SPI ST7796S LCD Capacitive Touch FT6206。
+
+
+ST7796S
+  RESET	IO22
+  CS		IO15
+  RS		IO21
+  SCL		IO14(SPI_SCLK)
+  SDA		IO13(SPI_MOSI)
+  LED		IO23
+
+FT6206
+  TP_INT	SENSOR_VN
+  SCL		IO19
+  SDA		IO18
+
+
++
+
+GPS, Pressure or 10 DOF IMU
+Battery Charger & Booster (5V) : w/t Power switch, selector
+Button
+Amplifier (Mono) + Speaker
+SD Card
