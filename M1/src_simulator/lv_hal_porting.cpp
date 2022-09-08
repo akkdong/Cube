@@ -27,7 +27,7 @@ static int app_tick_handler(void * data)
 }
 
 
-void app_setup(void)
+void lv_hal_setup(void)
 {
     // Workaround for sdl2 `-m32` crash
     // https://bugs.launchpad.net/ubuntu/+source/libsdl2/+bug/1775067/comments/7
@@ -70,9 +70,9 @@ void app_setup(void)
 
 void app_loop(void)
 {
-    while(1) 
+    while (1)
     {
-        SDL_Delay(5);
         lv_task_handler();
+        SDL_Delay(5);
     }
 }

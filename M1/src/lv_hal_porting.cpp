@@ -63,7 +63,7 @@ static void cube_touch_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * da
 }
 
 
-void app_setup()
+void lv_hal_setup()
 {
 	gfx->begin();
 	gfx->fillScreen(BLACK); 
@@ -106,5 +106,9 @@ void app_setup()
 
 void app_loop()
 {
-    lv_timer_handler();
+	while(1)
+	{
+	    lv_timer_handler();
+		delay(10);
+	}
 }

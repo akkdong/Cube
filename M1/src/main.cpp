@@ -38,12 +38,12 @@ void setup()
 
   //
   lv_init();  
+  lv_hal_setup();
 
-  app_setup();
-  app_create_page();
+  app_init();
+  app_loop();
 }
 
 void loop() 
 {
-  app_loop();
 }
