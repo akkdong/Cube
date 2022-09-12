@@ -48,8 +48,8 @@ typedef struct app_conf
 
 	float			speedVertHistory[MAX_VARIO_HISTORY]; // 1s vertial speed history
 	float			speedVertSumTotal;
-	int16_t			speedVertSumCount;
-	int16_t			speedVertNext;
+	int32_t			speedVertSumCount;
+	int32_t			speedVertNext;
 
 	//
 	float			longitude;
@@ -64,8 +64,8 @@ typedef struct app_conf
 //	float			distTakeoff;	// distance from take-off place
 //	float			distFlight;		// total flight distance(odometer?)
 
-	int16_t			heading;
-	int16_t			headingLast;
+	int32_t			heading;
+	int32_t			headingLast;
 //	int16_t			bearing;
 	
 	//

@@ -16,20 +16,20 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////////
 //
 
-
-
-typedef struct _lv_page
+typedef struct _lv_page_item
 {
-    lv_box_group_item_t   box[MAX_BOX_COUNT];
+    lv_box_type_t type;
+    lv_coord_t  x, y, w, h;
+	lv_border_side_t side;
 
-} lv_page_t;
+} lv_page_item_t;
 
 
 
 ////////////////////////////////////////////////////////////////////////////
 //
 
-void    lv_page_create(lv_obj_t* parent, lv_box_group_item_t* boxes);
+void    lv_page_create(lv_obj_t* parent, lv_page_item_t* boxes);
 
 
 #ifdef __cplusplus
