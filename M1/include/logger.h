@@ -45,7 +45,7 @@ int _trace_printf(int level, const char* format, ...);
 
 // INFO
 #if LOG_LEVEL >= LOG_LEVEL_INFO
-#define LOGi(x, ...)        _trace_printf(LOG_LEVEL_INFO, x, ##__VA_ARGS__)
+#define LOGi(x, ...)        _trace_printf(LOG_LEVEL_INFO, x, __VA_ARGS__)
 #else
 #define LOGi(x, ...)
 #endif
