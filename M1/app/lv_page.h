@@ -29,8 +29,8 @@ typedef struct _lv_page_item
 ////////////////////////////////////////////////////////////////////////////
 //
 
-void    lv_page_create(lv_obj_t* parent, lv_page_item_t* boxes);
-
+void    lv_page_create(lv_obj_t* page, lv_page_item_t* boxes);
+void    lv_page_update(lv_obj_t* page);
 
 #ifdef __cplusplus
 }

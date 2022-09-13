@@ -1,9 +1,17 @@
 // lv_box.cpp
 //
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdarg.h>
+#include <math.h>
 #include <lvgl.h>
+
+#include "device_defines.h"
 #include "logger.h"
 #include "lv_box.h"
+#include "lv_app.h"
 
 
 //
@@ -71,6 +79,124 @@ const lv_font_t*    font_title = &lv_font_montserrat_14;
 const lv_font_t*    font_subtitle = &lv_font_montserrat_12;
 const lv_font_t*    font_body = &lv_font_montserrat_48;
 
+
+//
+// compass
+//
+
+#define COMPASS_WIDTH       106
+#define COMPASS_HEIGHT      106
+#define COMPASS_RADIUS      53
+
+
+static lv_color_t buf_compass[LV_CANVAS_BUF_SIZE_TRUE_COLOR(COMPASS_WIDTH, COMPASS_HEIGHT)];
+
+// heading, bearing : angle(radian)
+// method 
+//  0 : up-side is north
+//  1 : up-side is heading
+//  2 : up-side is bearing
+
+void lv_compass_draw(lv_obj_t* canvas, lv_coord_t heading, lv_coord_t bearing, int32_t method)
+{
+    //
+    lv_coord_t base_x = COMPASS_WIDTH / 2;
+    lv_coord_t base_y = COMPASS_HEIGHT / 2;
+    lv_coord_t angle, up = 0;
+    
+    if (method == 1)
+        up = heading;
+    else if (method == 2 && bearing >= 0) // bearing < 0 : n/a
+        up = bearing;
+
+    lv_draw_arc_dsc_t arc_dsc;
+    lv_draw_rect_dsc_t rect_dsc;
+    lv_draw_line_dsc_t line_dsc;
+    lv_point_t points[3];
+
+    lv_draw_arc_dsc_init(&arc_dsc);
+    lv_draw_line_dsc_init(&line_dsc);
+    lv_draw_rect_dsc_init(&rect_dsc);
+
+    // erase background
+    lv_canvas_fill_bg(canvas, lv_color_hex(0xFFFFFF), LV_OPA_100);
+
+    // draw circle
+    arc_dsc.color = lv_color_hex(0x000000);
+    arc_dsc.width = 1;
+    arc_dsc.start_angle = 0;
+    arc_dsc.end_angle = 360;
+    arc_dsc.img_src = NULL;
+    arc_dsc.opa = LV_OPA_80;
+    arc_dsc.blend_mode = LV_BLEND_MODE_NORMAL;
+    arc_dsc.rounded = 0;
+    lv_canvas_draw_arc(canvas, base_x, base_y, COMPASS_RADIUS, 0, 360, &arc_dsc);
+
+    // draw north-triangle
+    angle = 0 - up; // real-north = rotate counterclockwise
+
+    points[0].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin(angle * DEG_TO_RAD));
+    points[0].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos(angle * DEG_TO_RAD));
+    points[1].x = base_x + (lv_coord_t)(COMPASS_RADIUS / 3 * sin((angle + 180) * DEG_TO_RAD));
+    points[1].y = base_y - (lv_coord_t)(COMPASS_RADIUS / 3 * cos((angle + 180) * DEG_TO_RAD));
+    points[2].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin((angle - 140) * DEG_TO_RAD));
+    points[2].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos((angle - 140) * DEG_TO_RAD));
+
+    rect_dsc.bg_opa = LV_OPA_60;
+    rect_dsc.bg_color = lv_color_hex(0xFF0000);
+    //rect_dsc.border_width = 1;
+    //rect_dsc.border_color = lv_color_hex(0x000000);
+    //rect_dsc.border_opa = LV_OPA_20;
+    lv_canvas_draw_polygon(canvas, points, 3, &rect_dsc);
+
+    points[2].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin((angle + 140) * DEG_TO_RAD));
+    points[2].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos((angle + 140) * DEG_TO_RAD));
+
+    rect_dsc.bg_opa = LV_OPA_80;
+    lv_canvas_draw_polygon(canvas, points, 3, &rect_dsc);
+
+    // draw heading
+    if (/*method != 1*/ true)
+    {
+        line_dsc.color = lv_color_hex(0x000000);
+        line_dsc.width = 2;
+        //line_dsc.dash_width;
+        //line_dsc.dash_gap;
+        line_dsc.opa = LV_OPA_60;
+        //line_dsc.blend_mode = LV_BLEND_MODE_NORMAL;
+        //line_dsc.round_start;
+        //line_dsc.round_end;
+        //line_dsc.raw_end;
+
+        angle = heading - up; // rotate counterclockwise
+        points[0].x = base_x;
+        points[0].y = base_y;
+        points[1].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin(angle * DEG_TO_RAD));
+        points[1].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos(angle * DEG_TO_RAD));
+
+        lv_canvas_draw_line(canvas, points, 2, &line_dsc);
+    }
+
+    // bearing
+    if (bearing >= 0)
+    {
+        line_dsc.color = lv_color_hex(0x0000FF);
+        line_dsc.width = 2;
+        line_dsc.dash_width = 6;
+        line_dsc.dash_gap = 4;
+
+        angle = bearing - up; // rotate counterclockwise
+        points[0].x = base_x;
+        points[0].y = base_y;
+        points[1].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin(angle * DEG_TO_RAD));
+        points[1].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos(angle * DEG_TO_RAD));
+
+        lv_canvas_draw_line(canvas, points, 2, &line_dsc);
+    }
+}
+
+
+
 //
 //
 //
@@ -84,8 +210,8 @@ void lv_box_init()
             return;
 
         lv_style_init(box_def_style);
-        lv_style_set_pad_hor(box_def_style, 0/*4*/);
-        lv_style_set_pad_ver(box_def_style, 0/*2*/);
+        lv_style_set_pad_hor(box_def_style, 4);
+        lv_style_set_pad_ver(box_def_style, 2);
         lv_style_set_radius(box_def_style, 0/*4*/);
         lv_style_set_border_width(box_def_style, 0/*1*/);
         lv_style_set_border_side(box_def_style, LV_BORDER_SIDE_NONE);
@@ -116,7 +242,7 @@ lv_obj_t* lv_box_get_stock_object(lv_box_type_t type)
     return NULL;
 }
 
-void lv_box_hide_all()
+void lv_box_detach_all()
 {
     for (int i = 0; i < BOX_COUNT; i++)
         lv_obj_set_parent(boxes[i], scrn_offline);
@@ -145,45 +271,19 @@ lv_obj_t* lv_box_create(lv_obj_t* parent, const char* title, const char* desc)
     return box;
 }
 
-lv_obj_t* lv_box_create_canvas(lv_obj_t* box)
+lv_obj_t* lv_box_create_canvas(lv_obj_t* box, void* buf, int32_t w, int32_t h)
 {
-    lv_coord_t w = 120 - 2; // lv_obj_get_width(box);
-    lv_coord_t h = 120 - 2; // lv_obj_get_height(box);
-
-    static lv_color_t buf[LV_CANVAS_BUF_SIZE_TRUE_COLOR(118, 118)];
-   
-
     lv_obj_t* canvas = lv_canvas_create(box);
-    lv_obj_set_pos(canvas, 0, 0);
-    lv_obj_set_size(canvas, w, h);
-    //lv_obj_center(canvas);
+    if (!canvas)
+        return NULL;
+
+    lv_obj_set_align(canvas, LV_ALIGN_CENTER);
     lv_canvas_set_buffer(canvas, buf, w, h, LV_IMG_CF_TRUE_COLOR);
-    //lv_canvas_fill_bg(canvas, lv_color_hex(0xFF00FF), LV_OPA_60);
-    lv_canvas_fill_bg(canvas, lv_palette_lighten(LV_PALETTE_GREY, 3), LV_OPA_COVER);
-    //lv_canvas_draw_arc(canvas, w / 2, h / 1, w / 2 - 10, 0, 360, 0);
-
-    lv_draw_rect_dsc_t rect_dsc;
-    lv_draw_rect_dsc_init(&rect_dsc);
-    rect_dsc.radius = 10;
-    rect_dsc.bg_opa = LV_OPA_COVER;
-    rect_dsc.bg_grad.dir = LV_GRAD_DIR_HOR;
-    rect_dsc.bg_grad.stops[0].color = lv_palette_main(LV_PALETTE_RED);
-    rect_dsc.bg_grad.stops[1].color = lv_palette_main(LV_PALETTE_BLUE);
-    rect_dsc.border_width = 2;
-    rect_dsc.border_opa = LV_OPA_90;
-    rect_dsc.border_color = lv_color_white();
-    rect_dsc.shadow_width = 5;
-    rect_dsc.shadow_ofs_x = 5;
-    rect_dsc.shadow_ofs_y = 5;    
-
-    lv_canvas_draw_rect(canvas, 0, 0, 118, 118, &rect_dsc);
-
-    lv_obj_t* label = lv_label_create(box);
-    lv_obj_align(label, LV_ALIGN_BOTTOM_MID, 0, 0);
-    lv_label_set_text(label, "Test");
+    lv_canvas_fill_bg(canvas, lv_color_hex(0xFFFFFF), LV_OPA_100);
 
     return canvas;
 }
+
 
 void lv_box_set_title(lv_obj_t* box, const char* title)
 {
@@ -278,11 +378,12 @@ void lv_box_set_content(lv_obj_t* box, lv_box_type_t type)
         info->content = lv_label_create(box);
         lv_obj_align(info->content, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
         lv_obj_set_style_text_font(info->content, font_body, 0);
-        lv_label_set_text(info->content, "1234.56");
+        lv_label_set_text(info->content, "");
         break;
     case COMPASS:
         info->box_type = type;
-        info->content = lv_box_create_canvas(box);
+        info->content = lv_box_create_canvas(box, buf_compass, COMPASS_WIDTH, COMPASS_HEIGHT);
+        lv_compass_draw(info->content, 0, 0, 1);
         break;
     case VSPEED_BAR:
     case VSPEED_PROFILE:
@@ -396,4 +497,96 @@ const char* lv_box_get_description(lv_box_type_t type)
     default:
         return NULL;
     }
+}
+
+void lv_box_set_content_text(lv_obj_t* label, const char* format, ...)
+{
+    static char buf[32];
+    va_list args;
+    va_start(args, format);
+    vsprintf(buf, format, args);
+    va_end(args);
+
+    lv_label_set_text(label, buf);
+}
+
+void lv_box_update(lv_obj_t* box)
+{
+    box_info_t* info = (box_info_t *)lv_obj_get_user_data(box);
+    if (!info || info->magic != 0xDEADBEEF)
+        return;
+
+    app_conf_t* conf = app_get_conf();
+
+    switch (info->box_type)
+    {
+    case ALTITUDE_GROUND:
+        lv_box_set_content_text(info->content, "%.0f", conf->altitudeGPS);
+        break;
+    case ALTITUDE_AGL:
+        lv_box_set_content_text(info->content, "%.0f", conf->altitudeAGL);
+        break;
+    case ALTITUDE_PROFILE:
+        break;
+    case SPEED_GROUND:
+        lv_box_set_content_text(info->content, "%.0f", conf->speedGround);
+        break;
+    case SPEED_AIR:
+        break;
+    case SPEED_VERTICAL:
+        lv_box_set_content_text(info->content, "%.1f", conf->speedVertActive);
+        break;
+    case SPEED_VERTICAL_LAZY:
+        lv_box_set_content_text(info->content, "%.1f", conf->speedVertLazy);
+        break;
+    case TRACK_HEADING:
+        lv_box_set_content_text(info->content, "%d", conf->heading);
+        break;
+    case TARCK_BEARING:
+        lv_box_set_content_text(info->content, "%d", conf->bearing);
+        break;
+    case TIME_FLIGHT:
+        if (conf->timeFly > 0)
+        {
+            time_t temp = conf->timeFly % 3600;
+            time_t h = conf->timeFly / 3600;
+            time_t m = temp / 60;
+            time_t s = temp % 60;
+            if (h != 0)
+                lv_box_set_content_text(info->content, "%d:%02d:%02d", h, m, s);
+            else
+                lv_box_set_content_text(info->content, "%02d:%02d", m, s);
+        }
+        else
+        {
+            lv_box_set_content_text(info->content, "");
+        }
+        break;
+    case TIME_CURRENT:
+        break;
+    case TIME_TO_NEXT_WAYPOINT:
+        break;
+    case TIME_REMAIN:
+        break;
+    case DISTANCE_TAKEOFF:
+        break;
+    case DISTANCE_LANDING:
+        break;
+    case DISTANCE_NEXT_WAYPOINT:
+        break;
+    case DISTANCE_FLIGHT:
+        break;
+    case LIFT_vs_DRAG:
+        lv_box_set_content_text(info->content, "%.1f", conf->glideRatio);
+        break;
+    case COMPASS:
+        lv_compass_draw(info->content, conf->heading, conf->bearing, 1);
+        break;
+    case VSPEED_BAR:
+        break;
+    case VSPEED_PROFILE:
+        break;
+    case TRACK_FLIGHT:
+        break;
+    }        
 }

@@ -12,14 +12,14 @@
 //
 //
 
-static lv_style_t style_text_muted;
-static lv_style_t style_title;
-static lv_style_t style_icon;
-static lv_style_t style_bullet;  
-
 static const lv_font_t * font_large;
 static const lv_font_t * font_normal;
 static const lv_font_t * font_small;
+
+app_conf_t*     app_conf = NULL;
+
+lv_obj_t*       app_annun;
+lv_obj_t*       app_page;
 
 //
 // Pages
@@ -52,7 +52,7 @@ lv_page_item_t page_1[] = {
         ALTITUDE_AGL, 0, 96, 180, 96, LV_BORDER_SIDE_FULL 
     },
     {
-        TIME_FLIGHT, 0, 192, 180, 96, LV_BORDER_SIDE_FULL
+        TRACK_HEADING, 0, 192, 180, 96, LV_BORDER_SIDE_FULL
     },
     {
         SPEED_GROUND, 300, 0, 180, 96, LV_BORDER_SIDE_FULL 
@@ -61,7 +61,7 @@ lv_page_item_t page_1[] = {
         SPEED_VERTICAL, 300, 96, 180, 96, LV_BORDER_SIDE_FULL 
     },
     {
-        LIFT_vs_DRAG, 300, 192, 180, 96, LV_BORDER_SIDE_FULL 
+        TARCK_BEARING, 300, 192, 180, 96, LV_BORDER_SIDE_FULL 
     },
     {
         COMPASS, 180, 0, 120, 120, LV_BORDER_SIDE_NONE
@@ -99,14 +99,22 @@ static void power_event_cb(lv_event_t* evt)
 }
 
 
-
 //
 //
 //
 
 void app_config_init(app_conf_t* conf)
 {
+    //
+    app_conf = conf;
 
+	//
+    memset(app_conf, 0, sizeof(app_conf_t));
+}
+
+app_conf_t* app_get_conf()
+{
+    return app_conf;
 }
 
 void app_init()
@@ -149,5 +157,18 @@ void app_init()
     //      box position/dimention
     //      box type: { title, sub-title, content }
     lv_page_create(page, page_1);
+
+
+    app_annun = ann;
+    app_page = page;
 }
 
+
+void app_update()
+{
+    if (app_conf->dirty)
+    {
+        lv_page_update(app_page);
+        app_conf->dirty = 0;
+    }
+}

@@ -18,7 +18,10 @@ extern "C" {
 
 typedef struct app_conf
 {
-//
+	//
+	int				dirty;
+
+	//
 	float			altitudeGPS;		// QNH
 	float			altitudeBaro;		// QNE
 	float			altitudeCalibrated; // Baro + (Baro <-> GPS differential : altitudeDrift)
@@ -36,7 +39,7 @@ typedef struct app_conf
 //	float			altitudeAbtain;
 	float			thermalTime;
 	float			thermalGain;
-//	float			glideRatio;	
+	float			glideRatio;	
 	
 	//
 	float			speedGround;
@@ -58,15 +61,15 @@ typedef struct app_conf
 	float			longitudeLast;
 	float			latitudeLast;
 
-//	float			longitudeStart;	// take-off longitude
-//	float			latitudeStart;	// take-off latitude
+	float			longitudeStart;	// take-off longitude
+	float			latitudeStart;	// take-off latitude
 
-//	float			distTakeoff;	// distance from take-off place
-//	float			distFlight;		// total flight distance(odometer?)
+	float			distTakeoff;	// distance from take-off place
+	float			distFlight;		// total flight distance(odometer?)
 
-	int32_t			heading;
-	int32_t			headingLast;
-//	int16_t			bearing;
+	int16_t			heading;		// angle(radian)
+	int16_t			headingLast;
+	int16_t			bearing;
 	
 	//
 	float			pressure;
@@ -75,14 +78,21 @@ typedef struct app_conf
 
 	//
 	time_t			timeCurrent;
-//	time_t			timeStart;
-//	time_t			timeFly;
+	time_t			timeTakeoff;
+	time_t			timeFly;
 } app_conf_t;
 
 
 
-void app_config_init(app_conf_t* conf);
-void app_init();
+////////////////////////////////////////////////////////////////////////////
+//
+
+void 			app_config_init(app_conf_t* conf);
+void 			app_init();
+void 			app_update();
+
+app_conf_t* 	app_get_conf();
+
 
 #ifdef __cplusplus
 }

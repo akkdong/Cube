@@ -49,12 +49,14 @@ void 				lv_box_set_title(lv_obj_t* box, const char* title);
 void 				lv_box_set_description(lv_obj_t* box, const char* desc);
 void				lv_box_set_content(lv_obj_t* box, lv_box_type_t type);
 
+void                lv_box_update(lv_obj_t* box);
+
 const char*			lv_box_get_title(lv_box_type_t type);
 const char*			lv_box_get_description(lv_box_type_t type);
 
 
 lv_obj_t*           lv_box_get_stock_object(lv_box_type_t type);
-void                lv_box_hide_all();
+void                lv_box_detach_all();
 
 #ifdef __cplusplus
 }

@@ -23,7 +23,7 @@ int _trace_printf(int level, const char* format, ...)
 
     va_list args;
     va_start(args, format);
-    vprintf(trace_buf, args);
+    vsprintf(trace_buf, format, args);
     va_end(args);
 
     return printf("[%c] %s\n", trace_prefix[level], trace_buf);

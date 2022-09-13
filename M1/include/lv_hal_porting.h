@@ -10,7 +10,7 @@ extern "C" {
 
 
 void lv_hal_setup(void);
-void app_loop(void);
+void lv_hal_loop(void);
 
 
 #ifdef __cplusplus

@@ -1,19 +1,29 @@
 #include <unistd.h>
 #define SDL_MAIN_HANDLED        /*To fix SDL's "undefined reference to WinMain" issue*/
 #include <SDL2/SDL.h>
+
 #include "display/monitor.h"
 #include "indev/mouse.h"
 #include "indev/mousewheel.h"
 #include "indev/keyboard.h"
 #include "sdl/sdl.h"
+
+#include "device_defines.h"
+#include "logger.h"
 #include "lv_hal_porting.h"
+#include "lv_app.h"
+
+
+Uint32 hal_update_tick;
+
+
 
 /**
  * A task to measure the elapsed time for LittlevGL
  * @param data unused
  * @return never return
  */
-static int app_tick_handler(void * data)
+static int hal_tick_handler(void * data)
 {
     (void)data;
 
@@ -65,13 +75,52 @@ void lv_hal_setup(void)
     /* Tick init.
      * You have to call 'lv_tick_inc()' in periodically to inform LittelvGL about how much time were elapsed
      * Create an SDL thread to do this*/
-    SDL_CreateThread(app_tick_handler, "tick", NULL);
+    SDL_CreateThread(hal_tick_handler, "tick", NULL);
 }
 
-void app_loop(void)
+void lv_hal_update(void)
 {
+    if (SDL_GetTicks() - hal_update_tick >= 1000)
+    {
+        //
+        app_conf_t* conf = app_get_conf();
+
+        conf->altitudeGPS = 2100 + (rand() % 400) - 200;
+        conf->altitudeBaro = conf->altitudeGPS + (rand() % 100) - 50;
+        conf->altitudeAGL = conf->altitudeGPS - (rand() % 500);
+
+        conf->speedGround = 20 + (rand() % 20) - 10;
+        conf->speedVertActive = (rand() % 30) / 10.0;
+        conf->glideRatio = (rand() % 80) / 10.0;
+
+        conf->heading = (conf->heading + 10) % 360;
+        conf->bearing = 30;
+
+        conf->timeCurrent = time(NULL);
+        conf->timeFly = conf->timeCurrent - conf->timeTakeoff;
+        conf->dirty = 1;
+
+        // 
+        hal_update_tick = SDL_GetTicks();
+    }
+}
+
+void lv_hal_loop(void)
+{
+    //
+    hal_update_tick = SDL_GetTicks();
+
+    app_conf_t* conf = app_get_conf();
+    conf->timeTakeoff = time(NULL);
+
+    //
     while (1)
     {
+        //
+        lv_hal_update();
+        app_update();
+
+        //
         lv_task_handler();
         SDL_Delay(5);
     }

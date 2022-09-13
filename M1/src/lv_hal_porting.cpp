@@ -9,6 +9,7 @@
 #include "bsp.h"
 #include "FT6206.h"
 #include "lv_hal_porting.h"
+#include "lv_app.h"
 
 //
 //
@@ -104,10 +105,14 @@ void lv_hal_setup()
 }
 
 
-void app_loop()
+void lv_hal_loop()
 {
 	while(1)
 	{
+		//
+		app_update();
+
+		//
 	    lv_timer_handler();
 		delay(10);
 	}
