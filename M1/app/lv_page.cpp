@@ -25,7 +25,7 @@ void lv_page_create(lv_obj_t* page, lv_page_item_t* boxes)
             lv_obj_set_size(box, boxes[i].w - 2, boxes[i].h - 2);
             //lv_obj_set_style_border_side(box, boxes[i].side, 0);
 
-            lv_box_set_content(box, type);
+            //lv_box_set_content(box, type);
         }
     }
 }

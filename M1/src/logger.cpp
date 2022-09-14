@@ -15,7 +15,17 @@ static const char* trace_prefix = "EWIVD";
 static char trace_buf[256];
 
 
-int _trace_printf(int level, const char* format, ...)
+int trace_putc(uint8_t c)
+{
+    return Serial.write(c);
+}
+
+int trace_puts(const char* str)
+{
+    return Serial.write(str);
+}
+
+int trace_printf(int level, const char* format, ...)
 {
     if (level < LOG_LEVEL_ERROR)
         level = LOG_LEVEL_ERROR;

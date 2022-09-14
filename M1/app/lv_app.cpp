@@ -7,6 +7,8 @@
 #include "lv_app.h"
 #include "lv_page.h"
 
+#include "LocationDataSource.h"
+#include "LocationParser.h"
 
 //
 //
@@ -82,6 +84,10 @@ int32_t page_a[] = {
         TIME_FLIGHT,     TIME_FLIGHT,     TIME_FLIGHT, VSPEED_BAR, VSPEED_BAR,   LIFT_vs_DRAG,   LIFT_vs_DRAG,   LIFT_vs_DRAG,
         TIME_FLIGHT,     TIME_FLIGHT,     TIME_FLIGHT, VSPEED_BAR, VSPEED_BAR,   LIFT_vs_DRAG,   LIFT_vs_DRAG,   LIFT_vs_DRAG,
 };
+
+
+LocationParser   nmeaParser;
+
 
 
 //
@@ -161,7 +167,56 @@ void app_init()
 
     app_annun = ann;
     app_page = page;
+
+
+    //
+    // start-vario
+    //   make-top-menu
+    //   load-scren -> show active-screen
+    //   initialize: batery, vario
+    //      --> update vario/device state
+    //
+    // 
+
+    nmeaParser.begin(CreateLocationDataSource());
 }
+
+// vario-mode
+//   init
+//   ready
+//   flying
+//   circling
+//
+//
+// page
+//   check-device (loading)
+//   x
+//   circling
+//   statistic
+//   setting
+//     preference
+//     sensor
+//     gps
+//     sound
+
+struct IVariometer
+{
+    virtual void    begin() = 0;
+    virtual void    end() = 0;
+
+    virtual void    update() = 0;
+    virtual bool    available() = 0;
+
+    virtual float   getPressure() = 0;
+    virtual float   getTemperature() = 0;
+    virtual float   getVelocity() = 0;
+
+    virtual void    calibrateAltitude(float altitude) = 0;
+    virtual void    calibrateSeaLevel(float pressure) = 0;
+};
+
+
+
 
 
 void app_update()
@@ -170,5 +225,45 @@ void app_update()
     {
         lv_page_update(app_page);
         app_conf->dirty = 0;
+    }
+
+    // reset-watchdog
+    // keybd-update
+    // vario.avaiable?
+    //   update context-data: v-vel, v-vel-statistic, altitude, ....
+    //   update beeper
+    //   check-sleep?
+    //   update vario-sentence : LX..
+    //
+    // nmea-parser-update
+    // nmea-parser.data-ready?
+    //   update vario-state (gps relative stubs)
+    //   check takeoff or landing
+    //     or update flight-state
+    // logger-update
+    // bt-update
+    // battery-update
+    // process-key
+
+
+    nmeaParser.update();
+
+    while (nmeaParser.available())
+    {
+        int ch = nmeaParser.read();
+        trace_putc(ch);
+    }
+
+    if (nmeaParser.locationAvailable())
+    {
+        LOGi("[GPS] %f,%f %f", nmeaParser.getLongitude(), nmeaParser.getLatitude(), nmeaParser.getAltitude());
+        app_conf->latitude = nmeaParser.getLatitude();
+        app_conf->longitude = nmeaParser.getLongitude();
+        app_conf->altitudeGPS = nmeaParser.getAltitude();
+        app_conf->speedGround = nmeaParser.getSpeed();
+        app_conf->heading = nmeaParser.getHeading();
+        app_conf->dirty = 1;
+
+        nmeaParser.locationReset();
     }
 }

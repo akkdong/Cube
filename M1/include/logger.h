@@ -12,8 +12,11 @@ extern "C" {
 //
 //
 
-int _trace_printf(int level, const char* format, ...);
+int     trace_putc(uint8_t c);
+int     trace_puts(const char* str);
+int     trace_printf(const char* format, ...);
 
+int     _log_printf(int level, const char* format, ...);
 
 //
 //
@@ -31,35 +34,35 @@ int _trace_printf(int level, const char* format, ...);
 
 // ERROR
 #if LOG_LEVEL >= LOG_LEVEL_ERROR
-#define LOGe(x, ...)        _trace_printf(LOG_LEVEL_ERROR, x, ##__VA_ARGS__)
+#define LOGe(x, ...)        _log_printf(LOG_LEVEL_ERROR, x, ##__VA_ARGS__)
 #else
 #define LOGe(x, ...)
 #endif
 
 // WARNING
 #if LOG_LEVEL >= LOG_LEVEL_WARNING
-#define LOGw(x, ...)        _trace_printf(LOG_LEVEL_WARNING, x, ##__VA_ARGS__)
+#define LOGw(x, ...)        _log_printf(LOG_LEVEL_WARNING, x, ##__VA_ARGS__)
 #else
 #define LOGw(x, ...)
 #endif
 
 // INFO
 #if LOG_LEVEL >= LOG_LEVEL_INFO
-#define LOGi(x, ...)        _trace_printf(LOG_LEVEL_INFO, x, ##__VA_ARGS__)
+#define LOGi(x, ...)        _log_printf(LOG_LEVEL_INFO, x, ##__VA_ARGS__)
 #else
 #define LOGi(x, ...)
 #endif
 
 // VERBOSE
 #if LOG_LEVEL >= LOG_LEVEL_VERBOSE
-#define LOGv(x, ...)        _trace_printf(LOG_LEVEL_VERBOSE, x, ##__VA_ARGS__)
+#define LOGv(x, ...)        _log_printf(LOG_LEVEL_VERBOSE, x, ##__VA_ARGS__)
 #else
 #define LOGv(x, ...)
 #endif
 
 // DEBUG
 #if LOG_LEVEL >= LOG_LEVEL_DEBUG
-#define LOGd(x, ...)        _trace_printf(LOG_LEVEL_DEBUG, x, ##__VA_ARGS__)
+#define LOGd(x, ...)        _log_printf(LOG_LEVEL_DEBUG, x, ##__VA_ARGS__)
 #else
 #define LOGd(x, ...)
 #endif
