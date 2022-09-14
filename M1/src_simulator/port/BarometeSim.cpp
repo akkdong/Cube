@@ -1,0 +1,43 @@
+// BarometerSim.cpp
+//
+
+#include "Barometer.h"
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// class BarometerSim declaration
+
+class BarometerSim : public IBarometer
+{
+public:
+    BarometerSim();
+
+public:
+    bool getData(float* p, float* t);
+};
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+// class BarometerSim implementation
+
+BarometerSim::BarometerSim()
+{
+}
+
+bool BarometerSim::getData(float* p, float* t)
+{
+    return false;
+}
+
+
+
+
+///////////////////////////////////////////////////////////////////////////////////////////////
+//
+
+IBarometer* CreateBarometer()
+{
+    static BarometerSim sim;
+    return &sim;
+}

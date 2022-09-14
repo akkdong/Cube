@@ -64,14 +64,14 @@ public:
 
     void                update();
 
-	int			        available();
-	int			        read();    
-
     bool                isFixed() { return mFixed; }
 
     //
-    bool                locationAvailable() { return mDataReady; }
-    void                locationReset() { mDataReady = false; }
+	int			        availableNmea();
+	int			        readNmea();    
+
+    bool                availableLocation() { return mDataReady; }
+    void                resetLocation() { mDataReady = false; }
 
     time_t              getDateTime() { return mDateTime; }
     float               getLatitude() { return mLatitude; }

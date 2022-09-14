@@ -7,8 +7,16 @@
 #include "lv_app.h"
 #include "lv_page.h"
 
+#include "Variometer.h"
 #include "LocationDataSource.h"
 #include "LocationParser.h"
+
+#define USE_KALMAN_FILTER              (1)
+#if USE_KALMAN_FILTER
+#include "KalmanVario.h"
+#else
+#include "KalmanFilter.h"
+#endif
 
 //
 //
@@ -86,8 +94,14 @@ int32_t page_a[] = {
 };
 
 
-LocationParser   nmeaParser;
+Variometer      vario;
+LocationParser  locParser;
 
+#if USE_KALMAN_FILTER
+KalmanFilter    varioFilter;
+#else
+KalmanFilter    varioFilter;
+#endif
 
 
 //
@@ -178,7 +192,14 @@ void app_init()
     //
     // 
 
-    nmeaParser.begin(CreateLocationDataSource());
+    #if USE_KALMAN_FILTER
+    varioFilter.begin(0, 400.0f, 1000.0f, 1.0f);
+    #else
+    varioFilter.Configure(30.0f, 4.0f, altitude);
+    #endif    
+
+    vario.begin(CreateBarometer(), &varioFilter);
+    locParser.begin(CreateLocationDataSource());
 }
 
 // vario-mode
@@ -198,25 +219,6 @@ void app_init()
 //     sensor
 //     gps
 //     sound
-
-struct IVariometer
-{
-    virtual void    begin() = 0;
-    virtual void    end() = 0;
-
-    virtual void    update() = 0;
-    virtual bool    available() = 0;
-
-    virtual float   getPressure() = 0;
-    virtual float   getTemperature() = 0;
-    virtual float   getVelocity() = 0;
-
-    virtual void    calibrateAltitude(float altitude) = 0;
-    virtual void    calibrateSeaLevel(float pressure) = 0;
-};
-
-
-
 
 
 void app_update()
@@ -246,24 +248,33 @@ void app_update()
     // process-key
 
 
-    nmeaParser.update();
+    locParser.update();
+    int varioUpdated = vario.update();
 
-    while (nmeaParser.available())
+    while (locParser.availableNmea())
     {
-        int ch = nmeaParser.read();
-        trace_putc(ch);
+        int ch = locParser.readNmea();
+        //trace_putc(ch);
     }
 
-    if (nmeaParser.locationAvailable())
+    if (locParser.availableLocation())
     {
-        LOGi("[GPS] %f,%f %f", nmeaParser.getLongitude(), nmeaParser.getLatitude(), nmeaParser.getAltitude());
-        app_conf->latitude = nmeaParser.getLatitude();
-        app_conf->longitude = nmeaParser.getLongitude();
-        app_conf->altitudeGPS = nmeaParser.getAltitude();
-        app_conf->speedGround = nmeaParser.getSpeed();
-        app_conf->heading = nmeaParser.getHeading();
+        LOGi("[GPS] %f,%f %f", locParser.getLongitude(), locParser.getLatitude(), locParser.getAltitude());
+        app_conf->latitude = locParser.getLatitude();
+        app_conf->longitude = locParser.getLongitude();
+        app_conf->altitudeGPS = locParser.getAltitude();
+        app_conf->speedGround = locParser.getSpeed();
+        app_conf->heading = locParser.getHeading();
         app_conf->dirty = 1;
 
-        nmeaParser.locationReset();
+        locParser.resetLocation();
+    }
+
+    if (varioUpdated)
+    {
+        app_conf->altitudeBaro = vario.getAltitudeFiltered();
+        app_conf->pressure = vario.getPressure();
+        app_conf->temperature = vario.getTemperature();
+        app_conf->speedVertActive = vario.getVelocity();
     }
 }

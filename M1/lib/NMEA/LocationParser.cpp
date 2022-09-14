@@ -498,12 +498,12 @@ void LocationParser::update()
     }
 }
 
-int LocationParser::available()
+int LocationParser::availableNmea()
 {
     return (! mDataQueue.isEmpty());
 }
 
-int LocationParser::read()
+int LocationParser::readNmea()
 {
     return mDataQueue.pop();
 }
