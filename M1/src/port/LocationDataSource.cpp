@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#include "LocationDataSource.h"
+#include "abstract/LocationDataSource.h"
 #include "logger.h"
 
 

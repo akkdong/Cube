@@ -10,7 +10,7 @@
 #ifndef __VARIL_FILTER_HARINAIRKF4D_H__
 #define __VARIL_FILTER_HARINAIRKF4D_H__
 
-#include "VarioFilter.h"
+#include "abstract/VarioFilter.h"
 
 
 typedef struct KF4_STATE_ {

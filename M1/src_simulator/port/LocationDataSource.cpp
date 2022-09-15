@@ -3,7 +3,7 @@
 
 #include <SDL2/SDL.h>
 
-#include "LocationDataSource.h"
+#include "abstract/LocationDataSource.h"
 #include "logger.h"
 #include "nmea_log.h"
 

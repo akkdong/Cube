@@ -12,7 +12,7 @@
 #ifndef __VARIO_FILTER_ROBINKF_H__
 #define __VARIO_FILTER_ROBINKF_H__
 
-#include "VarioFilter.h"
+#include "abstract/VarioFilter.h"
 
 /**
  * A linear Kalman filter estimator of altitude and vertical velocity.

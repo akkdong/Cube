@@ -8,7 +8,7 @@
 #include "device_defines.h"
 #include "bsp.h"
 #include "FT6206.h"
-#include "lv_hal_porting.h"
+#include "lv_disp.h"
 #include "lv_app.h"
 
 //
@@ -64,7 +64,11 @@ static void cube_touch_read( lv_indev_drv_t * indev_driver, lv_indev_data_t * da
 }
 
 
-void lv_hal_setup()
+//
+//
+//
+
+void lv_disp_init()
 {
 	gfx->begin();
 	gfx->fillScreen(BLACK); 

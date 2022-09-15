@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 
-#include "Barometer.h"
+#include "abstract/Barometer.h"
 #include "Bme280.h"
 #include "logger.h"
 

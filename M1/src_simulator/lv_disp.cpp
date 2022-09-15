@@ -10,8 +10,8 @@
 
 #include "device_defines.h"
 #include "logger.h"
-#include "lv_hal_porting.h"
 #include "lv_app.h"
+#include "lv_disp.h"
 
 
 Uint32 hal_update_tick;
@@ -37,7 +37,7 @@ static int hal_tick_handler(void * data)
 }
 
 
-void lv_hal_setup(void)
+void lv_disp_init(void)
 {
     // Workaround for sdl2 `-m32` crash
     // https://bugs.launchpad.net/ubuntu/+source/libsdl2/+bug/1775067/comments/7
@@ -78,6 +78,8 @@ void lv_hal_setup(void)
     SDL_CreateThread(hal_tick_handler, "tick", NULL);
 }
 
+
+#if 0
 void lv_hal_update(void)
 {
     #if 0
@@ -127,3 +129,4 @@ void lv_hal_loop(void)
         SDL_Delay(5);
     }
 }
+#endif

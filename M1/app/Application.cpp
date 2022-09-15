@@ -1,68 +1,32 @@
-// lv_app.cpp
+// Application.cpp
 //
-#if 0
-#include <lvgl.h>
-#include "bsp.h"
-#include "logger.h"
-#include "lv_app.h"
-#include "lv_page.h"
 
-#include "abstract/LocationDataSource.h"
-#include "Variometer.h"
-#include "LocationParser.h"
-
-#define VFILTER_HARINAIR_KF2     1
-#define VFILTER_HARINAIR_KF4d    2
-#define VFILTER_ROBIN_KF         3
-
-#define USE_KALMAN_FILTER        VFILTER_HARINAIR_KF2
-
-#if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
-#include "VarioFilter_HarInAirKF2.h"
-#elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
-#include "VarioFilter_HarInAirKF4d.h"
-#elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
-#include "VarioFilter_RobinKF.h"
-#else
-#error "Invalid vario kalman-filter"
+#ifdef ARDUINO
+#include <Arduino.h>
 #endif
+#include "Application.h"
+#include "bsp.h"
 
+
+
+extern "C" app_conf_t* app_get_conf()
+{
+    static app_conf_t conf;
+
+    return &conf;
+}
+
+extern "C" void app_config_init(app_conf_t* conf)
+{
+	//
+    memset(conf, 0, sizeof(app_conf_t));
+}
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////
 //
-//
-//
 
-static const lv_font_t * font_large;
-static const lv_font_t * font_normal;
-static const lv_font_t * font_small;
-
-app_conf_t*     app_conf = NULL;
-
-lv_obj_t*       app_annun;
-lv_obj_t*       app_page;
-
-//
-// Pages
-//  +--Page
-//      +--Boxes
-//           +--Box
-//
-
-// box
-//      title
-//      desc
-//      content
-
-// screen: annunciator + page
-// annunciator: 480x32
-// page: 480x288
-// box: 60x48 -> 1 page = 8x6 boxes
-//   1 box = title + sub-title(description) + content
-// title: top-left aligned label (font-14)
-// sub-title: top-right aligned label (font-12)
-// content: use entire of block area
-//   number : bottom-right aligned label
-//   canvas : custom-draw
-    
 lv_page_item_t page_1[] = {
     {
         ALTITUDE_GROUND, 0, 0, 180, 96, LV_BORDER_SIDE_FULL
@@ -95,54 +59,20 @@ lv_page_item_t page_1[] = {
 
 
 
-Variometer      vario;
-LocationParser  locParser;
+////////////////////////////////////////////////////////////////////////////////////////
+// class Application implementation
 
-#if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
-VarioFilter_HarInAirKF2     varioFilter;
-#elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
-VarioFilter_HarInAirKF4d    varioFilter;
-#elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
-VarioFilter_RobinKF         varioFilter;
-#endif
-
-
-
-//
-//
-//
-
-static void power_event_cb(lv_event_t* evt)
+Application::Application()
 {
-	lv_event_code_t code = lv_event_get_code(evt);
-	if (code == LV_EVENT_RELEASED)
-	{
-		LOGv("Turn of board power!!!\n");
-		bsp_power_on(false);
-	}
+    // ...
 }
 
-
-//
-//
-//
-
-void app_config_init(app_conf_t* conf)
+void Application::begin()
 {
     //
-    app_conf = conf;
+    app_config_init(app_get_conf());
 
-	//
-    memset(app_conf, 0, sizeof(app_conf_t));
-}
-
-app_conf_t* app_get_conf()
-{
-    return app_conf;
-}
-
-void app_init()
-{
+    //
     font_large = &lv_font_montserrat_48;
     font_normal = LV_FONT_DEFAULT;
     font_small = &lv_font_montserrat_12;
@@ -214,27 +144,18 @@ void app_init()
     locParser.begin(CreateLocationDataSource());
 }
 
-// vario-mode
-//   init
-//   ready
-//   flying
-//   circling
-//
-//
-// page
-//   check-device (loading)
-//   x
-//   circling
-//   statistic
-//   setting
-//     preference
-//     sensor
-//     gps
-//     sound
-
-
-void app_update()
+void Application::end()
 {
+
+}
+
+void Application::update()
+{
+    //
+    // application routines
+    //
+    //
+    
     if (app_conf->dirty)
     {
         lv_page_update(app_page);
@@ -291,4 +212,3 @@ void app_update()
         app_conf->dirty = 1;
     }
 }
-#endif

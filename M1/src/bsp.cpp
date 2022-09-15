@@ -2,6 +2,8 @@
 //
 
 #include <Arduino.h>
+#include <lvgl.h>
+#include "lv_disp.h"
 
 #include "device_defines.h"
 #include "bsp.h"
@@ -39,7 +41,7 @@ static Bme280Settings varioSettings()
 //
 //
 
-void bsp_init()
+void bsp_hal_init()
 {
 	// initialize pin-mode
 	pinMode(POWER_ON, OUTPUT);
@@ -78,4 +80,30 @@ void bsp_power_on(bool on)
 void bsp_lcd_backlight(bool on)
 {
 	digitalWrite(LCD_BL, on ? HIGH : LOW);	
+}
+
+
+
+//
+//
+//
+
+void bsp_gui_init()
+{
+	//
+	lv_init();
+
+	lv_disp_init();
+}
+
+
+
+//
+//
+//
+
+void bsp_update()
+{
+	lv_timer_handler();
+	delay(5);
 }

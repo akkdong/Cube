@@ -1,3 +1,5 @@
+#if 0
+
 #include <Arduino.h>
 #include <lvgl.h>
 #include <Arduino_GFX_Library.h>
@@ -55,3 +57,5 @@ void setup()
 void loop() 
 {
 }
+
+#endif

@@ -4,8 +4,8 @@
 #ifndef __VARIOMETER_H__
 #define __VARIOMETER_H__
 
-#include "Barometer.h"
-#include "VarioFilter.h"
+#include "abstract/Barometer.h"
+#include "abstract/VarioFilter.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////

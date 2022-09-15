@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <time.h>
 
-#include "LocationDataSource.h"
+#include "abstract/LocationDataSource.h"
 
 #define MAX_NMEA_PARSER_BUFFER          (128)
 
