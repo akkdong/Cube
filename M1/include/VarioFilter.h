@@ -11,7 +11,7 @@
 struct IVarioFilter
 {
     virtual void update(float altitude, float va, float* altitudeFiltered, float* vv) = 0;
-    virtual void reset() = 0;
+    virtual void reset(float altitude) = 0;
 };
 
 

@@ -1,7 +1,7 @@
-// KalmanVario.cpp
+// VarioFilter_HarInAirKF2.cpp
 //
 
-#include "KalmanVario.h"
+#include "VarioFilter_HarInAirKF2.h"
 //#include "Common.h"
 
 #define KALMAN_UPDATE_FREQ          (25)
@@ -12,12 +12,12 @@
 ///////////////////////////////////////////////////////////////////////////////////////////////
 //
 
-KalmanFilter::KalmanFilter()
+VarioFilter_HarInAirKF2::VarioFilter_HarInAirKF2()
 {
 }
 
 
-int KalmanFilter::begin(float altitude, float zVariance, float zAccelVariance, float zAccelBiasVariance)
+int VarioFilter_HarInAirKF2::begin(float zVariance, float zAccelVariance, float zAccelBiasVariance, float altitude)
 {
 	// init values
 	zAccelVariance_ = zAccelVariance;
@@ -25,27 +25,12 @@ int KalmanFilter::begin(float altitude, float zVariance, float zAccelVariance, f
 	zVariance_ = zVariance;
 
 	//
-	z_ = altitude;
-	v_ = 0.0f; // vInitial;
-
-	aBias_ = 0.0f; // aBiasInitial;
-
-	Pzz_ = 1.0f;
-	Pzv_ = 0.0f;
-	Pza_ = 0.0f;
-
-	Pvz_ = 0.0f;
-	Pvv_ = 1.0f;
-	Pva_ = 0.0f;
-
-	Paz_ = 0.0f;
-	Pav_ = 0.0;
-	Paa_ = 100000.0f;
+	reset(altitude);
 
 	return 0;
 }
 
-void KalmanFilter::update(float altitude, float va, float* altitudeFilteredPtr, float* varioPtr)
+void VarioFilter_HarInAirKF2::update(float altitude, float va, float* altitudeFilteredPtr, float* varioPtr)
 {
 	// delta time
 	#if 0
@@ -136,12 +121,22 @@ void KalmanFilter::update(float altitude, float va, float* altitudeFilteredPtr, 
 	Pza_ -= kz * Pza_;
 }
 
-/*
-void KalmanFilter::update(float altitude, float va, float* altitudeFiltered, float* vv)
+void VarioFilter_HarInAirKF2::reset(float altitude)
 {
-}
-*/
+	z_ = altitude;
+	v_ = 0.0f; // vInitial;
 
-void KalmanFilter::reset()
-{
+	aBias_ = 0.0f; // aBiasInitial;
+
+	Pzz_ = 1.0f;
+	Pzv_ = 0.0f;
+	Pza_ = 0.0f;
+
+	Pvz_ = 0.0f;
+	Pvv_ = 1.0f;
+	Pva_ = 0.0f;
+
+	Paz_ = 0.0f;
+	Pav_ = 0.0;
+	Paa_ = 100000.0f;
 }

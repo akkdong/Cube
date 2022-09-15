@@ -27,7 +27,7 @@ public:
 	int					front() { return mFront; }
 
 	int					isFull() 	{ return ((mFront + 1) % MAX_NMEA_PARSER_BUFFER) == mTail; }
-	int					isEmpty()	{ return mHead == mTail; }	
+	bool				isEmpty()	{ return mHead == mTail; }	
 
 	int					get(int index);
 	int					copy(char* dst, int startPos, int count);
@@ -67,7 +67,7 @@ public:
     bool                isFixed() { return mFixed; }
 
     //
-	int			        availableNmea();
+	bool		        availableNmea();
 	int			        readNmea();    
 
     bool                availableLocation() { return mDataReady; }

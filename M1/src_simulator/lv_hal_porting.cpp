@@ -80,20 +80,21 @@ void lv_hal_setup(void)
 
 void lv_hal_update(void)
 {
+    #if 0
     if (SDL_GetTicks() - hal_update_tick >= 1000)
     {
         //
         app_conf_t* conf = app_get_conf();
 
-        //conf->altitudeGPS = 2100 + (rand() % 400) - 200;
+        conf->altitudeGPS = 2100 + (rand() % 400) - 200;
         conf->altitudeBaro = conf->altitudeGPS + (rand() % 100) - 50;
         conf->altitudeAGL = conf->altitudeGPS - (rand() % 500);
 
-        //conf->speedGround = 20 + (rand() % 20) - 10;
+        conf->speedGround = 20 + (rand() % 20) - 10;
         conf->speedVertActive = (rand() % 30) / 10.0;
         conf->glideRatio = (rand() % 80) / 10.0;
 
-        //conf->heading = (conf->heading + 10) % 360;
+        conf->heading = (conf->heading + 10) % 360;
         conf->bearing = 30;
 
         conf->timeCurrent = time(NULL);
@@ -103,6 +104,7 @@ void lv_hal_update(void)
         // 
         hal_update_tick = SDL_GetTicks();
     }
+    #endif
 }
 
 void lv_hal_loop(void)

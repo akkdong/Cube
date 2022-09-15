@@ -11,11 +11,20 @@
 #include "LocationDataSource.h"
 #include "LocationParser.h"
 
-#define USE_KALMAN_FILTER              (1)
-#if USE_KALMAN_FILTER
-#include "KalmanVario.h"
+#define VFILTER_HARINAIR_KF2     1
+#define VFILTER_HARINAIR_KF4d    2
+#define VFILTER_ROBIN_KF         3
+
+#define USE_KALMAN_FILTER        VFILTER_HARINAIR_KF2
+
+#if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
+#include "VarioFilter_HarInAirKF2.h"
+#elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
+#include "VarioFilter_HarInAirKF4d.h"
+#elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
+#include "VarioFilter_RobinKF.h"
 #else
-#include "KalmanFilter.h"
+#error "Invalid vario kalman-filter"
 #endif
 
 //
@@ -71,7 +80,7 @@ lv_page_item_t page_1[] = {
         SPEED_VERTICAL, 300, 96, 180, 96, LV_BORDER_SIDE_FULL 
     },
     {
-        TARCK_BEARING, 300, 192, 180, 96, LV_BORDER_SIDE_FULL 
+        ALTITUDE_BARO, 300, 192, 180, 96, LV_BORDER_SIDE_FULL 
     },
     {
         COMPASS, 180, 0, 120, 120, LV_BORDER_SIDE_NONE
@@ -84,24 +93,19 @@ lv_page_item_t page_1[] = {
     }
 };
 
-int32_t page_a[] = {
-    ALTITUDE_GROUND, ALTITUDE_GROUND, ALTITUDE_GROUND,    COMPASS,    COMPASS,   SPEED_GROUND,  SPEED_GROUND,    SPEED_GROUND,
-    ALTITUDE_GROUND, ALTITUDE_GROUND, ALTITUDE_GROUND,    COMPASS,    COMPASS,   SPEED_GROUND,  SPEED_GROUND,    SPEED_GROUND,
-       ALTITUDE_AGL,    ALTITUDE_AGL,    ALTITUDE_AGL, VSPEED_BAR, VSPEED_BAR, SPEED_VERTICAL, SPEED_VERTICAL, SPEED_VERTICAL,
-       ALTITUDE_AGL,    ALTITUDE_AGL,    ALTITUDE_AGL, VSPEED_BAR, VSPEED_BAR, SPEED_VERTICAL, SPEED_VERTICAL, SPEED_VERTICAL,
-        TIME_FLIGHT,     TIME_FLIGHT,     TIME_FLIGHT, VSPEED_BAR, VSPEED_BAR,   LIFT_vs_DRAG,   LIFT_vs_DRAG,   LIFT_vs_DRAG,
-        TIME_FLIGHT,     TIME_FLIGHT,     TIME_FLIGHT, VSPEED_BAR, VSPEED_BAR,   LIFT_vs_DRAG,   LIFT_vs_DRAG,   LIFT_vs_DRAG,
-};
 
 
 Variometer      vario;
 LocationParser  locParser;
 
-#if USE_KALMAN_FILTER
-KalmanFilter    varioFilter;
-#else
-KalmanFilter    varioFilter;
+#if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
+VarioFilter_HarInAirKF2     varioFilter;
+#elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
+VarioFilter_HarInAirKF4d    varioFilter;
+#elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
+VarioFilter_RobinKF         varioFilter;
 #endif
+
 
 
 //
@@ -192,9 +196,17 @@ void app_init()
     //
     // 
 
-    #if USE_KALMAN_FILTER
-    varioFilter.begin(0, 400.0f, 1000.0f, 1.0f);
-    #else
+    #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
+    varioFilter.begin(400.0f, 1000.0f, 1.0f, 0);
+    #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
+
+    // injects additional uncertainty depending on magnitude of acceleration
+    // helps respond quickly to large accelerations while heavily filtering
+    // in low acceleration situations.  Range : 0.5 - 1.5
+    #define KF_ADAPT			1.0f
+
+    varioFilter.begin(1000.0f * 1, KF_ADAPT, 0, 0, 0);
+    #elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
     varioFilter.Configure(30.0f, 4.0f, altitude);
     #endif    
 
@@ -270,11 +282,12 @@ void app_update()
         locParser.resetLocation();
     }
 
-    if (varioUpdated)
+    if (varioUpdated > 0)
     {
         app_conf->altitudeBaro = vario.getAltitudeFiltered();
         app_conf->pressure = vario.getPressure();
         app_conf->temperature = vario.getTemperature();
         app_conf->speedVertActive = vario.getVelocity();
+        app_conf->dirty = 1;
     }
 }

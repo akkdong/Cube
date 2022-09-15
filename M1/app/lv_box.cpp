@@ -97,6 +97,19 @@ static lv_color_t buf_compass[LV_CANVAS_BUF_SIZE_TRUE_COLOR(COMPASS_WIDTH, COMPA
 //  1 : up-side is heading
 //  2 : up-side is bearing
 
+void RotateAndTranslate(lv_point_t* points, lv_coord_t org_x, lv_coord_t org_y, float angle)
+{
+    for (int i = 0; i < 3; i++)
+    {
+        float theta = angle * DEG_TO_RAD;
+        lv_coord_t x = points[i].x * cos(theta) - points[i].y * sin(theta);
+        lv_coord_t y = points[i].x * sin(theta) + points[i].y * cos(theta);
+        
+        points[i].x = org_x + x;
+        points[i].y = org_y - y;
+    }
+}
+
 void lv_compass_draw(lv_obj_t* canvas, lv_coord_t heading, lv_coord_t bearing, int32_t method)
 {
     //
@@ -127,7 +140,7 @@ void lv_compass_draw(lv_obj_t* canvas, lv_coord_t heading, lv_coord_t bearing, i
     arc_dsc.start_angle = 0;
     arc_dsc.end_angle = 360;
     arc_dsc.img_src = NULL;
-    arc_dsc.opa = LV_OPA_80;
+    arc_dsc.opa = LV_OPA_40;
     arc_dsc.blend_mode = LV_BLEND_MODE_NORMAL;
     arc_dsc.rounded = 0;
     lv_canvas_draw_arc(canvas, base_x, base_y, COMPASS_RADIUS, 0, 360, &arc_dsc);
@@ -158,40 +171,84 @@ void lv_compass_draw(lv_obj_t* canvas, lv_coord_t heading, lv_coord_t bearing, i
     // draw heading
     if (/*method != 1*/ true)
     {
-        line_dsc.color = lv_color_hex(0x000000);
-        line_dsc.width = 2;
-        //line_dsc.dash_width;
-        //line_dsc.dash_gap;
-        line_dsc.opa = LV_OPA_60;
-        //line_dsc.blend_mode = LV_BLEND_MODE_NORMAL;
-        //line_dsc.round_start;
-        //line_dsc.round_end;
-        //line_dsc.raw_end;
-
         angle = heading - up; // rotate counterclockwise
+
+        #if DRAW_LINE
         points[0].x = base_x;
         points[0].y = base_y;
         points[1].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin(angle * DEG_TO_RAD));
         points[1].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos(angle * DEG_TO_RAD));
 
+        line_dsc.color = lv_color_hex(0x000000);
+        line_dsc.width = 2;
+        line_dsc.opa = LV_OPA_60;
+
         lv_canvas_draw_line(canvas, points, 2, &line_dsc);
+        #else // DRAW_TRIANGLE
+        /*
+        points[0].x = 0;
+        points[0].y = COMPASS_RADIUS;
+        points[1].x = 0 - COMPASS_RADIUS / 5;
+        points[1].y = COMPASS_RADIUS / 2;
+        points[2].x = COMPASS_RADIUS / 5;
+        points[2].y = COMPASS_RADIUS / 2;
+
+        RotateAndTranslate(points, base_x, base_y, 0 - angle);
+        */
+        points[0].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin(angle * DEG_TO_RAD));
+        points[0].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos(angle * DEG_TO_RAD));
+        points[1].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin((angle + 18) * DEG_TO_RAD) / 2);
+        points[1].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos((angle + 18) * DEG_TO_RAD) / 2);
+        points[2].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin((angle - 18) * DEG_TO_RAD) / 2);
+        points[2].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos((angle - 18) * DEG_TO_RAD) / 2);
+
+        rect_dsc.bg_opa = LV_OPA_60;
+        rect_dsc.bg_color = lv_color_hex(0x0000FF);
+        lv_canvas_draw_polygon(canvas, points, 3, &rect_dsc);
+        #endif
     }
 
     // bearing
     if (bearing >= 0)
     {
-        line_dsc.color = lv_color_hex(0x0000FF);
-        line_dsc.width = 2;
-        line_dsc.dash_width = 6;
-        line_dsc.dash_gap = 4;
-
         angle = bearing - up; // rotate counterclockwise
+
+        #if DRAW_TRIANGLE
         points[0].x = base_x;
         points[0].y = base_y;
         points[1].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin(angle * DEG_TO_RAD));
         points[1].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos(angle * DEG_TO_RAD));
 
+        line_dsc.color = lv_color_hex(0x0000FF);
+        line_dsc.width = 2;
+        line_dsc.dash_width = 6;
+        line_dsc.dash_gap = 4;
+
         lv_canvas_draw_line(canvas, points, 2, &line_dsc);
+        #else
+        /*
+        points[0].x = 0;
+        points[0].y = COMPASS_RADIUS;
+        points[1].x = 0 - COMPASS_RADIUS / 5;
+        points[1].y = COMPASS_RADIUS * 2;
+        points[2].x = COMPASS_RADIUS / 5;
+        points[2].y = COMPASS_RADIUS * 2;
+
+        RotateAndTranslate(points, base_x, base_y, 0 - angle);
+        */
+        points[0].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin(angle * DEG_TO_RAD));
+        points[0].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos(angle * DEG_TO_RAD));
+        points[1].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin((angle + 18) * DEG_TO_RAD) / 2);
+        points[1].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos((angle + 18) * DEG_TO_RAD) / 2);
+        points[2].x = base_x + (lv_coord_t)(COMPASS_RADIUS * sin((angle - 18) * DEG_TO_RAD) / 2);
+        points[2].y = base_y - (lv_coord_t)(COMPASS_RADIUS * cos((angle - 18) * DEG_TO_RAD) / 2);
+
+        rect_dsc.bg_opa = LV_OPA_80;
+        rect_dsc.bg_color = lv_color_hex(0x00FF00);
+        rect_dsc.border_width = 1;
+        rect_dsc.border_color = lv_color_hex(0x000000);
+        lv_canvas_draw_polygon(canvas, points, 3, &rect_dsc);
+        #endif
     }
 }
 
@@ -357,6 +414,7 @@ void lv_box_set_content(lv_obj_t* box, lv_box_type_t type)
     switch (type)
     {
     case ALTITUDE_GROUND:
+    case ALTITUDE_BARO:
     case ALTITUDE_AGL:
     case ALTITUDE_PROFILE:
     case SPEED_GROUND:
@@ -373,7 +431,7 @@ void lv_box_set_content(lv_obj_t* box, lv_box_type_t type)
     case DISTANCE_LANDING:
     case DISTANCE_NEXT_WAYPOINT:
     case DISTANCE_FLIGHT:
-    case LIFT_vs_DRAG:
+    case GLIDE_RATIO:
         info->box_type = type;
         info->content = lv_label_create(box);
         lv_obj_align(info->content, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
@@ -383,7 +441,7 @@ void lv_box_set_content(lv_obj_t* box, lv_box_type_t type)
     case COMPASS:
         info->box_type = type;
         info->content = lv_box_create_canvas(box, buf_compass, COMPASS_WIDTH, COMPASS_HEIGHT);
-        lv_compass_draw(info->content, 0, 0, 1);
+        lv_compass_draw(info->content, 0, 0, 0);
         break;
     case VSPEED_BAR:
     case VSPEED_PROFILE:
@@ -399,6 +457,8 @@ const char* lv_box_get_title(lv_box_type_t type)
     {
     case ALTITUDE_GROUND:
         return "Altitude G.";
+    case ALTITUDE_BARO:
+        return "Altitude Baro";
     case ALTITUDE_AGL:
         return "AGL";
     case ALTITUDE_PROFILE:
@@ -431,7 +491,7 @@ const char* lv_box_get_title(lv_box_type_t type)
         return "Dist Next";
     case DISTANCE_FLIGHT:
         return "Dist Fl.";
-    case LIFT_vs_DRAG:
+    case GLIDE_RATIO:
         return "L/D";
     case COMPASS:
         return NULL;
@@ -451,7 +511,7 @@ const char* lv_box_get_description(lv_box_type_t type)
     switch (type)
     {
     case ALTITUDE_GROUND:
-        return "m";
+    case ALTITUDE_BARO:
     case ALTITUDE_AGL:
         return "m";
     case ALTITUDE_PROFILE:
@@ -484,7 +544,7 @@ const char* lv_box_get_description(lv_box_type_t type)
         return "m";
     case DISTANCE_FLIGHT:
         return "m";
-    case LIFT_vs_DRAG:
+    case GLIDE_RATIO:
         return NULL;
     case COMPASS:
         return NULL;
@@ -522,6 +582,9 @@ void lv_box_update(lv_obj_t* box)
     {
     case ALTITUDE_GROUND:
         lv_box_set_content_text(info->content, "%.0f", conf->altitudeGPS);
+        break;
+    case ALTITUDE_BARO:
+        lv_box_set_content_text(info->content, "%.0f", conf->altitudeBaro);
         break;
     case ALTITUDE_AGL:
         lv_box_set_content_text(info->content, "%.0f", conf->altitudeAGL);
@@ -576,11 +639,11 @@ void lv_box_update(lv_obj_t* box)
         break;
     case DISTANCE_FLIGHT:
         break;
-    case LIFT_vs_DRAG:
+    case GLIDE_RATIO:
         lv_box_set_content_text(info->content, "%.1f", conf->glideRatio);
         break;
     case COMPASS:
-        lv_compass_draw(info->content, conf->heading, conf->bearing, 1);
+        lv_compass_draw(info->content, conf->heading, conf->bearing, 0);
         break;
     case VSPEED_BAR:
         break;

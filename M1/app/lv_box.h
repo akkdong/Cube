@@ -13,6 +13,7 @@ extern "C" {
 typedef enum _lv_box_type
 {
     ALTITUDE_GROUND,
+    ALTITUDE_BARO,
     ALTITUDE_AGL,       // Height Above Ground Level
     ALTITUDE_PROFILE,
     SPEED_GROUND,
@@ -29,7 +30,7 @@ typedef enum _lv_box_type
     DISTANCE_LANDING,
     DISTANCE_NEXT_WAYPOINT,
     DISTANCE_FLIGHT,    // odometer
-    LIFT_vs_DRAG,
+    GLIDE_RATIO,
     COMPASS,
     VSPEED_BAR,
     VSPEED_PROFILE,

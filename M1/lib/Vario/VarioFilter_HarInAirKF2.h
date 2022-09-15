@@ -1,27 +1,32 @@
-// KalmanVario.h
+// VarioFilter_HarInAirKF2.h
 //
 
-#ifndef __KALMANVARIO_H__
-#define __KALMANVARIO_H__
+//
+// Reference: https://github.com/har-in-air/ESP32_IMU_BARO_GPS_VARIO/blob/master/offline/kf/compare_kf2_kf3_kf4.ipynb
+//
+//
+//
+
+#ifndef __VARIL_FILTER_HARINAIRKF2_H__
+#define __VARIL_FILTER_HARINAIRKF2_H__
 
 #include "VarioFilter.h"
 
 
-//
-//
+////////////////////////////////////////////////////////////////////////////////////////////
 //
 
-class KalmanFilter : public IVarioFilter
+class VarioFilter_HarInAirKF2 : public IVarioFilter
 {
 public:
-	KalmanFilter();
+	VarioFilter_HarInAirKF2();
 
 public:
 	// IVarioFilter
 	void					update(float altitude, float va, float* altitudeFiltered, float* vv);
-	void					reset();
+	void					reset(float altitude);
 
-	int						begin(float altitude, float zVariance = 400.0, float zAccelVariance = 1000.0, float zAccelBiasVariance = 1.0);
+	int						begin(float zVariance = 400.0, float zAccelVariance = 1000.0, float zAccelBiasVariance = 1.0, float altitude = 0);
 	void					end();
 
 	/*
@@ -52,4 +57,4 @@ private:
 	float					zVariance_; //  z measurement noise variance fixed
 };
 
-#endif // __KALMANVARIO_H__
+#endif // __VARIL_FILTER_HARINAIRKF2_H__

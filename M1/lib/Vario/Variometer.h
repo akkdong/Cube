@@ -29,11 +29,11 @@ public:
 	float					getAltitude() { return altitude; }
 	float					getVelocity() { return vario; }
 
-	void					calibrateAltitude(float altitudeRef);
-	void					calculateSeaLevel(float altitude);
+	void					calibrateSeaLevel(float altitudeRef);
 	
 protected:
-	  void					measure();
+	int						measure();
+	float					calculateSeaLevel(float pressure, float temperature, float altitude);
 
 protected:
 	// sensor

@@ -498,7 +498,7 @@ void LocationParser::update()
     }
 }
 
-int LocationParser::availableNmea()
+bool LocationParser::availableNmea()
 {
     return (! mDataQueue.isEmpty());
 }
