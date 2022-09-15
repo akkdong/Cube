@@ -42,8 +42,8 @@ bool Barometer::getData(float* p, float* t)
     lastTick = tick;
 
     // enter-critical-section
-    *p = baro.getPressure();
     *t = baro.getTemperature();
+    *p = baro.getPressure();
     // leave-critical-section
 
     return true;

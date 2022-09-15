@@ -22,7 +22,9 @@ Bme280CalibrationData AbstractBme280::getCalibrationData() const {
 
 Bme280Settings AbstractBme280::getSettings() const {
   config_.value = read8(Bme280RegisterAddressConfig);
+  /*
   ctrlHum_.value = read8(Bme280RegisterAddressCtrlHum);
+  */
   ctrlMeas_.value = read8(Bme280RegisterAddressCtrlMeas);
 
   return {
@@ -30,7 +32,10 @@ Bme280Settings AbstractBme280::getSettings() const {
       .temperatureOversampling =
           static_cast<Bme280Oversampling>(ctrlMeas_.osrsT),
       .pressureOversampling = static_cast<Bme280Oversampling>(ctrlMeas_.osrsP),
+      /*
       .humidityOversampling = static_cast<Bme280Oversampling>(ctrlHum_.osrsH),
+      */
+      .humidityOversampling = Bme280Oversampling::Off,
       .filter = static_cast<Bme280Filter>(config_.filter),
       .standbyTime = static_cast<Bme280StandbyTime>(config_.tSb)};
 }
@@ -61,7 +66,7 @@ float AbstractBme280::getTemperature() const {
 }
 
 float AbstractBme280::getPressure() const {
-  getTemperature();
+  //getTemperature();
 
   int32_t rawPressure = read24(Bme280RegisterAddressPressureData);
   if (rawPressure == 0x800000) {
@@ -95,6 +100,7 @@ float AbstractBme280::getPressure() const {
 }
 
 float AbstractBme280::getHumidity() const {
+  /*
   getTemperature();
 
   int32_t rawHumidity = read16(Bme280RegisterAddressHumidityData);
@@ -124,6 +130,8 @@ float AbstractBme280::getHumidity() const {
 
   float humidity = (var1 >> 12);
   return humidity / 1024;
+  */
+  return 0;
 }
 
 void AbstractBme280::setSettings(const Bme280Settings settings) {
@@ -131,7 +139,9 @@ void AbstractBme280::setSettings(const Bme280Settings settings) {
   ctrlMeas_.osrsT = static_cast<uint8_t>(settings.temperatureOversampling);
   ctrlMeas_.osrsP = static_cast<uint8_t>(settings.pressureOversampling);
 
+  /*
   ctrlHum_.osrsH = static_cast<uint8_t>(settings.humidityOversampling);
+  */
 
   config_.filter = static_cast<uint8_t>(settings.filter);
   config_.tSb = static_cast<uint8_t>(settings.standbyTime);
@@ -140,13 +150,17 @@ void AbstractBme280::setSettings(const Bme280Settings settings) {
          static_cast<uint8_t>(Bme280Mode::Sleep));
 
   write8(Bme280RegisterAddressConfig, config_.value);
+  /*
   write8(Bme280RegisterAddressCtrlHum, ctrlHum_.value);
+  */
   write8(Bme280RegisterAddressCtrlMeas, ctrlMeas_.value);
 
   delay(100);
 }
 
-void AbstractBme280::reset() { write8(Bme280RegisterAddressReset, 0xB6); }
+void AbstractBme280::reset() { 
+  write8(Bme280RegisterAddressReset, 0xB6); 
+}
 
 void AbstractBme280::sleep() {
   auto settings = getSettings();
@@ -207,6 +221,7 @@ void AbstractBme280::readCalibrationData() const {
   calibrationData_.digP8 = read16SignedLittleEndian(Bme280RegisterAddressDigP8);
   calibrationData_.digP9 = read16SignedLittleEndian(Bme280RegisterAddressDigP9);
 
+  /*
   calibrationData_.digH1 = read8(Bme280RegisterAddressDigH1);
   calibrationData_.digH2 = read16SignedLittleEndian(Bme280RegisterAddressDigH2);
   calibrationData_.digH3 = read8(Bme280RegisterAddressDigH3);
@@ -218,6 +233,7 @@ void AbstractBme280::readCalibrationData() const {
       (read8(Bme280RegisterAddressDigH5) >> 4);
   calibrationData_.digH6 =
       static_cast<int8_t>(read8(Bme280RegisterAddressDigH6));
+  */
 }
 
 int16_t AbstractBme280::read16Signed(const uint8_t registerAddress) const {
