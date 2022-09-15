@@ -99,6 +99,7 @@ int main(void)
 void setup()
 {
     // initialize core & peripherals
+    LOGi("Start M1 Simulator!!");
     bsp_hal_init();
     // hold-on power: turn-on power-switch
     bsp_power_on(true);
@@ -110,7 +111,8 @@ void setup()
 
     //
     Application app;
-    //app.begin();
+
+    app.begin();
 
     while (1)
     {

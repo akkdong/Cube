@@ -70,7 +70,8 @@ Application::Application()
 void Application::begin()
 {
     //
-    app_config_init(app_get_conf());
+    app_conf = app_get_conf();
+    app_config_init(app_conf);
 
     //
     font_large = &lv_font_montserrat_48;
@@ -146,7 +147,6 @@ void Application::begin()
 
 void Application::end()
 {
-
 }
 
 void Application::update()
@@ -179,7 +179,6 @@ void Application::update()
     // bt-update
     // battery-update
     // process-key
-
 
     locParser.update();
     int varioUpdated = vario.update();

@@ -63,7 +63,7 @@ int compareTime(struct tm* t1, struct tm* t2)
 
 DataQueue::DataQueue()
 {
-	mHead = mTail = mFront;
+	mHead = mTail = mFront = 0;
 }
 
 void DataQueue::push(int ch)
