@@ -25,7 +25,18 @@ int trace_puts(const char* str)
     return Serial.write(str);
 }
 
-int trace_printf(int level, const char* format, ...)
+int trace_printf(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    vsprintf(trace_buf, format, args);
+    va_end(args);
+
+    return Serial.write(trace_buf);
+}
+
+
+int _log_printf(int level, const char* format, ...)
 {
     if (level < LOG_LEVEL_ERROR)
         level = LOG_LEVEL_ERROR;
