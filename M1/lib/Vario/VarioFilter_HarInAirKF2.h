@@ -55,6 +55,8 @@ private:
 	float					zAccelBiasVariance_; // assumed fixed.
 	float					zAccelVariance_;  // dynamic acceleration variance
 	float					zVariance_; //  z measurement noise variance fixed
+
+	uint32_t				t_;
 };
 
 #endif // __VARIL_FILTER_HARINAIRKF2_H__

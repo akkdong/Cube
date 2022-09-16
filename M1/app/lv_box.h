@@ -35,6 +35,9 @@ typedef enum _lv_box_type
     VSPEED_BAR,
     VSPEED_PROFILE,
     TRACK_FLIGHT,
+    SENSOR_PRESSURE,
+    SENSOR_TEMPERATURE,
+    SENSOR_HUMIDITY,
 	END_OF_BOX,
     BOX_COUNT = END_OF_BOX,
     

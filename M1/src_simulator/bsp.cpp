@@ -54,3 +54,31 @@ void bsp_update()
 	lv_timer_handler();
 	SDL_Delay(5);
 }
+
+
+
+//
+//
+//
+
+static lv_disp_t*	cube_disp = NULL;
+static lv_indev_t*	cube_touch = NULL;
+static lv_indev_t*	cube_keypad = NULL;
+
+void bsp_set_drivers(lv_disp_t* disp, lv_indev_t* touch, lv_indev_t* keypad)
+{
+	cube_disp = disp;
+	cube_touch = touch;
+	cube_keypad = keypad;
+}
+
+void bsp_regiter_keypad_receiver(lv_obj_t* obj)
+{
+	if (cube_keypad != NULL)
+	{
+		lv_group_t* grp = lv_group_create();
+		lv_group_add_obj(grp, obj);
+
+		lv_indev_set_group(cube_keypad, grp);	
+	}
+}

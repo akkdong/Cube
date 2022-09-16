@@ -1,6 +1,12 @@
 // VarioFilter_HarInAirKF2.cpp
 //
 
+#ifdef ARDUINO
+#include <Arduino.H>
+#else
+#include <SDL2/SDL.h>
+#endif
+
 #include "VarioFilter_HarInAirKF2.h"
 //#include "Common.h"
 
@@ -33,8 +39,12 @@ int VarioFilter_HarInAirKF2::begin(float zVariance, float zAccelVariance, float 
 void VarioFilter_HarInAirKF2::update(float altitude, float va, float* altitudeFilteredPtr, float* varioPtr)
 {
 	// delta time
-	#if 0
+	#if 1
+	#ifdef ARDUINO
 	uint32_t lastTick = millis();
+	#else
+	uint32_t lastTick = SDL_GetTicks();
+	#endif
 	unsigned long deltaTime = lastTick - t_;
 	float dt = ((float)deltaTime) / 1000.0;
 	t_ = lastTick;
@@ -139,4 +149,10 @@ void VarioFilter_HarInAirKF2::reset(float altitude)
 	Paz_ = 0.0f;
 	Pav_ = 0.0;
 	Paa_ = 100000.0f;
+
+	#if ARDUINO
+	t_ = millis();
+	#else
+	t_ = SDL_GetTicks();
+	#endif
 }

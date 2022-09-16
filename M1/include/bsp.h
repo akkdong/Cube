@@ -6,8 +6,10 @@
 
 #ifdef __cplusplus
 extern "C" {
-
 #endif
+
+#include <lvgl.h>
+
 
 /////////////////////////////////////////////////////////////////////////
 //
@@ -19,6 +21,11 @@ void bsp_power_on(bool on);
 void bsp_lcd_backlight(bool on);
 
 void bsp_update();
+
+
+//
+void bsp_set_drivers(lv_disp_t* disp, lv_indev_t* touch, lv_indev_t* keypad);
+void bsp_regiter_keypad_receiver(lv_obj_t* obj);
 
 
 #ifdef __cplusplus

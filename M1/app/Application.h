@@ -10,9 +10,9 @@
 #include "lv_app.h"
 #include "lv_page.h"
 
-#include "abstract/LocationDataSource.h"
 #include "Variometer.h"
 #include "LocationParser.h"
+#include "Beeper.h"
 
 #define VFILTER_HARINAIR_KF2     1
 #define VFILTER_HARINAIR_KF4d    2
@@ -62,6 +62,7 @@ protected:
     //
     Variometer      vario;
     LocationParser  locParser;
+    Beeper          beeper;
 
     #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
     VarioFilter_HarInAirKF2     varioFilter;

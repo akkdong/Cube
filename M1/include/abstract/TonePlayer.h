@@ -1,0 +1,26 @@
+// TonePlayer.h
+//
+
+#ifndef __TONE_PLAYER_H__
+#define __TONE_PLAYER_H__
+
+//////////////////////////////////////////////////////////////////////////////
+//
+
+struct ITonePlayer
+{
+    virtual void    setup() = 0;
+
+    virtual void    play(int freq) = 0;
+};
+
+
+
+//////////////////////////////////////////////////////////////////////////////
+//
+
+ITonePlayer* CreateTonePlayer();
+
+
+
+#endif // __TONE_PLAYER_H__

@@ -432,6 +432,9 @@ void lv_box_set_content(lv_obj_t* box, lv_box_type_t type)
     case DISTANCE_NEXT_WAYPOINT:
     case DISTANCE_FLIGHT:
     case GLIDE_RATIO:
+    case SENSOR_PRESSURE:
+    case SENSOR_TEMPERATURE:
+    case SENSOR_HUMIDITY:
         info->box_type = type;
         info->content = lv_label_create(box);
         lv_obj_align(info->content, LV_ALIGN_BOTTOM_RIGHT, 0, 0);
@@ -501,6 +504,12 @@ const char* lv_box_get_title(lv_box_type_t type)
         return NULL;
     case TRACK_FLIGHT:
         return NULL;
+    case SENSOR_PRESSURE:
+        return "Pressure";
+    case SENSOR_TEMPERATURE:
+        return "Temperature";
+    case SENSOR_HUMIDITY:
+        return "Humidity";
     default:
         return NULL;
     }
@@ -554,6 +563,12 @@ const char* lv_box_get_description(lv_box_type_t type)
         return NULL;
     case TRACK_FLIGHT:
         return NULL;
+    case SENSOR_PRESSURE:
+        return "Pa";
+    case SENSOR_TEMPERATURE:
+        return "C";
+    case SENSOR_HUMIDITY:
+        return "%%";
     default:
         return NULL;
     }
@@ -650,6 +665,14 @@ void lv_box_update(lv_obj_t* box)
     case VSPEED_PROFILE:
         break;
     case TRACK_FLIGHT:
+        break;
+    case SENSOR_PRESSURE:
+        lv_box_set_content_text(info->content, "%.0f", conf->pressure);
+        break;
+    case SENSOR_TEMPERATURE:
+        lv_box_set_content_text(info->content, "%.1f", conf->temperature);
+        break;
+    case SENSOR_HUMIDITY:
         break;
     }        
 }

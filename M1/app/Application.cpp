@@ -5,6 +5,7 @@
 #include <Arduino.h>
 #endif
 #include "Application.h"
+#include "Beeper.h"
 #include "bsp.h"
 
 
@@ -20,8 +21,16 @@ extern "C" void app_config_init(app_conf_t* conf)
 {
 	//
     memset(conf, 0, sizeof(app_conf_t));
+
+    //
+    conf->bearing = -1;
 }
 
+extern "C" void page_event_cb(lv_event_t* event)
+{
+    uint32_t key = lv_indev_get_key(lv_indev_get_act());
+    LOGi("Page Event: %d, %d", event->code, key);
+}
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -32,19 +41,19 @@ lv_page_item_t page_1[] = {
         ALTITUDE_GROUND, 0, 0, 180, 96, LV_BORDER_SIDE_FULL
     },
     {
-        ALTITUDE_AGL, 0, 96, 180, 96, LV_BORDER_SIDE_FULL 
+        TRACK_HEADING, 0, 96, 180, 96, LV_BORDER_SIDE_FULL 
     },
     {
-        TRACK_HEADING, 0, 192, 180, 96, LV_BORDER_SIDE_FULL
+        SPEED_GROUND, 0, 192, 180, 96, LV_BORDER_SIDE_FULL
     },
     {
-        SPEED_GROUND, 300, 0, 180, 96, LV_BORDER_SIDE_FULL 
+        ALTITUDE_BARO, 300, 0, 180, 96, LV_BORDER_SIDE_FULL 
     },
     {
-        SPEED_VERTICAL, 300, 96, 180, 96, LV_BORDER_SIDE_FULL 
+        SENSOR_PRESSURE, 300, 96, 180, 96, LV_BORDER_SIDE_FULL 
     },
     {
-        ALTITUDE_BARO, 300, 192, 180, 96, LV_BORDER_SIDE_FULL 
+        SPEED_VERTICAL, 300, 192, 180, 96, LV_BORDER_SIDE_FULL 
     },
     {
         COMPASS, 180, 0, 120, 120, LV_BORDER_SIDE_NONE
@@ -108,6 +117,9 @@ void Application::begin()
     lv_obj_set_style_border_width(page, 0, 0);
     lv_obj_set_style_bg_color(page, lv_color_hex(0xE0E0E6), 0);
 
+    bsp_regiter_keypad_receiver(page);
+    lv_obj_add_event_cb(page, page_event_cb, LV_EVENT_KEY, 0);
+
     // page
     //      box position/dimention
     //      box type: { title, sub-title, content }
@@ -143,6 +155,7 @@ void Application::begin()
 
     vario.begin(CreateBarometer(), &varioFilter);
     locParser.begin(CreateLocationDataSource());
+    beeper.begin(CreateTonePlayer());
 }
 
 void Application::end()
@@ -182,6 +195,7 @@ void Application::update()
 
     locParser.update();
     int varioUpdated = vario.update();
+    beeper.update();
 
     while (locParser.availableNmea())
     {
@@ -204,10 +218,55 @@ void Application::update()
 
     if (varioUpdated > 0)
     {
+        //static uint32_t lastTick = millis();
+        //static uint32_t tick[30];
+        static uint32_t count = 0;
+        static float vSpeed = 0;
+
         app_conf->altitudeBaro = vario.getAltitudeFiltered();
         app_conf->pressure = vario.getPressure();
         app_conf->temperature = vario.getTemperature();
-        app_conf->speedVertActive = vario.getVelocity();
-        app_conf->dirty = 1;
+
+        //app_conf->speedVertActive = vario.getVelocity();
+        float temp = vario.getVelocity();
+        vSpeed += temp;
+        beeper.setVelocity(temp);
+
+        //tick[count] = millis();
+        count += 1;
+        if ((count % 25) == 0)
+        {
+            /*
+            LOGi("Update vario-relative stubs: %u", millis() - lastTick);
+            LOGi("  %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u",
+                tick[1] - tick[0],
+                tick[2] - tick[1],
+                tick[3] - tick[2],
+                tick[4] - tick[3],
+                tick[5] - tick[4],
+                tick[6] - tick[5],
+                tick[7] - tick[6],
+                tick[8] - tick[7],
+                tick[9] - tick[8],
+                tick[10] - tick[9],
+                tick[11] - tick[10],
+                tick[12] - tick[11],
+                tick[13] - tick[12],
+                tick[14] - tick[13],
+                tick[15] - tick[14],
+                tick[16] - tick[15],
+                tick[17] - tick[16],
+                tick[18] - tick[17],
+                tick[19] - tick[18],
+                tick[20] - tick[19]);
+            */
+
+            app_conf->speedVertActive = vSpeed / count;
+            app_conf->dirty = 1;
+
+            vSpeed = 0;
+            count = 0;
+            //lastTick = millis();
+        }
     }
 }
