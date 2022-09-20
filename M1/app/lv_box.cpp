@@ -444,7 +444,7 @@ void lv_box_set_content(lv_obj_t* box, lv_box_type_t type)
     case COMPASS:
         info->box_type = type;
         info->content = lv_box_create_canvas(box, buf_compass, COMPASS_WIDTH, COMPASS_HEIGHT);
-        lv_compass_draw(info->content, 0, 0, 0);
+        lv_compass_draw(info->content, 0, 0, 1);
         break;
     case VSPEED_BAR:
     case VSPEED_PROFILE:
@@ -658,7 +658,7 @@ void lv_box_update(lv_obj_t* box)
         lv_box_set_content_text(info->content, "%.1f", conf->glideRatio);
         break;
     case COMPASS:
-        lv_compass_draw(info->content, conf->heading, conf->bearing, 0);
+        lv_compass_draw(info->content, conf->heading, conf->bearing, 1);
         break;
     case VSPEED_BAR:
         break;

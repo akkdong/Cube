@@ -6,7 +6,7 @@
 
 #include "VarioFilter_HarInAirKF4d.h"
 #include "logger.h"
-
+#include "utils.h"
 
 #ifndef KALMAN_UPDATE_FREQ
 #define KALMAN_UPDATE_FREQ          (25)
@@ -57,6 +57,11 @@ void VarioFilter_HarInAirKF4d::begin(float aVariance,  float kAdapt, float zInit
 	AccelVariance = aVariance;
 	KAdapt = kAdapt;
 
+	reset(zInitial);
+	//State.v = vInitial;
+    //State.a = aInitial;
+
+	/*
 	State.z = zInitial;
 	State.v = vInitial;
     State.a = aInitial;
@@ -81,6 +86,7 @@ void VarioFilter_HarInAirKF4d::begin(float aVariance,  float kAdapt, float zInit
 	Pbv = Pvb;
 	Pba = Pab;
 	Pbb = 1500.0f;
+	*/
 }
 
 
@@ -160,6 +166,17 @@ void VarioFilter_HarInAirKF4d::predict(float dt)
 
 void VarioFilter_HarInAirKF4d::update(float zm, float am, float* pz, float* pv) 
 {
+	//
+	#if 1
+	uint32_t lastTick = get_tick();
+	float dt = ((float)(lastTick - t_)) / 1000.0;
+	t_ = lastTick;
+	#else
+	float dt = 1.0 / KALMAN_UPDATE_FREQ; // 25Hz
+	#endif
+
+	predict(dt);
+
 	// Innovation Error y_k = measurement minus apriori estimate
 	float z_err = zm - State.z;
 	float a_err = am - State.a;
@@ -253,5 +270,32 @@ void VarioFilter_HarInAirKF4d::update(float zm, float am, float* pz, float* pv)
 
 void VarioFilter_HarInAirKF4d::reset(float altitude)
 {
+	State.z = altitude;
+	State.v = 0.0f;
+    State.a = 0.0f;
+	State.b = 0.0f; // assume residual acceleration bias = 0 initially
+
+	Pzz = 1500.0f;
+    Pzv = 0.0f;
+	Pza = 0.0f;
+	Pzb = 0.0f;
+	
+	Pvz = Pzv; 
+	Pvv = 1500.0f;
+	Pva = 0.0f;
+	Pvb = 0.0f;
+	
+	Paz = Pza;
+	Pav = Pva;
+	Paa = 100000.0f;
+	Pab = 0.0f;
+
+	Pbz = Pzb;
+	Pbv = Pvb;
+	Pba = Pab;
+	Pbb = 1500.0f;
+
+	//
+	t_ = get_tick();
 }
 

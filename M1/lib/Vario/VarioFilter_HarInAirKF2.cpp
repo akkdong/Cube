@@ -8,7 +8,7 @@
 #endif
 
 #include "VarioFilter_HarInAirKF2.h"
-//#include "Common.h"
+#include "utils.h"
 
 #define KALMAN_UPDATE_FREQ          (25)
 
@@ -40,13 +40,8 @@ void VarioFilter_HarInAirKF2::update(float altitude, float va, float* altitudeFi
 {
 	// delta time
 	#if 1
-	#ifdef ARDUINO
-	uint32_t lastTick = millis();
-	#else
-	uint32_t lastTick = SDL_GetTicks();
-	#endif
-	unsigned long deltaTime = lastTick - t_;
-	float dt = ((float)deltaTime) / 1000.0;
+	uint32_t lastTick = get_tick();
+	float dt = ((float)(lastTick - t_)) / 1000.0;
 	t_ = lastTick;
 	#else
 	float dt = 1.0 / KALMAN_UPDATE_FREQ; // 25Hz
@@ -135,6 +130,7 @@ void VarioFilter_HarInAirKF2::reset(float altitude)
 {
 	z_ = altitude;
 	v_ = 0.0f; // vInitial;
+	t_ = get_tick();
 
 	aBias_ = 0.0f; // aBiasInitial;
 
@@ -149,10 +145,4 @@ void VarioFilter_HarInAirKF2::reset(float altitude)
 	Paz_ = 0.0f;
 	Pav_ = 0.0;
 	Paa_ = 100000.0f;
-
-	#if ARDUINO
-	t_ = millis();
-	#else
-	t_ = SDL_GetTicks();
-	#endif
 }
