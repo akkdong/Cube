@@ -146,9 +146,10 @@ void Application::begin()
     // injects additional uncertainty depending on magnitude of acceleration
     // helps respond quickly to large accelerations while heavily filtering
     // in low acceleration situations.  Range : 0.5 - 1.5
-    #define KF_ADAPT			1.0f
+    #define KF_ACCEL_VARIANCE_DEFAULT   100     // 50 ~ 150
+    #define KF_ADAPT_DEFAULT            100     // 50 ~ 150
 
-    varioFilter.begin(1000.0f * 1, KF_ADAPT, 0, 0, 0);
+    varioFilter.begin(1000.0f * KF_ACCEL_VARIANCE_DEFAULT, KF_ADAPT_DEFAULT / 100.0f, 0, 0, 0);
     #elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
     varioFilter.Configure(30.0f, 4.0f, altitude);
     #endif    

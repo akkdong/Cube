@@ -35,7 +35,7 @@ public:
 	void            update(float altitude, float va, float* altitudeFiltered, float* vv);
 	void            reset(float altitude);
 
-	void            begin(float aVariance, float kAdapt, float zInitial, float vInitial, float aInitial);
+	void            begin(float aVariance, float kAdapt, float zInitial, float vInitial = 1.0f, float aInitial = 1.0f);
 	void            end();
 	
 protected:
@@ -44,6 +44,7 @@ protected:
 
 private:
     KF4_STATE       State;
+    uint32_t        t_;
 
     // 4x4 process model state covariance estimate P 
     // Note : P is symmetric
