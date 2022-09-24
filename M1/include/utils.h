@@ -4,16 +4,16 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
 #ifdef ARDUINO
 #include <Arduino.h>
 #else
 #include <stddef.h>
 #include <stdint.h>
 #include <SDL2/SDL.h>
+#endif
+
+#ifdef __cplusplus
+extern "C" {
 #endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////
