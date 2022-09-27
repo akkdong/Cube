@@ -587,6 +587,7 @@ size_t BLEVario::sendKey(const uint8_t *buffer, size_t size)
 void BLEVario::onConnect(BLEServer* pServer) 
 {
   this->connected = true;
+  this->sendLen = 0;
 
 #if !defined(USE_NIMBLE)
     BLE2902* desc = (BLE2902*)this->inputKeyboard->getDescriptorByUUID(BLEUUID((uint16_t)0x2902));
@@ -702,9 +703,37 @@ size_t BLEVario::write(uint8_t c)
         pTxCharacteristic->setValue(&c, 1);
         pTxCharacteristic->notify();
 
-        // delay(10); // bluetooth stack will go into congestion, if too many packets are sent
+        delay(10); // bluetooth stack will go into congestion, if too many packets are sent
+
+        // [E][BLECharacteristic.cpp:537] notify(): << esp_ble_gatts_send_ notify: rc=-1 Unknown ESP_ERR error
         return 1;
     }
 
     return 0;
+}
+
+size_t BLEVario::writeDelayed(uint8_t c)
+{
+    if (sendLen < sizeof(bufSend) - 1)
+    {
+        bufSend[sendLen] = c;
+        sendLen++;
+    }
+
+    return sendLen;
+}
+
+void BLEVario::flush()
+{
+    if (sendLen)
+    {
+        if (this->connected)
+        {
+            pTxCharacteristic->setValue(bufSend, sendLen);
+            pTxCharacteristic->notify();
+            sendLen = 0;
+
+            delay(10); // bluetooth stack will go into congestion, if too many packets are sent
+        }
+    }
 }

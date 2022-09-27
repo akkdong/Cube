@@ -153,6 +153,9 @@ public:
 	int					read();
 	size_t				write(uint8_t c);
 
+	size_t				writeDelayed(uint8_t c);
+	void				flush();
+
 
 	// HID
 	void 				setVendorID(uint16_t vid);
@@ -229,6 +232,9 @@ protected:
 	uint8_t				bufUart[32];
 	uint16_t			bufFront;
 	uint16_t			bufRear;
+
+	uint8_t				bufSend[128];
+	uint16_t			sendLen;
 
 	//
 #if defined(USE_NIMBLE)

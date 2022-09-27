@@ -314,12 +314,14 @@ void loop() {
             if (ch < 0)
                 break;
 
-            bleDevice.write(ch);
+            bleDevice.writeDelayed(ch);
             Serial.write(ch);
 
             if (ch == '\n')
                 bt_lock_state = 0;
         }
+
+        bleDevice.flush();
     }
 
     // nmea-sentense avaialble?
@@ -333,12 +335,14 @@ void loop() {
             if (ch < 0)
                 break;
 
-            bleDevice.write(ch);
+            bleDevice.writeDelayed(ch);
             Serial.write(ch);
 
             if (ch == '\n')
                 bt_lock_state = 0;                
         }
+
+        bleDevice.flush();
     }    
     #endif
 }
