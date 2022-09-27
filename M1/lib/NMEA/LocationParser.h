@@ -11,6 +11,34 @@
 
 #define MAX_NMEA_PARSER_BUFFER          (128)
 
+#define MAX_IGC_SENTENCE						(37)	// B-sentence max size
+														// ex: B1602405407121N00249342WA0028000421\r\n
+														//     0123456789012345678901234567890123456789
+														//     BHHMMSSDDMMmmmNDDDMMmmmWAPPPPPGGGGGCL
+														//                   S        EV          RF
+
+#define IGC_OFFSET_START						(0)
+#define IGC_OFFSET_TIME							(1)
+#define IGC_OFFSET_LATITUDE						(7)
+#define IGC_OFFSET_LATITUDE_					(14)
+#define IGC_OFFSET_LONGITUDE					(15)
+#define IGC_OFFSET_LONGITUDE_					(23)
+#define IGC_OFFSET_VALIDITY						(24)
+#define IGC_OFFSET_PRESS_ALT					(25)
+#define IGC_OFFSET_GPS_ALT						(30)
+#define IGC_OFFSET_RETURN						(35)
+#define IGC_OFFSET_NEWLINE						(36)
+#define IGC_OFFSET_TERMINATE					(37)
+
+#define IGC_SIZE_TIME							(6)
+#define IGC_SIZE_LATITUDE						(7)
+#define IGC_SIZE_LATITUDE_						(1)
+#define IGC_SIZE_LONGITUDE						(8)
+#define IGC_SIZE_LONGITUDE_						(1)
+#define IGC_SIZE_VALIDITY						(1)
+#define IGC_SIZE_PRESS_ALT						(5)
+#define IGC_SIZE_GPS_ALT						(5)
+
 
 /////////////////////////////////////////////////////////////////////////////
 // class DataQueue
@@ -68,7 +96,10 @@ public:
 
     //
 	bool		        availableNmea();
-	int			        readNmea();    
+	int			        readNmea(); 
+
+	int					availableIGC();
+	int					readIGC();   
 
     bool                availableLocation() { return mDataReady; }
     void                resetLocation() { mDataReady = false; }
@@ -127,9 +158,9 @@ private:
 	bool				mFixed;
 
 	// IGC sentence
-	//char				mIGCSentence[MAX_IGC_SENTENCE+1];
-	//volatile int		mIGCNext;	// next = 0 ~ MAX_XXX -1 -> available
-	//volatile int		mIGCSize;	// size = 0 -> empty, size = MAX_xx -> valid
+	char				mIGCSentence[MAX_IGC_SENTENCE+1];
+	volatile int		mIGCNext;	// next = 0 ~ MAX_XXX -1 -> available
+	volatile int		mIGCSize;	// size = 0 -> empty, size = MAX_xx -> valid
 };
 
 

@@ -3,6 +3,7 @@
 
 #include "LocationParser.h"
 #include "logger.h"
+#include <string.h>
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -129,13 +130,13 @@ LocationParser::LocationParser()
 	reset();
 
 	// initialize un-chagned characters
-	//memset(mIGCSentence, '0', sizeof(mIGCSentence));
-	//
-	//mIGCSentence[IGC_OFFSET_START] = 'B';
-	//mIGCSentence[IGC_OFFSET_VALIDITY] = 'A';
-	//mIGCSentence[IGC_OFFSET_RETURN] = '\r';
-	//mIGCSentence[IGC_OFFSET_NEWLINE] = '\n';
-	//mIGCSentence[IGC_OFFSET_TERMINATE] = '\0';    
+	memset(mIGCSentence, '0', sizeof(mIGCSentence));
+	
+	mIGCSentence[IGC_OFFSET_START] = 'B';
+	mIGCSentence[IGC_OFFSET_VALIDITY] = 'A';
+	mIGCSentence[IGC_OFFSET_RETURN] = '\r';
+	mIGCSentence[IGC_OFFSET_NEWLINE] = '\n';
+	mIGCSentence[IGC_OFFSET_TERMINATE] = '\0';    
 }
 
 void LocationParser::begin(ILocationDataSource* iLocation)
@@ -170,6 +171,10 @@ void LocationParser::reset()
 	
 	mParseStep = -1;
 	mParseState = 0;
+
+	//	
+	mIGCSize = 0;
+	mIGCNext = 0;
 }
 
 void LocationParser::update()
@@ -292,11 +297,11 @@ void LocationParser::update()
 						SET_STATE(mParseState, PARSE_GGA);
 						
 						// make unavailable the IGC sentence, if It's unlocked
-						//if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
-						//{
-						//	mIGCSize = 0;
-						//	mIGCNext = 0;
-						//}
+						if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
+						{
+							mIGCSize = 0;
+							mIGCNext = 0;
+						}
 					}
 				}
 			}
@@ -454,17 +459,17 @@ void LocationParser::update()
 						mFixed = true;
 						mDataReady = true;
 
-						//if (!IS_SET(mParseState, IGC_SENTENCE_LOCKED))
-						//{
-						//	// IGC sentence is available
-						//	mIGCSize = MAX_IGC_SENTENCE;
-						//	mIGCNext = 0;
-                        //
-						//	#if DEBUG_PARSING
-						//	for (int i = 0; i < mIGCSize; i++)
-						//		trace_putc((char)mIGCSentence[i]);
-						//	#endif
-						//}
+						if (!IS_SET(mParseState, IGC_SENTENCE_LOCKED))
+						{
+							// IGC sentence is available
+							mIGCSize = MAX_IGC_SENTENCE;
+							mIGCNext = 0;
+                        
+							#if DEBUG_PARSING
+							for (int i = 0; i < mIGCSize; i++)
+								trace_putc((char)mIGCSentence[i]);
+							#endif
+						}
 
 						// unset valid state
 						UNSET_STATE(mParseState, GGA_VALID|RMC_VALID);						
@@ -481,13 +486,13 @@ void LocationParser::update()
 					
 					// the logger(readIGC) does not unlock state while the parser does parsing(GGA).
 					// so the parser must unlocked it
-					//if (IS_SET(mParseState, IGC_SENTENCE_LOCKED) && mIGCSize == mIGCNext)
-					//{
-					//	UNSET_STATE(mParseState, IGC_SENTENCE_LOCKED);
-					//	
-					//	mIGCSize = 0;
-					//	mIGCNext = 0;
-					//}
+					if (IS_SET(mParseState, IGC_SENTENCE_LOCKED) && mIGCSize == mIGCNext)
+					{
+						UNSET_STATE(mParseState, IGC_SENTENCE_LOCKED);
+						
+						mIGCSize = 0;
+						mIGCNext = 0;
+					}
 
 					#if DEBUG_PARSING
 					trace_printf("<< mParseState = %Xh\n", mParseState);
@@ -802,4 +807,38 @@ long LocationParser::floatToCoordi(float value)
 	float temp = value * 1000.0f;
 	return (long)temp;
 	#endif
+}
+
+
+int	LocationParser::availableIGC()
+{
+	return (mIGCSize == MAX_IGC_SENTENCE && mIGCNext < MAX_IGC_SENTENCE);
+}
+
+int	LocationParser::readIGC()
+{
+	if (mIGCSize == MAX_IGC_SENTENCE && mIGCNext < MAX_IGC_SENTENCE) // if available
+	{
+		// start reading... : lock state
+		if (mIGCNext == 0)
+			SET_STATE(mParseState, IGC_SENTENCE_LOCKED);
+		
+		int ch = mIGCSentence[mIGCNext++];
+
+		// if it reaches end of sentence, state & buffer must be cleared.
+		// however, if it's parsing state, let the parser clear it.
+		if (mIGCNext == MAX_IGC_SENTENCE && ! IS_SET(mParseState, PARSE_GGA)) // end of sentence
+		{
+			// unlock
+			UNSET_STATE(mParseState, IGC_SENTENCE_LOCKED);
+			
+			// empty
+			mIGCSize = 0;
+			mIGCNext = 0;
+		}
+		
+		return ch;
+	}
+	
+	return -1;
 }
