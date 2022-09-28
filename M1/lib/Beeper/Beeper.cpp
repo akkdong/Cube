@@ -66,6 +66,10 @@ void Beeper::begin(ITonePlayer* tp)
     //
     toneAct = NULL;
     toneState = MUTE;
+
+    melodyPtr = NULL;
+    melodyAct = 0;
+    melodyLen = 0;
 }
 
 void Beeper::end()
@@ -98,7 +102,18 @@ void Beeper::update()
         }
     }
 
-    if (!toneAct && toneNext.freq != 0 )
+    if (!toneAct && melodyPtr != NULL && melodyAct < melodyLen)
+    {
+        toneCur = melodyPtr[melodyAct++];
+        toneAct = &toneCur;
+
+        //
+        tonePlayer->play(toneAct->freq);
+        tickStart = get_tick();
+        toneState = PLAY;
+    }
+
+    if (!toneAct && toneNext.freq != 0)
     {
         //
         toneCur = toneNext;
@@ -126,6 +141,13 @@ void Beeper::setMute()
     toneState = MUTE;
     toneCur.reset();
     toneNext.reset();
+}
+
+void Beeper::playMelody(Tone* tones, int toneCount)
+{
+    melodyPtr = tones;
+    melodyAct = 0;
+    melodyLen = toneCount;
 }
 
 Tone Beeper::getTone(float vel)

@@ -1,9 +1,10 @@
 // VarioSentence.cpp
 //
 
-#include <Arduino.h>
+#include <stdint.h>
 #include "device_defines.h"
 #include "VarioSentence.h"
+#include "utils.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -14,7 +15,7 @@ VarioSentence::VarioSentence(char type) : sentenceType(type)
 	varioSentence = ((sentenceType == VARIOMETER_LK8_SENTENCE) ?
 				(IVarioSentence *)&LK8 : (IVarioSentence *)&LxNav);
 				
-	lastTick = millis();
+	lastTick = get_tick();
 }
 	
 void VarioSentence::begin(float height, float vel, float temp, float bat)
@@ -39,10 +40,11 @@ int VarioSentence::read()
 
 int VarioSentence::checkInterval()
 {
-	if (! varioSentence->available() && (millis() - lastTick) > VARIOMETER_SENTENCE_DELAY)
+	uint32_t tick = get_tick();
+	if (! varioSentence->available() && (tick - lastTick) > VARIOMETER_SENTENCE_DELAY)
 	{
-		lastTick = millis();
-		
+		lastTick = tick;
+
 		return true;
 	}
 	

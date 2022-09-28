@@ -153,7 +153,7 @@ public:
 	int					read();
 	size_t				write(uint8_t c);
 
-	size_t				writeDelayed(uint8_t c);
+	size_t				writeBuffered(uint8_t c);
 	void				flush();
 
 
@@ -229,7 +229,7 @@ protected:
 	BLECharacteristic*  pTxCharacteristic;
 	BLECharacteristic*  pRxCharacteristic;
 
-	uint8_t				bufUart[32];
+	uint8_t				bufRecv[128];
 	uint16_t			bufFront;
 	uint16_t			bufRear;
 

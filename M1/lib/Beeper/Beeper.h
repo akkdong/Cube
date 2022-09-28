@@ -5,6 +5,7 @@
 #define __BEEPER_H__
 
 #include "abstract/TonePlayer.h"
+#include "ToneFrequency.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -69,6 +70,8 @@ public:
     void            setVelocity(float vel);
     void            setMute();
 
+    void            playMelody(Tone* tones, int toneCount);
+
 protected:
     Tone            getTone(float vel);
     void            findTone(float velocity, int& freq, int& period, int& duty);
@@ -80,6 +83,10 @@ protected:
     Tone*           toneAct;
     Tone            toneCur;
     Tone            toneNext;
+
+    Tone*           melodyPtr;  // melody: sequence of tone
+    int             melodyAct;  //
+    int             melodyLen;  // 
 
     uint32_t        tickStart;
 

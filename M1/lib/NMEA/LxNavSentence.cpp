@@ -1,8 +1,21 @@
 // LxNavSentence.cpp
 //
 
+#include <stdint.h>
 #include "VarioSentence.h"
 
+#ifndef PGM_READ_BYTE_REAR
+#ifdef ARDUINO
+#include <Arduino.h>
+#ifdef ESP32
+#define PGM_READ_BYTE_REAR(x)		*(x)
+#else
+#define PGM_READ_BYTE_REAR(x)		pgm_read_byte_rear(x)
+#endif
+#else
+#define PGM_READ_BYTE_REAR(x)		*(x)
+#endif
+#endif
 
 /* no special character for the first digit (alti), just for vario "V" and parity "P" */
 #define LXNAV_SENTENCE_TAG 				"$LXWP0,Y,,,V,,,,,,,,*P\r\n" 
@@ -57,7 +70,7 @@ int LxNavSentence::read()
 	}
 	else // else write tag
 	{
-		outc = pgm_read_byte_near(LxNavTag + tagPos);
+		outc = PGM_READ_BYTE_REAR(LxNavTag + tagPos);
 		tagPos++;
 
 		// check special characters

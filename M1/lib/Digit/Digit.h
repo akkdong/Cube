@@ -1,8 +1,6 @@
 #ifndef DIGIT_H
 #define DIGIT_H
 
-#include <Arduino.h>
-
 #define DIGIT_STABILIZATION_THRESHOLD 0.7
 
 /* !!! can only display numbers with less than 10 digits !!! */
@@ -10,13 +8,13 @@
 class Digit
 {
 public:
-	Digit(boolean plusDisplay = false);
+	Digit(bool plusDisplay = false);
 	
 	void 			begin(float value, uint8_t precision); //display float
 	void 			begin(unsigned long value);             //display unsigned integer
 	void 			begin(long value);                      //diplay signed integer
 	unsigned 		size(unsigned signSize = 1, unsigned digitSize = 1, unsigned dotSize = 1); //!! work only just after begin
-	boolean 		available(void);
+	bool 		    available(void);
 	uint8_t 		get(void);
 	unsigned long 	getIntegerDigit(void); //the integer formed by the digit displayed
 
@@ -39,7 +37,7 @@ protected:
 class FPDigit : public Digit
 {
 public:
-	FPDigit(uint8_t precision, boolean plusDisplay = false)
+	FPDigit(uint8_t precision, bool plusDisplay = false)
 		: Digit(plusDisplay), precision(precision) { }
 
 	void 			begin(float value);
@@ -53,7 +51,7 @@ protected:
 class FPSDigit : public FPDigit
 {
 public :
-	FPSDigit(uint8_t precision, boolean plusDisplay = false)
+	FPSDigit(uint8_t precision, bool plusDisplay = false)
 		: FPDigit(precision, plusDisplay), lastDisplayValue(100000000000.5) { }
 
 	bool 			begin(float value); //return true if the stabilized value has changed
@@ -68,7 +66,7 @@ class HexDigit
 {
 public:
 	void 			begin(uint8_t hexValue);
-	boolean 		available(void);
+	bool 		    available(void);
 	uint8_t 		get(void);
 
 private:

@@ -1,5 +1,8 @@
-#include <digit.h>
-#include <Arduino.h>
+// Digit.cpp
+//
+
+#include <stdint.h>
+#include "Digit.h"
 
 #define PLUS_DISPLAY 0
 #define DISPLAY_PLUS 1
@@ -12,7 +15,7 @@
 
 
 /* init */
-Digit::Digit(boolean plusDisplay) {
+Digit::Digit(bool plusDisplay) {
 
   state = 0;
  
@@ -208,7 +211,7 @@ unsigned Digit::size(unsigned signSize, unsigned digitSize, unsigned dotSize) {
   return size;
 }
 
-boolean Digit::available(void) {
+bool Digit::available(void) {
   if( exp > 0 ) {
     return true;
   } else {
@@ -256,7 +259,7 @@ void HexDigit::begin(uint8_t hexValue) {
   pos = 2;
 }
 
-boolean  HexDigit::available(void) {
+bool  HexDigit::available(void) {
   if( pos > 0 ) {
     return true;
   } else {

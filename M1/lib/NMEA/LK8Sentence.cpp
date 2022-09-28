@@ -1,7 +1,22 @@
 // LK8Sentence.cpp
 //
 
+#include <stdint.h>
+#include <math.h>
 #include "VarioSentence.h"
+
+#ifndef PGM_READ_BYTE_REAR
+#ifdef ARDUINO
+#include <Arduino.h>
+#ifdef ESP32
+#define PGM_READ_BYTE_REAR(x)		*(x)
+#else
+#define PGM_READ_BYTE_REAR(x)		pgm_read_byte_rear(x)
+#endif
+#else
+#define PGM_READ_BYTE_REAR(x)		*(x)
+#endif
+#endif
 
 #define LK8_SENTENCE_TAG 					"$LK8EX1,,A,V,T,B,*P\r\n"
 #define LK8_SENTENCE_TAG_SIZE 				21
@@ -74,7 +89,7 @@ int LK8Sentence::read()
 	}	
 	else // else write tag
 	{
-		outc = pgm_read_byte_near(LK8Tag + tagPos);
+		outc = PGM_READ_BYTE_REAR(LK8Tag + tagPos);
 		tagPos++;
 
 		// check special characters

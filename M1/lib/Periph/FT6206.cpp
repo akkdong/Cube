@@ -31,7 +31,7 @@ FT6206::FT6206() { touches = 0; }
     @returns True if an FT6206 is found, false on any failure
 */
 /**************************************************************************/
-boolean FT6206::begin(uint8_t thresh) {
+bool FT6206::begin(uint8_t thresh) {
   //Wire.begin();
 
 #ifdef FT6206_DEBUG

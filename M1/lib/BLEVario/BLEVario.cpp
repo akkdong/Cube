@@ -622,7 +622,7 @@ void BLEVario::onWrite(BLECharacteristic* pCharacteristic)
         // UART: push received characters to buffer 
         for (size_t i = 0; i < value.length(); i++)
         {
-            bufUart[bufFront] = value[i];
+            bufRecv[bufFront] = value[i];
             bufFront = (bufFront + 1) % 32;
             if (bufFront == bufRear)
                 bufRear = (bufRear + 1) % 32; // // overflow: abandon old data
@@ -689,7 +689,7 @@ int BLEVario::read()
 
     if (bufRear != bufFront)
     {
-        ch = bufUart[bufRear];
+        ch = bufRecv[bufRear];
         bufRear = (bufRear + 1) % 32;
     }
 
@@ -703,16 +703,14 @@ size_t BLEVario::write(uint8_t c)
         pTxCharacteristic->setValue(&c, 1);
         pTxCharacteristic->notify();
 
-        delay(10); // bluetooth stack will go into congestion, if too many packets are sent
-
-        // [E][BLECharacteristic.cpp:537] notify(): << esp_ble_gatts_send_ notify: rc=-1 Unknown ESP_ERR error
+        //delay(10); // bluetooth stack will go into congestion, if too many packets are sent
         return 1;
     }
 
     return 0;
 }
 
-size_t BLEVario::writeDelayed(uint8_t c)
+size_t BLEVario::writeBuffered(uint8_t c)
 {
     if (sendLen < sizeof(bufSend) - 1)
     {
@@ -731,9 +729,10 @@ void BLEVario::flush()
         {
             pTxCharacteristic->setValue(bufSend, sendLen);
             pTxCharacteristic->notify();
-            sendLen = 0;
 
-            delay(10); // bluetooth stack will go into congestion, if too many packets are sent
+            //delay(10); // bluetooth stack will go into congestion, if too many packets are sent
         }
+
+        sendLen = 0;
     }
 }

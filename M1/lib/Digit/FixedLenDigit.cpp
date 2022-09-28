@@ -1,9 +1,9 @@
 // FixedLenDigit.cpp
 //
 
-#include <Arduino.h>
-
+#include <stdint.h>
 #include "FixedLenDigit.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // class FixedLenDigit

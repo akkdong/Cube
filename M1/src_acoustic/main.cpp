@@ -5,6 +5,7 @@
 #include "device_defines.h"
 #include "logger.h"
 #include "lv_app.h"
+#include "utils.h"
 #include "BLEVario.h"
 #include "Variometer.h"
 #include "VarioSentence.h"
@@ -35,23 +36,140 @@
 // button
 //
 
-typedef struct _key_map
-{
-	uint8_t		pin;
-	uint8_t		active; // 0: ACTIVE_LOW, others: ACTIVE_HIGH
-	uint8_t	    key;
-    uint8_t     state;  // 0: release, others: press
-} key_map;
+#define TIME_DEBOUNCE       (100)
+#define TIME_LONG_PRESS     (2000)
 
 
-static key_map _m1[] =
+struct KeypadCallback
 {
-	{ BTN_SEL, 		0, 	KEY_RETURN, 0 },
-	{ BTN_LEFT, 	1, 	KEY_LEFT_ARROW, 0 },
-	{ BTN_RIGHT, 	1, 	KEY_RIGHT_ARROW, 0 },
-	{ BTN_UP, 		1, 	KEY_UP_ARROW, 0 },
-	{ BTN_DOWN, 	1, 	KEY_DOWN_ARROW, 0 },
+    virtual void OnPressed(uint8_t key) = 0;
+    virtual void OnLongPressed(uint8_t key) = 0;
+    virtual void OnReleased(uint8_t key) = 0;
 };
+
+class KeyPad
+{
+public:
+    KeyPad(KeypadCallback* callback = NULL);
+
+
+    enum KeyState {
+        RELEASE,
+        PRE_PRESS,
+        PRESS,
+        LONG_PRESS,
+        POST_PRESS
+    };
+
+    struct Key
+    {
+        uint8_t		pin;
+        uint8_t		active; // 0: ACTIVE_LOW, others: ACTIVE_HIGH
+        uint8_t	    key;
+        uint8_t     state;  // KeyState
+        uint32_t    tick;
+    };
+
+
+public:
+    void            begin();
+    void            update();
+
+    void            setCallback(KeypadCallback* callback) { this->callback = callback; }
+protected:
+    Key             keyMap[5];
+    KeypadCallback* callback;
+};
+
+KeyPad::KeyPad(KeypadCallback* callback)
+    : keyMap {
+        { BTN_SEL, 		0, 	KEY_RETURN,         RELEASE },
+        { BTN_LEFT, 	1, 	KEY_LEFT_ARROW,     RELEASE },
+        { BTN_RIGHT, 	1, 	KEY_RIGHT_ARROW,    RELEASE },
+        { BTN_UP, 		1, 	KEY_UP_ARROW,       RELEASE },
+        { BTN_DOWN, 	1, 	KEY_DOWN_ARROW,     RELEASE },
+    }
+    , callback(callback)
+{
+
+}
+
+void KeyPad::begin()
+{
+    for (size_t i = 0; i < sizeof(keyMap) / sizeof(keyMap[0]); i++)
+        keyMap[i].state = RELEASE;
+}
+
+void KeyPad::update()
+{
+    for (size_t i = 0; i < sizeof(keyMap) / sizeof(keyMap[0]); i++)
+    {
+        Key* key = &keyMap[i];
+        int value = digitalRead(key->pin);
+        uint8_t state = RELEASE; // release
+        if ((key->active == 0 && value == 0) || (key->active != 0 && value != 0))
+            state = PRESS; // press
+        uint32_t tick = get_tick();
+
+        switch (key->state)
+        {
+        case RELEASE:
+            if (state != RELEASE)
+            {
+                key->state = PRE_PRESS;
+                key->tick = tick;
+            }
+            break;
+        case PRE_PRESS:
+            if (state != RELEASE)
+            {
+                if (tick - key->tick > TIME_DEBOUNCE)
+                {
+                    key->state = PRESS;
+                    key->tick = tick;
+
+                    if (callback)
+                        callback->OnPressed(key->key);
+                }
+            }
+            else
+            {
+                key->state = RELEASE;
+            }
+            break;
+        case PRESS:
+        case LONG_PRESS:
+            if (state != RELEASE)
+            {
+                if (key->state == PRESS && tick - key->tick > TIME_LONG_PRESS)
+                {
+                    key->state = LONG_PRESS;
+                    key->tick = tick;
+
+                    if (callback)
+                        callback->OnLongPressed(key->key);
+                }
+            }
+            else
+            {
+                key->state = POST_PRESS;
+                key->tick = tick;
+            }
+            break;
+        case POST_PRESS:
+            if (tick - key->tick > TIME_DEBOUNCE)
+            {
+                key->state = RELEASE;
+                key->tick = 0;
+
+                if (callback)
+                    callback->OnReleased(key->key);
+            }
+            break;
+        }
+    }    
+}
+
 
 //
 // baro-settings
@@ -89,9 +207,49 @@ VarioFilter_RobinKF         varioFilter;
 
 BLEVario        bleDevice;
 
+
+class VarioKeypad : public KeypadCallback
+{
+public:
+    VarioKeypad() {}
+
+    virtual void OnPressed(uint8_t key) {
+        Serial.printf("Key pressed: %02X\n", key);
+        if (key != KEY_RETURN)
+            bleDevice.press(key);
+    }
+
+    virtual void OnLongPressed(uint8_t key) {
+        Serial.printf("Key long-pressed: %02X\n", key);
+        if (key == KEY_RETURN)
+        {
+            Serial.println("Turn-off Variometer!!");
+
+            digitalWrite(POWER_ON, LOW);
+        }
+    }
+
+    virtual void OnReleased(uint8_t key) {
+        Serial.printf("Key released: %02X\n", key);
+        if (key != KEY_RETURN)
+            bleDevice.release(key);
+    }
+};
+
+VarioKeypad     keyCallback;
+KeyPad          keyPad(&keyCallback);
+
+
+
 app_conf_t*     app_conf = NULL;
 
 
+static Tone melodyStart[] =
+{
+    { NOTE_C5, 400, 500 },
+    { NOTE_E5, 400, 500 },
+    { NOTE_G5, 400, 500 },
+};
 
 //
 //
@@ -150,7 +308,9 @@ void setup() {
 	baro.setSettings(varioSettings());		
 	
 	// setup-touch
-	touch.begin();     
+	touch.begin();
+    // 
+    keyPad.begin();
 
     //
     // start-vario
@@ -178,7 +338,9 @@ void setup() {
 
     vario.begin(CreateBarometer(), &varioFilter);
     locParser.begin(CreateLocationDataSource());
-    beeper.begin(CreateTonePlayer());    
+    beeper.begin(CreateTonePlayer());
+
+    beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
 }
 
 void loop() {
@@ -198,6 +360,8 @@ void loop() {
     #endif
 
     // button processing
+    keyPad.update();
+    /*
     for (size_t i = 0; i < sizeof(_m1) / sizeof(_m1[0]); i++)
     {
         key_map* kmap = &_m1[i];
@@ -222,6 +386,7 @@ void loop() {
             kmap->state = state;
         }
     }
+    */
 
     #if 1
     // update each state
@@ -254,15 +419,16 @@ void loop() {
         app_conf->altitudeBaro = vario.getAltitudeFiltered();
         app_conf->pressure = vario.getPressure();
         app_conf->temperature = vario.getTemperature();
+        app_conf->speedVertActive = vario.getVelocity();
 
-        //app_conf->speedVertActive = vario.getVelocity();
-        float temp = vario.getVelocity();
-        vSpeed += temp;
-        beeper.setVelocity(temp);
+        vSpeed += app_conf->speedVertActive;
+
+        if (!bleDevice.isConnected())
+            beeper.setVelocity(app_conf->speedVertActive);
 
         //tick[count] = millis();
         count += 1;
-        if ((count % 25) == 0)
+        if ((count % 10) == 0)
         {
             /*
             LOGi("Update vario-relative stubs: %u", millis() - lastTick);
@@ -289,7 +455,7 @@ void loop() {
                 tick[20] - tick[19]);
             */
 
-            app_conf->speedVertActive = vSpeed / count;
+            app_conf->speedVertLazy = vSpeed / count;
             app_conf->dirty = 1;
 
             vSpeed = 0;
@@ -299,7 +465,7 @@ void loop() {
 
         //
         if (varioNmea.checkInterval())
-            varioNmea.begin(app_conf->altitudeAGL, app_conf->speedGround, app_conf->temperature, 0.0f);
+            varioNmea.begin(app_conf->altitudeAGL, app_conf->speedVertLazy, app_conf->temperature, 0.0f);
     }
 
     // vario-sentense available?
@@ -314,14 +480,18 @@ void loop() {
             if (ch < 0)
                 break;
 
-            bleDevice.writeDelayed(ch);
-            Serial.write(ch);
+            bleDevice.writeBuffered(ch);
+            //Serial.write(ch);
 
             if (ch == '\n')
+            {
                 bt_lock_state = 0;
+                break;
+            }
         }
 
-        bleDevice.flush();
+        if (bt_lock_state == 0 /*|| bleDevice.uartBufferIsFull()*/)
+            bleDevice.flush();
     }
 
     // nmea-sentense avaialble?
@@ -335,14 +505,18 @@ void loop() {
             if (ch < 0)
                 break;
 
-            bleDevice.writeDelayed(ch);
-            Serial.write(ch);
+            bleDevice.writeBuffered(ch);
+            //Serial.write(ch);
 
             if (ch == '\n')
-                bt_lock_state = 0;                
+            {
+                bt_lock_state = 0;
+                break;
+            }
         }
 
-        bleDevice.flush();
+        if (bt_lock_state == 0 /*|| bleDevice.uartBufferIsFull()*/)
+            bleDevice.flush();
     }    
     #endif
 }

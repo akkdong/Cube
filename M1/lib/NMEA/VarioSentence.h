@@ -4,9 +4,6 @@
 #ifndef __VARIOSENTENCE_H__
 #define __VARIOSENTENCE_H__
 
-#include <Arduino.h>
-
-//#include "DeviceDefines.h"
 #include "Digit.h"
 
 
