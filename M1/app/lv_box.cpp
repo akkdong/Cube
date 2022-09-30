@@ -7,6 +7,9 @@
 #include <stdarg.h>
 #include <math.h>
 #include <lvgl.h>
+#ifdef ARDUINO
+#include <Arduino.h>
+#endif
 
 #include "device_defines.h"
 #include "logger.h"
@@ -88,8 +91,11 @@ const lv_font_t*    font_body = &lv_font_montserrat_48;
 #define COMPASS_HEIGHT      106
 #define COMPASS_RADIUS      53
 
-
+#ifndef ARDUINO
 static lv_color_t buf_compass[LV_CANVAS_BUF_SIZE_TRUE_COLOR(COMPASS_WIDTH, COMPASS_HEIGHT)];
+#else
+static lv_color_t* buf_compass = NULL;
+#endif
 
 // heading, bearing : angle(radian)
 // method 
@@ -260,6 +266,14 @@ void lv_compass_draw(lv_obj_t* canvas, lv_coord_t heading, lv_coord_t bearing, i
 
 void lv_box_init()
 {
+    #ifdef ARDUINO
+    if (buf_compass == NULL)
+    {
+        size_t size = sizeof(lv_color_t) * LV_CANVAS_BUF_SIZE_TRUE_COLOR(COMPASS_WIDTH, COMPASS_HEIGHT);
+        buf_compass = (lv_color_t *)ps_malloc(size);
+    }
+    #endif
+
     if (!box_def_style)
     {
         box_def_style = (lv_style_t *)lv_mem_alloc(sizeof(lv_style_t));

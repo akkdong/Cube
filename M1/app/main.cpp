@@ -109,6 +109,13 @@ void setup()
     // turn-on lcd backlight
     bsp_lcd_backlight(true);
 
+    #ifdef ARDUINO
+    LOGi("Total heap: %d", ESP.getHeapSize());
+    LOGi("Free heap: %d", ESP.getFreeHeap());
+    LOGi("Total PSRAM: %d", ESP.getPsramSize());
+    LOGi("Free PSRAM: %d", ESP.getFreePsram());    
+    #endif
+
     //
     Application app;
 

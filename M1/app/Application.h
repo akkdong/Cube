@@ -11,8 +11,10 @@
 #include "lv_page.h"
 
 #include "Variometer.h"
+#include "VarioSentence.h"
 #include "LocationParser.h"
 #include "Beeper.h"
+#include "KeyPad.h"
 
 #define VFILTER_HARINAIR_KF2     1
 #define VFILTER_HARINAIR_KF4d    2
@@ -34,7 +36,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // class Application
 
-class Application
+class Application : public KeypadCallback
 {
 public:
     Application();
@@ -44,6 +46,12 @@ public:
     void        end();
 
     void        update();
+
+protected:
+    // KeypadCallback
+    virtual void OnPressed(uint8_t key);
+    virtual void OnLongPressed(uint8_t key);
+    virtual void OnReleased(uint8_t key);
 
 protected:
     void        init_config(app_conf_t* conf);
@@ -62,7 +70,9 @@ protected:
     //
     Variometer      vario;
     LocationParser  locParser;
+    VarioSentence   varioNmea;
     Beeper          beeper;
+    KeyPad          keyPad;
 
     #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
     VarioFilter_HarInAirKF2     varioFilter;

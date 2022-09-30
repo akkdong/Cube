@@ -4,6 +4,7 @@
 #include <Arduino.h>
 #include <lvgl.h>
 #include "lv_disp.h"
+#include "BLEVario.h"
 
 #include "device_defines.h"
 #include "bsp.h"
@@ -16,7 +17,7 @@ Bme280TwoWire	baro;
 SineGenerator	beep;
 FT6206			touch;
 
-
+BLEVario 		bleDevice;
 
 //
 // baro-settings
@@ -70,6 +71,8 @@ void bsp_hal_init()
 	
 	// setup-touch
 	touch.begin(); 
+
+	bleDevice.begin();
 }
 
 void bsp_power_on(bool on)
@@ -106,6 +109,19 @@ void bsp_update()
 {
 	lv_timer_handler();
 	delay(2);
+
+    // forward serial to bluetooth and reverse : debug purpose only
+    while (Serial.available())
+    {
+        int ch = Serial.read();
+        bleDevice.write(ch);
+    }
+
+    while (bleDevice.available())
+    {
+        int ch = bleDevice.read();
+        Serial.write(ch);
+    }	
 }
 
 
@@ -134,4 +150,35 @@ void bsp_regiter_keypad_receiver(lv_obj_t* obj)
 
 		lv_indev_set_group(cube_keypad, grp);	
 	}
+}
+
+
+
+//
+//
+//
+
+bool ble_isConnected()
+{
+	return bleDevice.isConnected();
+}
+
+int  ble_writeBuffered(uint8_t ch)
+{
+	return bleDevice.writeBuffered(ch);
+}
+
+void ble_flush()
+{
+	bleDevice.flush();
+}
+
+size_t ble_press(uint8_t key)
+{
+	return bleDevice.press(key);
+}
+
+size_t ble_release(uint8_t key)
+{
+	return bleDevice.release(key);
 }

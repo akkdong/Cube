@@ -4,9 +4,11 @@
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
+#include "device_defines.h"
+#include "bsp.h"
 #include "Application.h"
 #include "Beeper.h"
-#include "bsp.h"
+#include "BLEVario.h"
 
 
 
@@ -31,6 +33,15 @@ extern "C" void page_event_cb(lv_event_t* event)
     uint32_t key = lv_indev_get_key(lv_indev_get_act());
     LOGi("Page Event: %d, %d", event->code, key);
 }
+
+
+bool    ble_isConnected();
+int     ble_writeBuffered(uint8_t ch);
+void    ble_flush();
+
+size_t  ble_press(uint8_t key);
+size_t  ble_release(uint8_t key);
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
@@ -66,12 +77,20 @@ lv_page_item_t page_1[] = {
     }
 };
 
+static Tone melodyStart[] =
+{
+    { NOTE_C5, 400, 500 },
+    { NOTE_E5, 400, 500 },
+    { NOTE_G5, 400, 500 },
+};
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // class Application implementation
 
-Application::Application()
+Application::Application() 
+    : varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
+    , keyPad(this)
 {
     // ...
 }
@@ -157,6 +176,8 @@ void Application::begin()
     vario.begin(CreateBarometer(), &varioFilter);
     locParser.begin(CreateLocationDataSource());
     beeper.begin(CreateTonePlayer());
+
+    beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
 }
 
 void Application::end()
@@ -198,11 +219,8 @@ void Application::update()
     int varioUpdated = vario.update();
     beeper.update();
 
-    while (locParser.availableNmea())
-    {
-        int ch = locParser.readNmea();
-        //trace_putc(ch);
-    }
+    // button processing
+    keyPad.update();
 
     if (locParser.availableLocation())
     {
@@ -227,15 +245,16 @@ void Application::update()
         app_conf->altitudeBaro = vario.getAltitudeFiltered();
         app_conf->pressure = vario.getPressure();
         app_conf->temperature = vario.getTemperature();
+        app_conf->speedVertActive = vario.getVelocity();
 
-        //app_conf->speedVertActive = vario.getVelocity();
-        float temp = vario.getVelocity();
-        vSpeed += temp;
-        beeper.setVelocity(temp);
+        vSpeed += app_conf->speedVertActive;
+
+        /*if (!ble_isConnected())*/
+            beeper.setVelocity(app_conf->speedVertActive);
 
         //tick[count] = millis();
         count += 1;
-        if ((count % 25) == 0)
+        if ((count % 10) == 0)
         {
             /*
             LOGi("Update vario-relative stubs: %u", millis() - lastTick);
@@ -262,12 +281,99 @@ void Application::update()
                 tick[20] - tick[19]);
             */
 
-            app_conf->speedVertActive = vSpeed / count;
+            app_conf->speedVertLazy = vSpeed / count;
             app_conf->dirty = 1;
 
             vSpeed = 0;
             count = 0;
             //lastTick = millis();
         }
+
+        //
+        if (varioNmea.checkInterval())
+        {
+            float height = locParser.isFixed() ? app_conf->altitudeGPS : -1;
+            float velocity = app_conf->speedVertLazy;
+            float temperature = app_conf->temperature;
+            float pressure = app_conf->pressure; // to hPa
+
+            varioNmea.begin(height, velocity, temperature, pressure, -1);
+        }
+    }
+
+
+    // vario-sentense available?
+    static int bt_lock_state = 0; // 0: unlocked, 1: locked_by_vario, 2: locked_by_gps
+    if ((bt_lock_state == 0 && varioNmea.available()) || (bt_lock_state == 1))
+    {
+        bt_lock_state = 1;
+
+        while (varioNmea.available())
+        {
+            int ch = varioNmea.read();
+            if (ch < 0)
+                break;
+
+            ble_writeBuffered(ch);
+            //Serial.write(ch);
+
+            if (ch == '\n')
+            {
+                bt_lock_state = 0;
+                break;
+            }
+        }
+
+        if (bt_lock_state == 0 /*|| bleDevice.uartBufferIsFull()*/)
+            ble_flush();
+    }    
+
+    // nmea-sentense avaialble?
+    if ((bt_lock_state == 0 && locParser.availableNmea()) || (bt_lock_state == 2))
+    {
+        bt_lock_state = 2;
+
+        while (locParser.availableNmea())
+        {
+            int ch = locParser.readNmea();
+            if (ch < 0)
+                break;
+
+            ble_writeBuffered(ch);
+            //Serial.write(ch);
+
+            if (ch == '\n')
+            {
+                bt_lock_state = 0;
+                break;
+            }
+        }
+
+        if (bt_lock_state == 0 /*|| bleDevice.uartBufferIsFull()*/)
+            ble_flush();
+    }  
+}
+
+void Application::OnPressed(uint8_t key) 
+{
+    LOGv("Key pressed: %02X\n", key);
+    if (key != KEY_RETURN)
+        ble_press(key);
+}
+
+void Application::OnLongPressed(uint8_t key) 
+{
+    LOGv("Key long-pressed: %02X\n", key);
+    if (key == KEY_RETURN)
+    {
+        LOGi("Turn-off Variometer!!");
+        bsp_power_on(false);
     }
 }
+
+void Application::OnReleased(uint8_t key) 
+{
+    LOGv("Key released: %02X\n", key);
+    if (key != KEY_RETURN)
+        ble_release(key);
+}  

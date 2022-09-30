@@ -42,11 +42,12 @@ const char * LK8Sentence::LK8Tag = LK8_SENTENCE_TAG;
 void LK8Sentence::begin(float height, float vel, float temp, float bat)
 {
 	altimeter = height;
-	vario = vel * 100.0; // cm/s
+	vario = vel * 100.0; // m/s --> cm/s
 	temperature = temp;
 	voltage = bat;
 	
-	float pressure = LK8_BASE_SEA_PRESSURE * 100.0 * pow(1 - (0.0065/288.15)*altimeter, 5.255); 
+
+	float pressure = altimeter < 0 ? 999999 : LK8_BASE_SEA_PRESSURE * 100.0 * pow(1 - (0.0065/288.15) * altimeter, 5.255); 
 	valueDigit.begin(pressure, LK8_SENTENCE_PRESSURE_PRECISION);
 	
 	parity = '$';
@@ -56,11 +57,12 @@ void LK8Sentence::begin(float height, float vel, float temp, float bat)
 void LK8Sentence::begin(float height, float vel, float temp, float prs, float bat)
 {
 	altimeter = height;
-	vario = vel * 100.0; // cm/s
+	vario = vel * 100.0; // m/s --> cm/s
 	temperature = temp;
 	voltage = bat;
 	
-	valueDigit.begin(prs * 100.0, LK8_SENTENCE_PRESSURE_PRECISION);
+	// multiply 100 in case of prs is hPa
+	valueDigit.begin(prs/* * 100.0f */, LK8_SENTENCE_PRESSURE_PRECISION);
 	
 	parity = '$';
 	tagPos = 0;
@@ -95,7 +97,8 @@ int LK8Sentence::read()
 		// check special characters
 		if( tagPos == LK8_SENTENCE_ALTI_POS )
 		{
-			valueDigit.begin(altimeter, LK8_SENTENCE_ALTI_PRECISION);
+			float value = altimeter < 0 ? 99999 : altimeter;
+			valueDigit.begin(value, LK8_SENTENCE_ALTI_PRECISION);
 			tagPos++;
 		}
 		else if( tagPos == LK8_SENTENCE_VARIO_POS )
@@ -110,7 +113,10 @@ int LK8Sentence::read()
 		}
 		else if( tagPos == LK8_SENTENCE_BAT_POS )
 		{
-			valueDigit.begin(voltage, 1);
+			if (voltage < 0)
+				valueDigit.begin((long)999);
+			else
+				valueDigit.begin(voltage, 1);
 			tagPos++;
 		}
 		else if( tagPos == LK8_SENTENCE_PARITY_POS )
