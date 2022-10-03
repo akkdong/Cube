@@ -6,9 +6,10 @@
 #endif
 #include "device_defines.h"
 #include "bsp.h"
+#include "ble_vario.h"
 #include "Application.h"
 #include "Beeper.h"
-#include "BLEVario.h"
+
 
 
 
@@ -33,14 +34,6 @@ extern "C" void page_event_cb(lv_event_t* event)
     uint32_t key = lv_indev_get_key(lv_indev_get_act());
     LOGi("Page Event: %d, %d", event->code, key);
 }
-
-
-bool    ble_isConnected();
-int     ble_writeBuffered(uint8_t ch);
-void    ble_flush();
-
-size_t  ble_press(uint8_t key);
-size_t  ble_release(uint8_t key);
 
 
 
@@ -168,7 +161,7 @@ void Application::begin()
     #define KF_ACCEL_VARIANCE_DEFAULT   100     // 50 ~ 150
     #define KF_ADAPT_DEFAULT            100     // 50 ~ 150
 
-    varioFilter.begin(1000.0f * KF_ACCEL_VARIANCE_DEFAULT, KF_ADAPT_DEFAULT / 100.0f, 0, 0, 0);
+    varioFilter.begin(KF_ACCEL_VARIANCE_DEFAULT * 1000.0f, KF_ADAPT_DEFAULT / 100.0f, 0, 0, 0);
     #elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
     varioFilter.Configure(30.0f, 4.0f, altitude);
     #endif    
@@ -176,6 +169,7 @@ void Application::begin()
     vario.begin(CreateBarometer(), &varioFilter);
     locParser.begin(CreateLocationDataSource());
     beeper.begin(CreateTonePlayer());
+    keyPad.begin(CreateKeypadInput());
 
     beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
 }
@@ -254,33 +248,8 @@ void Application::update()
 
         //tick[count] = millis();
         count += 1;
-        if ((count % 10) == 0)
+        if ((count % (1000 / VARIOMETER_SENTENCE_DELAY)) == 0)
         {
-            /*
-            LOGi("Update vario-relative stubs: %u", millis() - lastTick);
-            LOGi("  %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u %u",
-                tick[1] - tick[0],
-                tick[2] - tick[1],
-                tick[3] - tick[2],
-                tick[4] - tick[3],
-                tick[5] - tick[4],
-                tick[6] - tick[5],
-                tick[7] - tick[6],
-                tick[8] - tick[7],
-                tick[9] - tick[8],
-                tick[10] - tick[9],
-                tick[11] - tick[10],
-                tick[12] - tick[11],
-                tick[13] - tick[12],
-                tick[14] - tick[13],
-                tick[15] - tick[14],
-                tick[16] - tick[15],
-                tick[17] - tick[16],
-                tick[18] - tick[17],
-                tick[19] - tick[18],
-                tick[20] - tick[19]);
-            */
-
             app_conf->speedVertLazy = vSpeed / count;
             app_conf->dirty = 1;
 

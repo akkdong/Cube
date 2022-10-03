@@ -4,13 +4,7 @@
 #ifndef __UTILS_H__
 #define __UTILS_H__
 
-#ifdef ARDUINO
-#include <Arduino.h>
-#else
-#include <stddef.h>
-#include <stdint.h>
-#include <SDL2/SDL.h>
-#endif
+#include "utils_time.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -19,11 +13,6 @@ extern "C" {
 ////////////////////////////////////////////////////////////////////////////////////////////
 //
 
-#ifdef ARDUINO
-inline uint32_t get_tick() { return millis(); }
-#else
-inline uint32_t get_tick() { return SDL_GetTicks(); }
-#endif
 
 
 

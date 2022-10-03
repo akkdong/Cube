@@ -14,7 +14,7 @@
 #include "Bme280.h"
 #include "FT6206.h"
 #include "SineGenerator.h"
-#include "KeyPad.h"
+#include "Keypad.h"
 
 #define VFILTER_HARINAIR_KF2     1
 #define VFILTER_HARINAIR_KF4d    2
@@ -104,7 +104,7 @@ public:
 };
 
 VarioKeypad     keyCallback;
-KeyPad          keyPad(&keyCallback);
+Keypad          keyPad(&keyCallback);
 
 
 
@@ -177,7 +177,7 @@ void setup() {
 	// setup-touch
 	touch.begin();
     // 
-    keyPad.begin();
+    keyPad.begin(CreateKeypadInput());
 
     //
     // start-vario

@@ -11,7 +11,7 @@
 #include "lv_disp.h"
 
 #include "bsp.h"
-
+#include "ble_vario.h"
 
 
 //
@@ -81,4 +81,36 @@ void bsp_regiter_keypad_receiver(lv_obj_t* obj)
 
 		lv_indev_set_group(cube_keypad, grp);	
 	}
+}
+
+
+
+
+//
+//
+//
+
+bool ble_isConnected()
+{
+	return false;
+}
+
+int  ble_writeBuffered(uint8_t ch)
+{
+	return 0;
+}
+
+void ble_flush()
+{
+	// nop
+}
+
+size_t ble_press(uint8_t key)
+{
+	return 0;
+}
+
+size_t ble_release(uint8_t key)
+{
+	return 0;
 }

@@ -14,7 +14,7 @@
 #include "VarioSentence.h"
 #include "LocationParser.h"
 #include "Beeper.h"
-#include "KeyPad.h"
+#include "Keypad.h"
 
 #define VFILTER_HARINAIR_KF2     1
 #define VFILTER_HARINAIR_KF4d    2
@@ -72,7 +72,7 @@ protected:
     LocationParser  locParser;
     VarioSentence   varioNmea;
     Beeper          beeper;
-    KeyPad          keyPad;
+    Keypad          keyPad;
 
     #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
     VarioFilter_HarInAirKF2     varioFilter;

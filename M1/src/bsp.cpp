@@ -4,13 +4,14 @@
 #include <Arduino.h>
 #include <lvgl.h>
 #include "lv_disp.h"
-#include "BLEVario.h"
-
 #include "device_defines.h"
 #include "bsp.h"
+#include "ble_vario.h"
+
 #include "Bme280.h"
 #include "FT6206.h"
 #include "SineGenerator.h"
+#include "BLEVario.h"
 
 
 Bme280TwoWire	baro;
