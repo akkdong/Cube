@@ -1,20 +1,20 @@
-// KeyPad.cpp
+// Keypad.cpp
 //
 
-#include <Arduino.h>
-
+#include <stdint.h>
 #include "device_defines.h"
 #include "logger.h"
 #include "utils.h"
-#include "KeyPad.h"
-#include "BLEVario.h"
+
+#include "Keypad.h"
 
 
 /////////////////////////////////////////////////////////////////////////////////////
 //
 
-KeyPad::KeyPad(KeypadCallback* callback)
-    : keyMap {
+Keypad::Keypad(KeypadCallback* callback)
+    : keyInput(NULL)
+    , keyMap {
         { BTN_SEL, 		0, 	KEY_RETURN,         RELEASE },
         { BTN_LEFT, 	1, 	KEY_LEFT_ARROW,     RELEASE },
         { BTN_RIGHT, 	1, 	KEY_RIGHT_ARROW,    RELEASE },
@@ -26,18 +26,20 @@ KeyPad::KeyPad(KeypadCallback* callback)
 
 }
 
-void KeyPad::begin()
+void Keypad::begin(IKeypadInput* input)
 {
+    keyInput = input;
+
     for (size_t i = 0; i < sizeof(keyMap) / sizeof(keyMap[0]); i++)
         keyMap[i].state = RELEASE;
 }
 
-void KeyPad::update()
+void Keypad::update()
 {
     for (size_t i = 0; i < sizeof(keyMap) / sizeof(keyMap[0]); i++)
     {
         Key* key = &keyMap[i];
-        int value = digitalRead(key->pin);
+        int value = keyInput ? keyInput->Read(key->pin) : 0;
         uint8_t state = RELEASE; // release
         if ((key->active == 0 && value == 0) || (key->active != 0 && value != 0))
             state = PRESS; // press

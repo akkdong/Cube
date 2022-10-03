@@ -167,7 +167,10 @@ void VarioFilter_HarInAirKF4d::predict(float dt)
 void VarioFilter_HarInAirKF4d::update(float zm, float am, float* pz, float* pv) 
 {
 	//
-	#if 1
+	zm = zm * 100.0f; // m --> cm
+
+	//
+	#if 0
 	uint32_t lastTick = get_tick();
 	float dt = ((float)(lastTick - t_)) / 1000.0;
 	t_ = lastTick;
@@ -261,8 +264,8 @@ void VarioFilter_HarInAirKF4d::update(float zm, float am, float* pz, float* pv)
 	Pbb = p33; 
 
 	// return the state variables of interest (z and v)
-	*pz = State.z;
-	*pv = State.v;
+	*pz = State.z / 100.0f; // cm --> m
+	*pv = State.v / 100.0f; // cm/s --> m/s
 
     //
 	LOGd("%.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f\n",zm, State.z, Pzz, State.v, Pvv, State.a - State.b, Paa, State.b, Pbb);

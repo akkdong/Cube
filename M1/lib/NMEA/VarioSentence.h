@@ -13,11 +13,11 @@
 class IVarioSentence
 {
 public:
-	virtual void		begin(float height, float vel, float temp, float bat);
-	virtual void		begin(float height, float vel, float temp, float prs, float bat);
+	virtual void		begin(float height, float vel, float temp, float bat) = 0;
+	virtual void		begin(float height, float vel, float temp, float prs, float bat) = 0;
 	
-	virtual int			available();
-	virtual int			read();
+	virtual int			available() = 0;
+	virtual int			read() = 0;
 };
 
 
@@ -95,9 +95,6 @@ public:
 	
 private:
 	IVarioSentence *	varioSentence;
-	
-	LK8Sentence			LK8;
-	LxNavSentence		LxNav;
 
 	char				sentenceType;
 	unsigned long		lastTick;

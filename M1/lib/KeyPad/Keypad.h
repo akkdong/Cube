@@ -4,8 +4,19 @@
 #ifndef __KEYPAD_H__
 #define __KEYPAD_H__
 
+#include "abstract/KeypadInput.h"
+
 #define TIME_DEBOUNCE       (100)
 #define TIME_LONG_PRESS     (2000)
+
+#define KEY_COUNT           (5)
+
+
+#define KEY_RETURN          (0xB0)
+#define KEY_LEFT_ARROW      (0xD8)
+#define KEY_RIGHT_ARROW     (0xD7)
+#define KEY_UP_ARROW        (0xDA)
+#define KEY_DOWN_ARROW      (0xD9)
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -19,13 +30,14 @@ struct KeypadCallback
 };
 
 
+
 /////////////////////////////////////////////////////////////////////////////////////
 //
 
-class KeyPad
+class Keypad
 {
 public:
-    KeyPad(KeypadCallback* callback = NULL);
+    Keypad(KeypadCallback* callback = NULL);
 
 
     enum KeyState {
@@ -47,13 +59,16 @@ public:
 
 
 public:
-    void            begin();
+    void            begin(IKeypadInput* pKeypad);
     void            update();
 
     void            setCallback(KeypadCallback* callback) { this->callback = callback; }
+
 protected:
-    Key             keyMap[5];
     KeypadCallback* callback;
+
+    IKeypadInput*   keyInput;
+    Key             keyMap[KEY_COUNT];
 };
 
 #endif // __KEYPAD_H__
