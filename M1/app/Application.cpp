@@ -6,7 +6,9 @@
 #endif
 #include "device_defines.h"
 #include "bsp.h"
+#include "utils.h"
 #include "ble_vario.h"
+
 #include "Application.h"
 #include "Beeper.h"
 
@@ -78,12 +80,19 @@ static Tone melodyStart[] =
 };
 
 
+extern const lv_img_dsc_t paper_plane;
+extern const lv_img_dsc_t bluetooth;
+extern const lv_img_dsc_t map_marker;
+extern const lv_img_dsc_t volume;
+
+
 ////////////////////////////////////////////////////////////////////////////////////////
 // class Application implementation
 
 Application::Application() 
     : varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
     , keyPad(this)
+    , bt_lock_state(0)
 {
     // ...
 }
@@ -121,6 +130,34 @@ void Application::begin()
     lv_obj_set_style_bg_color(ann, lv_color_hex(0x343247), 0);
     //lv_obj_set_style_border_side(ann, LV_BORDER_SIDE_BOTTOM, 0);
 
+    // annunciator icons
+    // logo, gps, bluetooth, beep          time
+
+    lv_obj_t* clock = lv_label_create(ann);
+    lv_obj_set_style_text_font(clock, font_normal, 0);
+    lv_obj_set_style_text_color(clock, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_align(clock, LV_ALIGN_RIGHT_MID, 0, 0);
+    lv_label_set_text(clock, "");
+
+    lv_obj_t* icon_logo = lv_img_create(ann);
+    lv_img_set_src(icon_logo, &paper_plane);
+    
+    //lv_img_buf_set_palette(&paper_plane, 0, lv_color_hex(0x000000));
+    //lv_img_buf_set_palette(&paper_plane, 1, lv_color_hex(0xFFFFFF));
+    lv_obj_align(icon_logo, LV_ALIGN_LEFT_MID, 0, 0);
+
+    lv_obj_t* icon_bluetooth = lv_img_create(ann);
+    lv_img_set_src(icon_bluetooth, &bluetooth);
+    lv_obj_align(icon_bluetooth, LV_ALIGN_LEFT_MID, 24, 0);
+
+    lv_obj_t* icon_gps = lv_img_create(ann);
+    lv_img_set_src(icon_gps, &map_marker);
+    lv_obj_align(icon_gps, LV_ALIGN_LEFT_MID, 48, 0);
+
+    lv_obj_t* icon_volume = lv_img_create(ann);
+    lv_img_set_src(icon_volume, &volume);
+    lv_obj_align(icon_volume, LV_ALIGN_LEFT_MID, 72, 0);
+
     lv_obj_t* page = lv_obj_create(scr);
     lv_obj_set_style_pad_hor(page, 0, 0);
     lv_obj_set_style_pad_ver(page, 0, 0);
@@ -140,6 +177,11 @@ void Application::begin()
 
     app_annun = ann;
     app_page = page;
+
+    app_clock = clock;
+    app_bluetooth = icon_bluetooth;
+    app_gps = icon_gps;
+    app_volume = icon_volume;
 
 
     //
@@ -172,6 +214,9 @@ void Application::begin()
     keyPad.begin(CreateKeypadInput());
 
     beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
+
+    //
+    tick_update_time = get_tick();
 }
 
 void Application::end()
@@ -185,6 +230,8 @@ void Application::update()
     //
     //
     
+    update_time();
+
     if (app_conf->dirty)
     {
         lv_page_update(app_page);
@@ -272,7 +319,6 @@ void Application::update()
 
 
     // vario-sentense available?
-    static int bt_lock_state = 0; // 0: unlocked, 1: locked_by_vario, 2: locked_by_gps
     if ((bt_lock_state == 0 && varioNmea.available()) || (bt_lock_state == 1))
     {
         bt_lock_state = 1;
@@ -346,3 +392,19 @@ void Application::OnReleased(uint8_t key)
     if (key != KEY_RETURN)
         ble_release(key);
 }  
+
+void Application::update_time()
+{
+    uint32_t tick = get_tick();
+    if (tick_update_time - tick > 1000)
+    {
+        time_t t = time(NULL) /*+ 9 * 60 * 60*/;
+        struct tm* _tm = localtime(&t);
+        
+        char sz[32];
+        sprintf(sz, "%d:%d:%d", _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
+        lv_label_set_text(app_clock, sz);
+
+        tick_update_time = tick;
+    }
+}

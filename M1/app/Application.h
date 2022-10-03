@@ -55,24 +55,30 @@ protected:
 
 protected:
     void        init_config(app_conf_t* conf);
+    void        update_time();
     
 protected:
     //
-    const lv_font_t * font_large;
-    const lv_font_t * font_normal;
-    const lv_font_t * font_small;
+    const lv_font_t *           font_large;
+    const lv_font_t *           font_normal;
+    const lv_font_t *           font_small;
 
-    app_conf_t*     app_conf = NULL;
+    app_conf_t*                 app_conf;
 
-    lv_obj_t*       app_annun;
-    lv_obj_t*       app_page;
+    lv_obj_t*                   app_annun;
+    lv_obj_t*                   app_page;
+
+    lv_obj_t*                   app_clock;
+    lv_obj_t*                   app_bluetooth;
+    lv_obj_t*                   app_gps;
+    lv_obj_t*                   app_volume;
 
     //
-    Variometer      vario;
-    LocationParser  locParser;
-    VarioSentence   varioNmea;
-    Beeper          beeper;
-    Keypad          keyPad;
+    Variometer                  vario;
+    LocationParser              locParser;
+    VarioSentence               varioNmea;
+    Beeper                      beeper;
+    Keypad                      keyPad;
 
     #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
     VarioFilter_HarInAirKF2     varioFilter;
@@ -80,7 +86,11 @@ protected:
     VarioFilter_HarInAirKF4d    varioFilter;
     #elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
     VarioFilter_RobinKF         varioFilter;
-    #endif    
+    #endif
+
+    //
+    int                         bt_lock_state; // 0: unlocked, 1: locked_by_vario, 2: locked_by_gps
+    uint8_t                     tick_update_time;
 };
 
 
