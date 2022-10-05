@@ -4,6 +4,7 @@
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
+#include <sys/time.h>
 #include "device_defines.h"
 #include "bsp.h"
 #include "utils.h"
@@ -35,6 +36,33 @@ extern "C" void page_event_cb(lv_event_t* event)
 {
     uint32_t key = lv_indev_get_key(lv_indev_get_act());
     LOGi("Page Event: %d, %d", event->code, key);
+}
+
+
+extern "C" void setTimeZone(long offset, int daylight)
+{
+    char cst[17] = {0};
+    char cdt[17] = "DST";
+    char tz[33] = {0};
+
+    if(offset % 3600) {
+        sprintf(cst, "UTC%ld:%02u:%02u", offset / 3600, abs((offset % 3600) / 60), abs(offset % 60));
+    } else {
+        sprintf(cst, "UTC%ld", offset / 3600);
+    }
+
+    if(daylight != 3600) {
+        long tz_dst = offset - daylight;
+        if(tz_dst % 3600){
+            sprintf(cdt, "DST%ld:%02u:%02u", tz_dst / 3600, abs((tz_dst % 3600) / 60), abs(tz_dst % 60));
+        } else {
+            sprintf(cdt, "DST%ld", tz_dst / 3600);
+        }
+    }
+
+    sprintf(tz, "%s%s", cst, cdt);
+    setenv("TZ", tz, 1);
+    tzset();
 }
 
 
@@ -93,6 +121,7 @@ Application::Application()
     : varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
     , keyPad(this)
     , bt_lock_state(0)
+    , gps_fixed(false)
 {
     // ...
 }
@@ -183,6 +212,10 @@ void Application::begin()
     app_gps = icon_gps;
     app_volume = icon_volume;
 
+    //
+    //
+    //
+    setTimeZone(9 * -3600, 0);
 
     //
     // start-vario
@@ -201,7 +234,7 @@ void Application::begin()
     // helps respond quickly to large accelerations while heavily filtering
     // in low acceleration situations.  Range : 0.5 - 1.5
     #define KF_ACCEL_VARIANCE_DEFAULT   100     // 50 ~ 150
-    #define KF_ADAPT_DEFAULT            100     // 50 ~ 150
+    #define KF_ADAPT_DEFAULT            10     // 50 ~ 150
 
     varioFilter.begin(KF_ACCEL_VARIANCE_DEFAULT * 1000.0f, KF_ADAPT_DEFAULT / 100.0f, 0, 0, 0);
     #elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
@@ -265,7 +298,8 @@ void Application::update()
 
     if (locParser.availableLocation())
     {
-        LOGi("[GPS] %f,%f %f", locParser.getLongitude(), locParser.getLatitude(), locParser.getAltitude());
+        LOGd("[GPS] %f,%f %f", locParser.getLongitude(), locParser.getLatitude(), locParser.getAltitude());
+
         app_conf->latitude = locParser.getLatitude();
         app_conf->longitude = locParser.getLongitude();
         app_conf->altitudeGPS = locParser.getAltitude();
@@ -289,6 +323,7 @@ void Application::update()
         app_conf->speedVertActive = vario.getVelocity();
 
         vSpeed += app_conf->speedVertActive;
+        //LOGi("%f, %f", app_conf->altitudeBaro * 100.0f , app_conf->speedVertActive * 100.0f);
 
         /*if (!ble_isConnected())*/
             beeper.setVelocity(app_conf->speedVertActive);
@@ -398,11 +433,24 @@ void Application::update_time()
     uint32_t tick = get_tick();
     if (tick_update_time - tick > 1000)
     {
+        //
+        bool fixed = locParser.isFixed();
+        if ((!gps_fixed && fixed) || (gps_fixed && fixed))
+        {
+            gps_fixed = fixed;
+            if (gps_fixed)
+            {
+                struct timeval now = { locParser.getDateTime(), 0 };
+                settimeofday(&now, NULL);
+            }
+        }
+
+        //
         time_t t = time(NULL) /*+ 9 * 60 * 60*/;
         struct tm* _tm = localtime(&t);
         
         char sz[32];
-        sprintf(sz, "%d:%d:%d", _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
+        sprintf(sz, "%d:%02d:%02d", _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
         lv_label_set_text(app_clock, sz);
 
         tick_update_time = tick;

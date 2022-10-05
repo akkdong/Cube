@@ -5,6 +5,7 @@
 #include <time.h>
 
 #include "abstract/Barometer.h"
+#include "baro_log.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -40,6 +41,7 @@ bool BarometerSim::getData(float* p, float* t)
     lastTick = tick;
 
     //
+    #if 0
     updateCount += 1;
     // period : 10 sec, tick : 1000 / 25 ms
     // 1 period -> 10000 / (1000 / 25) = 250 tick
@@ -47,6 +49,12 @@ bool BarometerSim::getData(float* p, float* t)
     
     *p = 95000 + sin(updateCount * 2 * 3.14 / (10000 / (1000 / 25))) * 60;
     *t = 15.0;
+    #else
+    *p = baro_data[updateCount].pressure;
+    *t = baro_data[updateCount].temperature;
+
+    updateCount = (updateCount + 1) % (sizeof(baro_data) / sizeof(baro_data[0]));
+    #endif
 
     return true;
 }

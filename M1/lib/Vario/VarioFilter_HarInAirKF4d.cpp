@@ -16,18 +16,18 @@
 // statistical variance in cm^2 of altitude samples from 
 // the baro sensor at rest
 #ifndef KF_Z_MEAS_VARIANCE
-#define KF_Z_MEAS_VARIANCE          (200)
+#define KF_Z_MEAS_VARIANCE          (40)
 #endif
 
 // KF4 Acceleration Measurement Noise variance
 #ifndef KF_A_MEAS_VARIANCE
-#define KF_A_MEAS_VARIANCE   		50.0f
+#define KF_A_MEAS_VARIANCE   		1000.0f
 #endif
 
 // This is set low as the residual acceleration bias after calibration
 // is expected to have little variation/drift
 #ifndef KF_ACCELBIAS_VARIANCE
-#define KF_ACCELBIAS_VARIANCE       0.005f
+#define KF_ACCELBIAS_VARIANCE       0.1f
 #endif
 
 
@@ -273,7 +273,7 @@ void VarioFilter_HarInAirKF4d::update(float zm, float am, float* pz, float* pv)
 
 void VarioFilter_HarInAirKF4d::reset(float altitude)
 {
-	State.z = altitude;
+	State.z = altitude * 100.0f; // m --> cm
 	State.v = 0.0f;
     State.a = 0.0f;
 	State.b = 0.0f; // assume residual acceleration bias = 0 initially

@@ -61,15 +61,18 @@ int Variometer::update()
 
     //
     if (updateCount == 0)
+    {
         varioFilter->reset(altitude);
-    else
+        updateCount = 1;
+    }
+    //else
         varioFilter->update(altitude, 0, &altitudeFiltered, &vario);
 
-    if (updateCount < 100)
-    {
-        updateCount += 1;
-        return 0; // updated(calibration)
-    }
+    //if (updateCount < 100)
+    //{
+    //    updateCount += 1;
+    //    return 0; // updated(calibration)
+    //}
 
     return 1; // updated(valid)
 }

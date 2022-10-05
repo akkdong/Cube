@@ -20,7 +20,7 @@
 #define VFILTER_HARINAIR_KF4d    2
 #define VFILTER_ROBIN_KF         3
 
-#define USE_KALMAN_FILTER        VFILTER_HARINAIR_KF2
+#define USE_KALMAN_FILTER        VFILTER_HARINAIR_KF4d
 
 #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
 #include "VarioFilter_HarInAirKF2.h"
@@ -91,6 +91,8 @@ protected:
     //
     int                         bt_lock_state; // 0: unlocked, 1: locked_by_vario, 2: locked_by_gps
     uint8_t                     tick_update_time;
+
+    bool                        gps_fixed;
 };
 
 
