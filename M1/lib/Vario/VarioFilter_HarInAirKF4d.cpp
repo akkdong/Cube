@@ -51,9 +51,6 @@ VarioFilter_HarInAirKF4d::VarioFilter_HarInAirKF4d()
 
 void VarioFilter_HarInAirKF4d::begin(float aVariance,  float kAdapt, float zInitial, float vInitial, float aInitial)
 {
-	ZMeasVariance = KF_Z_MEAS_VARIANCE;
-	AMeasVariance = KF_A_MEAS_VARIANCE;
-    ABiasVariance = KF_ACCELBIAS_VARIANCE;
 	AccelVariance = aVariance;
 	KAdapt = kAdapt;
 
@@ -202,7 +199,17 @@ void VarioFilter_HarInAirKF4d::update(float zm, float am, float* pz, float* pv)
 	ABiasVariance = KF_ACCELBIAS_VARIANCE/(1.0f + accel_ext);	
 
 	// Compute S_k_inv
-	float sdetinv = 1.0f/(s00*s11 - s10*s01);
+	float divisor = s00*s11 - s10*s01;
+	float sdetinv = 1.0f/(divisor);
+	if (isnan(divisor) || isnan(sdetinv))
+	{
+		LOGd("sdetinv = %f, divisor = %f\n", sdetinv, divisor);
+		*pz = State.z / 100.0f; // cm --> m
+		*pv = State.v / 100.0f; // cm/s --> m/s
+		reset(*pz);
+
+		return;
+	}
 	float sinv00 = sdetinv * s11;
 	float sinv01 = -sdetinv * s10;
 	float sinv10 = sinv01;
@@ -273,6 +280,10 @@ void VarioFilter_HarInAirKF4d::update(float zm, float am, float* pz, float* pv)
 
 void VarioFilter_HarInAirKF4d::reset(float altitude)
 {
+	ZMeasVariance = KF_Z_MEAS_VARIANCE;
+	AMeasVariance = KF_A_MEAS_VARIANCE;
+    ABiasVariance = KF_ACCELBIAS_VARIANCE;
+
 	State.z = altitude * 100.0f; // m --> cm
 	State.v = 0.0f;
     State.a = 0.0f;
