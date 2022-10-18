@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "abstract/KeypadInput.h"
+#include "device_defines.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -15,7 +16,7 @@ public:
     KeypadInput() {}
 
     virtual int Read(uint8_t pin) {
-        return 0;
+        return pin == BTN_SEL ?  1 : 0;
     }
 };
 

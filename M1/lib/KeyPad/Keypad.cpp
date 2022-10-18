@@ -73,21 +73,18 @@ void Keypad::update()
             break;
         case PRESS:
         case LONG_PRESS:
-            if (state != RELEASE)
-            {
-                if (key->state == PRESS && tick - key->tick > TIME_LONG_PRESS)
-                {
-                    key->state = LONG_PRESS;
-                    key->tick = tick;
-
-                    if (callback)
-                        callback->OnLongPressed(key->key);
-                }
-            }
-            else
+            if (state == RELEASE)
             {
                 key->state = POST_PRESS;
                 key->tick = tick;
+            }
+            else if (key->state == PRESS && tick - key->tick > TIME_LONG_PRESS)
+            {
+                key->state = LONG_PRESS;
+                key->tick = tick;
+
+                if (callback)
+                    callback->OnLongPressed(key->key);
             }
             break;
         case POST_PRESS:
