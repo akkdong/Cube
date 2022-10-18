@@ -3,7 +3,7 @@
 ESP32-S3 듀얼 코어 Xtensa 32 비트 LX7 마이크로 프로세서, 384KB ROM, 512KB sram으로 최대 240 MHz. 2.4GHz 와이파이 및 블루투스 5
 PSRAM: 2MB 플래시: 8MB
 저장: 마이크로 SD 카드 슬롯
-디스플레이: 4.3 × 800 해상도, I2C 정전 식 터치 패널, 480 인치 디스플레이
+디스플레이: 480 × 800 해상도, I2C 정전 식 터치 패널, 4.3 인치 디스플레이
 디스플레이 인터페이스: 16 비트, 8080 병렬 통신
 오디오: 코덱, 오디오 앰프, 내장 마이크, 스피커
 USB: 1x USB-C OTG (DFU/CDC) 포트, 1x USB-C 디버그 포트
@@ -12,3 +12,17 @@ USB: 1x USB-C OTG (DFU/CDC) 포트, 1x USB-C 디버그 포트
 기타: 웨이크 업 및 리셋 버튼, 전원 스위치
 전원 공급 장치: 5V / 1A
 치수: 110x61x13.5mm
+
+
+
+Peripherals
+
+RM68120		TFT LCD 480x800 4.3inch
+FT5X06		True Multi-Touch Capacitive TouchPanel Controller
+TCA9554		I/O Expander
+HDC1080		High Accuracy Digital Humidity Sensor with Temperature Sensor
+ES8311		Low Power Mono Audio CODEC
+MPU6050		6-Axis (Gyro + Accelerometer) MEMS
+
+TPS63001	High-Efficient Single Inductor Buck-Boost Converter With 1.8-A Switches
+NS4150		3W Mono Class D Audio Amplifier
