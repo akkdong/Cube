@@ -61,12 +61,13 @@
 #define FT5X06_ID_G_THCAL                   0x82 // The threshold when calculating the focus of touching
 #define FT5X06_ID_G_THWATER                 0x83 // The threshold when there is surface water
 #define FT5X06_ID_G_THTEMP                  0x84 // The threshold of temperature compensation
+#define FT5X06_ID_G_THDIFF                  0x85
 #define FT5X06_ID_G_CTRL                    0x86 // Power control mode
 #define FT5X06_ID_G_TIME_ENTER_MONITOR      0x87 // The timer of entering monitor status
 #define FT5X06_ID_G_PERIODACTIVE            0x88 // Period Active
 #define FT5X06_ID_G_PERIODMONITOR           0x89 // The timer of entering idle while in monitor status
+
 #define FT5X06_ID_G_AUTO_CLB_MODE           0xA0 // Auto calibration mode
- 
 #define FT5X06_TOUCH_LIB_VERSION_H          0xA1 // Firmware Library Version H byte
 #define FT5X06_TOUCH_LIB_VERSION_L          0xA2 // Firmware Library Version L byte
 #define FT5X06_ID_G_CIPHER                  0xA3 // Chip vendor ID
@@ -117,46 +118,19 @@ public:
     FT5x06(uint8_t address = FT5X06_I2C_ADDRESS, TwoWire& wire = Wire);
 
 public:
-    void        begin(int8_t pinInt = -1, uint8_t maxPoints = 5);
+    void        begin();
 
-    int8_t      jitterMargin(int8_t margin = -1);
-    uint8_t     maxPointCount(int8_t count = -1);
+    uint8_t     getTouchPointsNum();
+    bool        getPosition(uint16_t* x, uint16_t* y);
 
-    bool        pointDetected(void);
-    uint8_t     releaseCount(void);
-
-    uint8_t     getPointCount(void);
-
-    int16_t     getPointX(uint8_t point);
-    int16_t     getPointY(uint8_t point);
-    uint8_t     getGesture(void);    
-
-private:
-  static void   serviceInterrupt(void); // Touch detect interrupt
-  void          writeReg(uint8_t reg, uint8_t val);
-  void          readPoints(void);
+protected:
+    uint8_t     readByte(uint8_t reg);
+    void        readBytes(uint8_t reg, size_t len, uint8_t* data);
+    void        writeByte(uint8_t reg, uint8_t data);
 
 protected:
     uint8_t     _address;
     TwoWire&    _wire;
-
-    uint8_t     maxPoints;  // How many multi-point touches will be reported
-    uint8_t     margin;
-
-    uint8_t     pointCount; // How many touch points have been detected
-    int16_t     pointX[5];  // x coordinates of touches
-    int16_t     pointY[5];  // y coordinates of touches
-
-    // These are used to detect changes in touch position or count
-    uint8_t     lastPointCount;
-    int16_t     lastPointX[5];
-    int16_t     lastPointY[5];
-
-    uint8_t     released;
-    bool        readToggle;
-
-    // Copy of register values
-    uint8_t     reg[FT5X06_REG_COUNT];    
 };
 
 #endif // __FT5X06_H__

@@ -113,8 +113,8 @@ void setup()
   //
   //expander.DigitalWrite(GPIO_EXT_LCD_BL, true);
   //expander.PinSetMode(GPIO_EXT_LCD_BL, true);
-  expander.setOutput((1 << GPIO_EXT_TOUCH_RST) | (1 << GPIO_EXT_LCD_BL));
-  expander.setConfig(~((1 << GPIO_EXT_TOUCH_RST) | (1 << GPIO_EXT_LCD_BL)));
+  expander.setOutput(0b10110000);
+  expander.setConfig(0b00001111);
   Serial.println("turn-on LCD backlight");
   Serial.printf("Input: %02X\r\n", expander.getInput());
   Serial.printf("Output: %02X\r\n", expander.getOutput());
@@ -129,9 +129,9 @@ void setup()
   ht.begin();
   Serial.println("begin humidity & temperature");
 
-  touch.begin(-1, 1);
-  touch.maxPointCount(1);
-  touch.jitterMargin(5);
+  touch.begin();
+  //touch.maxPointCount(1);
+  //touch.jitterMargin(5);
 
   Serial.printf("Total heap: %d\r\n", ESP.getHeapSize());
   Serial.printf("Free heap: %d\r\n", ESP.getFreeHeap());
@@ -152,18 +152,11 @@ void loop()
   uint32_t tick = millis();
   if (tick - lastTick < (1000 * 2))
   {
-    /*
-    if(touch.pointDetected()) 
-    {
-      uint8_t touches = touch.getPointCount();
-      for (uint8_t i = 1; i <= touches; i++) 
-      {
-        Serial.print("Point "); Serial.print(i);
-        Serial.print(": x = "); Serial.print(touch.getPointX(i));
-        Serial.print(", y = "); Serial.println(touch.getPointY(i));
-      }
-    } 
-    */ 
+    uint16_t x, y;
+    if(touch.getPosition(&x, &y)) 
+      Serial.printf("Pos: %d, %d\r\n", x, y);
+
+    delay(20);
   }
   else
   {
