@@ -2,9 +2,13 @@
 #include <Wire.h>
 
 #include "board.h"
+#include "i2s_driver.h"
+#include "adc_driver.h"
+
 #include "tca9554.h"
 #include "bme280.h"
 #include "htu21d.h"
+#include "es8311.h"
 
 #include "lvgl_porting/lv_port_disp.h"
 #include "lvgl_porting/lv_port_indev.h"
@@ -87,6 +91,7 @@ static Bme280Settings varioSettings()
 TCA9554       expander(TCA9554A_ADDR, Wire);
 Bme280TwoWire	baro;
 HTU21D        ht;
+ES8311        codec;
 
 uint32_t      lastTick;
 
@@ -98,6 +103,8 @@ void setup()
   Serial2.begin(9600, SERIAL_8N1, 33, -1);
   Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
   Serial.println("M2 H/W Test");
+
+  adc_init();
 
   //
   expander.setOutput(0b10110000);
@@ -116,11 +123,24 @@ void setup()
   ht.begin();
   Serial.println("begin humidity & temperature");
 
+  codec.begin((es_i2s_fmt_t)AUDIO_HAL_16K_SAMPLES);
+  bsp_i2s_init(I2S_NUM_0, 16000);
+
+  //
   lv_init();
   lv_port_disp_init();
   lv_port_indev_init();
   lv_port_tick_init();
 
+  //
+  lv_obj_t* label = lv_label_create(lv_scr_act());
+  lv_label_set_text(label, "M2 H/W Test");
+  lv_obj_set_style_text_font(label, &lv_font_montserrat_42, LV_STATE_DEFAULT);
+  lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_RED), LV_STATE_DEFAULT);
+  lv_obj_align(label, LV_ALIGN_CENTER, 0, 0);
+
+
+  //
   Serial.printf("Total heap: %d\r\n", ESP.getHeapSize());
   Serial.printf("Free heap: %d\r\n", ESP.getFreeHeap());
   Serial.printf("Total PSRAM: %d\r\n", ESP.getPsramSize());
@@ -158,5 +178,8 @@ void loop()
 
     ht.measure();
     Serial.printf("HT: %f, %f\r\n", ht.getTemperature(), ht.getHumidity());
+
+    uint16_t voltage = adc_get_voltage();
+    Serial.printf("BAT: %d\r\n", voltage);
   }
 }
