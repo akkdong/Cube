@@ -1,6 +1,7 @@
 // ft5x06.cpp
 //
 
+#include "board.h"
 #include "ft5x06.h"
 
 
@@ -49,7 +50,7 @@ uint8_t FT5x06::readByte(uint8_t reg)
     _wire.write(reg);
     _wire.endTransmission(false);
 
-    _wire.requestFrom(_address, 1);
+    _wire.requestFrom(_address, (uint8_t)1);
     return _wire.read();
 }
 
@@ -84,8 +85,13 @@ bool FT5x06::getPosition(uint16_t* x, uint16_t* y)
     uint8_t data[4];
     readBytes(FT5X06_TOUCH1_XH, 4, data);
 
+#if LCD_DIRECTION_LANDSCAPE
+    *y = LCD_HEIGHT - ((data[0] & 0x0f) << 8) - data[1];
+    *x = ((data[2] & 0x0f) << 8) + data[3];
+#else
     *x = ((data[0] & 0x0f) << 8) + data[1];
-    *y = ((data[2] & 0x0f) << 8) + data[3];          
+    *y = ((data[2] & 0x0f) << 8) + data[3];
+#endif
 
     return true;
 }

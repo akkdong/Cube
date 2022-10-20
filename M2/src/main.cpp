@@ -5,24 +5,12 @@
 #include "tca9554.h"
 #include "bme280.h"
 #include "htu21d.h"
-#include "ft5x06.h"
+
+#include "lvgl_porting/lv_port_disp.h"
+#include "lvgl_porting/lv_port_indev.h"
+#include "lvgl_porting/lv_port_fs.h"
 
 /*
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_log.h"
-#include "esp_system.h"
-#include "esp_spi_flash.h"
-#include "driver/gpio.h"
-#include "freertos/event_groups.h"
-#include "freertos/queue.h"
-#include "nvs_flash.h"
-#include "tca9554.h"
-
-#include "lvgl.h"
-#include "lv_port_disp.h"
-#include "lv_port_indev.h"
-
 
 void setup() 
 {
@@ -99,8 +87,9 @@ static Bme280Settings varioSettings()
 TCA9554       expander(TCA9554A_ADDR, Wire);
 Bme280TwoWire	baro;
 HTU21D        ht;
-FT5x06        touch;
+
 uint32_t      lastTick;
+
 
 void setup()
 {
@@ -111,8 +100,6 @@ void setup()
   Serial.println("M2 H/W Test");
 
   //
-  //expander.DigitalWrite(GPIO_EXT_LCD_BL, true);
-  //expander.PinSetMode(GPIO_EXT_LCD_BL, true);
   expander.setOutput(0b10110000);
   expander.setConfig(0b00001111);
   Serial.println("turn-on LCD backlight");
@@ -129,9 +116,10 @@ void setup()
   ht.begin();
   Serial.println("begin humidity & temperature");
 
-  touch.begin();
-  //touch.maxPointCount(1);
-  //touch.jitterMargin(5);
+  lv_init();
+  lv_port_disp_init();
+  lv_port_indev_init();
+  lv_port_tick_init();
 
   Serial.printf("Total heap: %d\r\n", ESP.getHeapSize());
   Serial.printf("Free heap: %d\r\n", ESP.getFreeHeap());
@@ -152,11 +140,13 @@ void loop()
   uint32_t tick = millis();
   if (tick - lastTick < (1000 * 2))
   {
+    #if 0
     uint16_t x, y;
     if(touch.getPosition(&x, &y)) 
       Serial.printf("Pos: %d, %d\r\n", x, y);
 
     delay(20);
+    #endif
   }
   else
   {
