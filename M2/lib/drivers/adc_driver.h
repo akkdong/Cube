@@ -16,9 +16,9 @@ extern "C"
 ////////////////////////////////////////////////////////////////////////////////
 //
 
-esp_err_t adc_init(void);
+esp_err_t   adc_init(void);
 
-uint32_t adc_get_voltage(void);
+float       adc_get_voltage(void);
 
 
 #ifdef __cplusplus

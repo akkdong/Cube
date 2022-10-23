@@ -684,17 +684,20 @@ void ES8311::read_all()
 {
     for (int i = 0; i < 0x4A; i++) {
         uint8_t reg = read_reg(i);
-        ets_printf("REG:%02x, %02x\n", reg, i);
+        ESP_LOGI(TAG, "REG:%02x, %02x\n", reg, i);
     }
 }
 
-void ES8311::read_chipid(void)
+void ES8311::read_chipid(uint16_t& id, uint8_t& version)
 {
     uint8_t reg[3];
     reg[0] = read_reg(ES8311_CHD1_REGFD);
     reg[1] = read_reg(ES8311_CHD2_REGFE);
     reg[2] = read_reg(ES8311_CHVER_REGFF);
-    ets_printf("CHIP ID=ES%02X%02X,VERSION=%02X\n", reg[0], reg[1], reg[2]);
+
+    id = ((uint16_t)reg[0] << 8) | (uint16_t)reg[1];
+    version = reg[2];
+    ESP_LOGV(TAG, "CHIP ID=ES%04X,VERSION=%02X\n", id, version);
 }
 
 esp_err_t ES8311::codec_config(audio_hal_iface_samples_t sample_rate)

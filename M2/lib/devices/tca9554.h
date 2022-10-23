@@ -24,7 +24,7 @@
 class TCA9554
 {
 public:
-    TCA9554(int address, TwoWire& wire = Wire);
+    TCA9554(int address = TCA9554A_ADDR, TwoWire& wire = Wire);
 
 public:
     void setConfig(uint8_t value);

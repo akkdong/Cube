@@ -130,7 +130,8 @@ public:
     ES8311(uint8_t addr = ES8311_ADDR, TwoWire& wire = Wire);
 
 public:
-    void begin(es_i2s_fmt_t fmt) { config_fmt(fmt); }
+    //void begin(es_i2s_fmt_t fmt) { config_fmt(fmt); }
+    //
 
     /*
     * @brief Initialize ES8311 codec chip
@@ -283,17 +284,32 @@ public:
      */
     void read_all();
 
-    void read_chipid(void);
 
+    /**
+     * @brief Get Chip ID
+     *
+     * @return
+     *     - void
+     */    
+    void read_chipid(uint16_t& id, uint8_t& version);
+
+
+    /**
+     * @brief Config code 
+     *
+     * @return
+     *     - ESP_FAIL
+     *     - ESP_OK
+     */
     esp_err_t codec_config(audio_hal_iface_samples_t sample_rate);
 
 
 protected:
-    esp_err_t write_reg(uint8_t reg_addr, uint8_t data);
-    int read_reg(uint8_t reg_addr);
-    int get_coeff(uint32_t mclk, uint32_t rate);
-    void mute(int mute);
-    void suspend(void);
+    esp_err_t   write_reg(uint8_t reg_addr, uint8_t data);
+    int         read_reg(uint8_t reg_addr);
+    int         get_coeff(uint32_t mclk, uint32_t rate);
+    void        mute(int mute);
+    void        suspend(void);
 
 protected:
     uint8_t     _address;

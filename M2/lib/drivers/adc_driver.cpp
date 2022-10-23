@@ -73,15 +73,14 @@ esp_err_t adc_init(void)
     return ESP_OK;
 }
 
-uint32_t adc_get_voltage(void)
+float adc_get_voltage(void)
 {
     int adc_raw;
     adc2_get_raw(ADC_EXAMPLE_CHAN0, (adc_bits_width_t)ADC_WIDTH_BIT_DEFAULT, &adc_raw);
 
-    uint32_t voltage = esp_adc_cal_raw_to_voltage(adc_raw, &adc_chars);
-    // ESP_LOGI(TAG, "adc_raw= %d cali_data= %dmV", adc_raw, voltage);
+    uint32_t mv = esp_adc_cal_raw_to_voltage(adc_raw, &adc_chars);
 
-    return voltage;
+    return mv * 2.0f / 1000;
 }
 
 
