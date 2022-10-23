@@ -86,8 +86,13 @@ bool FT5x06::getPosition(uint16_t* x, uint16_t* y)
     readBytes(FT5X06_TOUCH1_XH, 4, data);
 
 #if LCD_DIRECTION_LANDSCAPE
+#if 0
     *y = LCD_HEIGHT - ((data[0] & 0x0f) << 8) - data[1];
     *x = ((data[2] & 0x0f) << 8) + data[3];
+#else
+    *y = ((data[0] & 0x0f) << 8) + data[1];
+    *x = LCD_WIDTH - ((data[2] & 0x0f) << 8) - data[3];
+#endif
 #else
     *x = ((data[0] & 0x0f) << 8) + data[1];
     *y = ((data[2] & 0x0f) << 8) + data[3];

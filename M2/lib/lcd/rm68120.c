@@ -43,8 +43,13 @@ esp_err_t esp_lcd_new_panel_rm68120(const esp_lcd_panel_io_handle_t io, const es
 
     // scanning direction
 #if LCD_DIRECTION_LANDSCAPE   // landscape mode
-    rm68120->dir = SCR_DIR_LRTB; 
+#if 0
+    rm68120->dir = SCR_DIR_LRTB;
     rm68120->madctl_val = 0x60;
+#else
+    rm68120->dir = SCR_DIR_LRBT; 
+    rm68120->madctl_val = 0xA0; 
+#endif
 #else   // portrait mode
     rm68120->dir = SCR_DIR_TBLR; 
     rm68120->madctl_val = 0x00;
@@ -53,6 +58,7 @@ esp_err_t esp_lcd_new_panel_rm68120(const esp_lcd_panel_io_handle_t io, const es
     switch (rm68120->dir)
     {
     case SCR_DIR_LRTB:
+    case SCR_DIR_LRBT:
         rm68120->width = LCD_WIDTH;
         rm68120->height = LCD_HEIGHT;
         break;
