@@ -78,9 +78,9 @@ lv_obj_t*           scrn_offline = NULL;
 lv_obj_t*           boxes[BOX_COUNT];
 lv_style_t*         box_def_style = NULL;
 
-const lv_font_t*    font_title = &lv_font_montserrat_14;
-const lv_font_t*    font_subtitle = &lv_font_montserrat_12;
-const lv_font_t*    font_body = &lv_font_montserrat_48;
+const lv_font_t*    font_title = &lv_font_montserrat_24;
+const lv_font_t*    font_subtitle = &lv_font_montserrat_18;
+const lv_font_t*    font_body = &font_en_bold_64; // lv_font_montserrat_48
 
 
 //

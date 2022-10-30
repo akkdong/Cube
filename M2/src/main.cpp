@@ -289,28 +289,28 @@ void loop()
 
 lv_page_item_t page_1[] = {
   {
-      ALTITUDE_GROUND, 0, 0, 180, 96, LV_BORDER_SIDE_FULL
+      ALTITUDE_GROUND, 0, 0, 300, 144, LV_BORDER_SIDE_FULL
   },
   {
-      TRACK_HEADING, 0, 96, 180, 96, LV_BORDER_SIDE_FULL 
+      TRACK_HEADING, 0, 144, 300, 144, LV_BORDER_SIDE_FULL 
   },
   {
-      SPEED_GROUND, 0, 192, 180, 96, LV_BORDER_SIDE_FULL
+      SPEED_GROUND, 0, 288, 300, 144, LV_BORDER_SIDE_FULL
   },
   {
-      ALTITUDE_BARO, 300, 0, 180, 96, LV_BORDER_SIDE_FULL 
+      ALTITUDE_BARO, 500, 0, 300, 144, LV_BORDER_SIDE_FULL 
   },
   {
-      SENSOR_PRESSURE, 300, 96, 180, 96, LV_BORDER_SIDE_FULL 
+      SENSOR_PRESSURE, 500, 144, 300, 144, LV_BORDER_SIDE_FULL 
   },
   {
-      SPEED_VERTICAL, 300, 192, 180, 96, LV_BORDER_SIDE_FULL 
+      SPEED_VERTICAL, 500, 288, 300, 144, LV_BORDER_SIDE_FULL 
   },
   {
-      COMPASS, 180, 0, 120, 120, LV_BORDER_SIDE_NONE
+      COMPASS, 300, 0, 200, 200, LV_BORDER_SIDE_NONE
   },
   {
-      VSPEED_BAR, 180, 120, 120, 168, LV_BORDER_SIDE_FULL
+      VSPEED_BAR, 300, 200, 200, 232, LV_BORDER_SIDE_FULL
   },
   {
       END_OF_BOX
@@ -361,15 +361,15 @@ void app_begin()
   lv_obj_t* scr = lv_obj_create(NULL);
   lv_scr_load(scr);
 
-  // annunciator height = 32
-  // page height = 320 - 32 = 288
-  // one box height = 288 / 3 = 96
+  // annunciator height = 48
+  // page height = 480 - 48 = 432
+  // one box height = 432 / 3 = 144
 
   lv_obj_t* ann = lv_obj_create(scr);
   lv_obj_set_style_pad_hor(ann, 4, 0);
   lv_obj_set_style_pad_ver(ann, 0, 0);
   lv_obj_set_pos(ann, 0, 0);
-  lv_obj_set_size(ann, 480, 32);
+  lv_obj_set_size(ann, LCD_WIDTH, 48);
   lv_obj_set_style_radius(ann, 0, 0);
   lv_obj_set_style_border_width(ann, 2, 0);
   lv_obj_set_style_border_color(ann, lv_color_hex(0x343247), 0);
@@ -381,7 +381,7 @@ void app_begin()
   // logo, gps, bluetooth, beep          time
 
   lv_obj_t* clock = lv_label_create(ann);
-  lv_obj_set_style_text_font(clock, font_normal, 0);
+  lv_obj_set_style_text_font(clock, &lv_font_montserrat_24, 0);
   lv_obj_set_style_text_color(clock, lv_color_hex(0xFFFFFF), 0);
   lv_obj_align(clock, LV_ALIGN_RIGHT_MID, 0, 0);
   lv_label_set_text(clock, "");
@@ -408,8 +408,8 @@ void app_begin()
   lv_obj_t* page = lv_obj_create(scr);
   lv_obj_set_style_pad_hor(page, 0, 0);
   lv_obj_set_style_pad_ver(page, 0, 0);
-  lv_obj_set_pos(page, 0, 32);
-  lv_obj_set_size(page, 480, 320 - 32);
+  lv_obj_set_pos(page, 0, 48);
+  lv_obj_set_size(page, LCD_WIDTH, LCD_HEIGHT - 48);
   lv_obj_set_style_border_width(page, 0, 0);
   lv_obj_set_style_bg_color(page, lv_color_hex(0xE0E0E6), 0);
 

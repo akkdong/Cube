@@ -351,7 +351,7 @@
                                 LV_FONT_DECLARE(font_en_bold_32) \
                                 LV_FONT_DECLARE(font_en_bold_36) \
                                 LV_FONT_DECLARE(font_en_bold_48) \
-                                LV_FONT_DECLARE(font_en_bold_60) \
+                                LV_FONT_DECLARE(font_en_bold_64) \
                                 LV_FONT_DECLARE(font_en_bold_72) \
                                 LV_FONT_DECLARE(font_kb_24) \
                                 LV_FONT_DECLARE(font_en_bold_24) \
