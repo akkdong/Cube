@@ -138,7 +138,7 @@ void Application::begin()
     // logo, gps, bluetooth, beep          time
 
     lv_obj_t* clock = lv_label_create(ann);
-    lv_obj_set_style_text_font(clock, font_normal, 0);
+    lv_obj_set_style_text_font(clock, &lv_font_montserrat_16, 0);
     lv_obj_set_style_text_color(clock, lv_color_hex(0xFFFFFF), 0);
     lv_obj_align(clock, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_label_set_text(clock, "");
@@ -202,7 +202,9 @@ void Application::begin()
     // 
 
     #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
-    varioFilter.begin(400.0f, 1000.0f, 1.0f, 0);
+    varioFilter.begin(40.0f, 1000000.0f, 0);
+    #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF3
+    varioFilter.begin(500.0f, 8000.0f, 1.0f, 0);
     #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
 
     // injects additional uncertainty depending on magnitude of acceleration
@@ -305,7 +307,7 @@ void Application::update()
 
         //tick[count] = millis();
         count += 1;
-        if ((count % (1000 / VARIOMETER_SENTENCE_DELAY)) == 0)
+        if (count * (1000 / SENSOR_UPDATE_FREQUENCY) >= VARIOMETER_SENTENCE_DELAY)
         {
             app_conf->speedVertLazy = vSpeed / count;
             app_conf->dirty = 1;

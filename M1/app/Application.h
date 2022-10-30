@@ -17,13 +17,16 @@
 #include "Keypad.h"
 
 #define VFILTER_HARINAIR_KF2     1
-#define VFILTER_HARINAIR_KF4d    2
-#define VFILTER_ROBIN_KF         3
+#define VFILTER_HARINAIR_KF3     2
+#define VFILTER_HARINAIR_KF4d    3
+#define VFILTER_ROBIN_KF         4
 
-#define USE_KALMAN_FILTER        VFILTER_HARINAIR_KF4d
+#define USE_KALMAN_FILTER        VFILTER_HARINAIR_KF3
 
 #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
 #include "VarioFilter_HarInAirKF2.h"
+#elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF3
+#include "VarioFilter_HarInAirKF3.h"
 #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
 #include "VarioFilter_HarInAirKF4d.h"
 #elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
@@ -82,6 +85,8 @@ protected:
 
     #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
     VarioFilter_HarInAirKF2     varioFilter;
+    #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF3
+    VarioFilter_HarInAirKF3     varioFilter;
     #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
     VarioFilter_HarInAirKF4d    varioFilter;
     #elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF

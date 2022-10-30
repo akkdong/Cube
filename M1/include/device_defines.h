@@ -45,6 +45,7 @@
 #define VARIOMETER_LK8_SENTENCE					(2)
 #define VARIOMETER_DEFAULT_NMEA_SENTENCE		VARIOMETER_LK8_SENTENCE
 
-#define VARIOMETER_SENTENCE_DELAY				(200)  //  tick = 1000/25 = 40, 5 tick = 200
+#define VARIOMETER_SENTENCE_DELAY				(1000)   // tick = 1000/25 = 40, 25 tick = 1000
+#define SENSOR_UPDATE_FREQUENCY                 (25)    // 25Hz
 
 #endif // __DEVICE_DEFINES_H__
