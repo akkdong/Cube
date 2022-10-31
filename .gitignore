@@ -31,4 +31,8 @@
 *.out
 *.app
 
+.vscode
+/bin
+/M1-Watch
+/M2/lib-temp
 /test

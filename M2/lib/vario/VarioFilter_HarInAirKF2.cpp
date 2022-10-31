@@ -23,11 +23,10 @@ VarioFilter_HarInAirKF2::VarioFilter_HarInAirKF2()
 }
 
 
-int VarioFilter_HarInAirKF2::begin(float zVariance, float zAccelVariance, float zAccelBiasVariance, float altitude)
+int VarioFilter_HarInAirKF2::begin(float zVariance, float zAccelVariance, float altitude)
 {
 	// init values
 	zAccelVariance_ = zAccelVariance;
-    zAccelBiasVariance_ = zAccelBiasVariance;
 	zVariance_ = zVariance;
 
 	//
@@ -36,10 +35,27 @@ int VarioFilter_HarInAirKF2::begin(float zVariance, float zAccelVariance, float 
 	return 0;
 }
 
+void VarioFilter_HarInAirKF2::reset(float altitude)
+{
+	z_ = altitude;
+	v_ = 0.0f; // vInitial;
+	t_ = get_tick();
+
+	Pzz_ = 1500.0f;
+	Pzv_ = 0.0f;
+	Pvz_ = Pzv_;
+	Pvv_ = 1500.0f;
+}
+
 void VarioFilter_HarInAirKF2::update(float altitude, float va, float* altitudeFilteredPtr, float* varioPtr)
 {
+	//
+	#if USE_CM
+	altitude = altitude * 100.0f; // m --> cm
+	#endif
+
 	// delta time
-	#if 1
+	#if 0
 	uint32_t lastTick = get_tick();
 	float dt = ((float)(lastTick - t_)) / 1000.0;
 	t_ = lastTick;
@@ -47,102 +63,44 @@ void VarioFilter_HarInAirKF2::update(float altitude, float va, float* altitudeFi
 	float dt = 1.0 / KALMAN_UPDATE_FREQ; // 25Hz
 	#endif
 
-	//
-	// prediction
-	//
-	float accel = va - aBias_;
-	v_ += accel * dt;
-	z_ += v_ * dt;
+	// predict
+	predict(dt);
 
-	// Predict State Covariance matrix
-	float t00,t01,t02;
-	float t10,t11,t12;
-	float t20,t21,t22;
+	// Update step.
+	float y = altitude - z_;  // Innovation.
+	float sInv = 1.0f / (Pzz_ + zVariance_);  // Innovation precision.
+	float kz = Pzz_ * sInv;  // Kalman gain
+	float kv = Pzv_ * sInv;
 
-	float dt2div2 = dt * dt / 2.0f;
-	float dt3div2 = dt2div2 * dt;
-	float dt4div4 = dt2div2 * dt2div2;
+	// Update state estimate.
+	z_ += kz * y;
+	v_ += kv * y;
 
-	t00 = Pzz_ + dt * Pvz_ - dt2div2 * Paz_;
-	t01 = Pzv_ + dt * Pvv_ - dt2div2 * Pav_;
-	t02 = Pza_ + dt * Pva_ - dt2div2 * Paa_;
-
-	t10 = Pvz_ - dt * Paz_;
-	t11 = Pvv_ - dt * Pav_;
-	t12 = Pva_ - dt * Paa_;
-
-	t20 = Paz_;
-	t21 = Pav_;
-	t22 = Paa_;
-
-	Pzz_ = t00 + dt * t01 - dt2div2 * t02;
-	Pzv_ = t01 - dt * t02;
-	Pza_ = t02;
-
-	Pvz_ = t10 + dt * t11 - dt2div2 * t12;
-	Pvv_ = t11 - dt * t12;
-	Pva_ = t12;
-
-	Paz_ = t20 + dt * t21 - dt2div2 * t22;
-	Pav_ = t21 - dt * t22;
-	Paa_ = t22;
-
-	Pzz_ += dt4div4 * zAccelVariance_;
-	Pzv_ += dt3div2 * zAccelVariance_;
-
-	Pvz_ += dt3div2 * zAccelVariance_;
-	Pvv_ += dt * dt * zAccelVariance_;
-
-	Paa_ += zAccelBiasVariance_;
-
-	// Error
-	float innov = altitude - z_;
-	float sInv = 1.0f / (Pzz_ + zVariance_);
-
-	// Kalman gains
-	float kz = Pzz_ * sInv;
-	float kv = Pvz_ * sInv;
-	float ka = Paz_ * sInv;
-
-	// Update state
-	z_ += kz * innov;
-	v_ += kv * innov;
-	aBias_ += ka * innov;
-
+	#if USE_CM
+	*altitudeFilteredPtr = z_ / 100.0f; // cm --> m
+	*varioPtr = v_ / 100.0f; // cm/s --> m/s
+	#else
 	*altitudeFilteredPtr = z_;
 	*varioPtr = v_;
+	#endif
 
-	// Update state covariance matrix
-	Paz_ -= ka * Pzz_;
-	Pav_ -= ka * Pzv_;
-	Paa_ -= ka * Pza_;
-
-	Pvz_ -= kv * Pzz_;
-	Pvv_ -= kv * Pzv_;
-	Pva_ -= kv * Pza_;
-
-	Pzz_ -= kz * Pzz_;
-	Pzv_ -= kz * Pzv_;
-	Pza_ -= kz * Pza_;
+	// Update state covariance.
+	Pvv_ -= Pzv_ * kv;
+	Pzv_ -= Pzv_ * kz;
+	Pvz_  = Pzv_;
+	Pzz_ -= Pzz_ * kz;
 }
 
-void VarioFilter_HarInAirKF2::reset(float altitude)
+void VarioFilter_HarInAirKF2::predict(/*float zAccelVariance,*/ float dt)
 {
-	z_ = altitude;
-	v_ = 0.0f; // vInitial;
-	t_ = get_tick();
+	/*zAccelVariance_ = zAccelVariance;*/
 
-	aBias_ = 0.0f; // aBiasInitial;
+	// predict state estimate.
+	z_ += v_ * dt;
 
-	Pzz_ = 1.0f;
-	Pzv_ = 0.0f;
-	Pza_ = 0.0f;
-
-	Pvz_ = 0.0f;
-	Pvv_ = 1.0f;
-	Pva_ = 0.0f;
-
-	Paz_ = 0.0f;
-	Pav_ = 0.0;
-	Paa_ = 100000.0f;
+	// predict state covariance. The last term mixes in acceleration noise.
+	Pzz_ += dt*Pzv_ + dt*Pvz_ + dt*dt*Pvv_ + zAccelVariance_*dt*dt*dt*dt/4.0f;
+	Pzv_ +=                        dt*Pvv_ + zAccelVariance_*dt*dt*dt/2.0f;
+	Pvz_ = Pzv_;
+	Pvv_ +=                                + zAccelVariance_*dt*dt;
 }

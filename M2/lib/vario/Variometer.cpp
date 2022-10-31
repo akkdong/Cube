@@ -4,7 +4,7 @@
 #include <math.h>
 
 #include "Variometer.h"
-
+#include "logger.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -65,15 +65,22 @@ int Variometer::update()
         varioFilter->reset(altitude);
         updateCount = 1;
     }
-    //else
-        varioFilter->update(altitude, 0, &altitudeFiltered, &vario);
 
-    //if (updateCount < 100)
-    //{
-    //    updateCount += 1;
-    //    return 0; // updated(calibration)
-    //}
+    float altitude_ = 0.0f, vario_ = 0.0f;
+    varioFilter->update(altitude, 0, &altitude_, &vario_);
 
+    if (!isnan(altitude_) && !isnan(vario_))
+    {
+        altitudeFiltered = altitude_;
+        vario = vario_;
+    }
+    else
+    {
+        // something is going wrong, reset!
+        LOGe("Something is going wrong!! Reset vario filter.");
+        updateCount = 0;
+    }
+    
     return 1; // updated(valid)
 }
 
