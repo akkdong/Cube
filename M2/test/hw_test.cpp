@@ -24,7 +24,7 @@
 #define TEST_AAC        2
 #define TEST_WAV        3
 
-#define TEST_METHOD     TEST_WAV
+#define TEST_METHOD     TEST_AAC
 
 #if TEST_METHOD != TEST_ADC
 #if TEST_METHOD == TEST_AAC
@@ -70,12 +70,12 @@ void setup()
     // nop
     #elif TEST_METHOD == TEST_AAC
     audioSrc = new AudioFileSourcePROGMEM(sampleaac, sizeof(sampleaac));
-    audioGen = new AudioGeneratorAAC();
 
     audioOut = new AudioOutputI2SEx();
     audioOut->SetPinout(GPIO_I2S_MCLK, GPIO_I2S_SCLK, GPIO_I2S_LRCK, GPIO_I2S_DOUT);
     audioOut->SetOutputModeMono(true); // <-- must use mono-mode
 
+    audioGen = new AudioGeneratorAAC();
     audioGen->begin(audioSrc, audioOut);
     #elif TEST_METHOD == TEST_WAV
     audioSrc[0] = new AudioFileSourcePROGMEM( viola, sizeof(viola) );
