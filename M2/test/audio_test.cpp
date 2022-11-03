@@ -17,29 +17,42 @@
 class VarioSoundSource : public AudioFileSource
 {
 public:
-    VarioSoundSource(float amplitude = 32767.0, float phase = 0.0, uint32_t sampleRate = 44100) {
-        m_amplitude = amplitude;
-        m_phase = phase;
-        m_sampleRate = sampleRate;
+    VarioSoundSource()
+        : m_frequency(0.0f)
+        , m_amplitude(32767.0)
+        , m_cycles(0.0f)
+        , m_deltaTime(0.0f)
+        , m_phase(0.0f)
+        , double_PI(PI * 2.0f)
+        , m_sampleRate(44100)
+    {
     }
 
 public:
-    bool begin() {
-        m_deltaTime = 1.0 / m_sampleRate;
+    bool begin(uint32_t sampleRate = 44100) 
+    {
+        m_sampleRate = sampleRate;
+        m_deltaTime = 1.0 / sampleRate;
 
         return true;
     }
 
-    void setFrequency(uint16_t freq) {
+    void setFrequency(uint16_t freq) 
+    {
         m_frequency = freq;
         m_cycles = 0;
     }
 
-    void setSampleRate(uint32_t rate) {
+    /*
+    void setSampleRate(uint32_t rate) 
+    {
         m_sampleRate = rate;
+        m_deltaTime = 1.0 / rate;
+        m_cycles = 0;
     }
 
     uint32_t getSampleRate() { return m_sampleRate; }
+    */
 
     uint32_t read(void* data, uint32_t len) override {
 		if ((len % 2) != 0)
@@ -74,7 +87,7 @@ protected:
     }
 
 protected:
-    volatile float  m_frequency = 0;
+    volatile float  m_frequency;
 
     float m_amplitude = 1.0;
     float m_cycles = 0.0; // varies between 0.0 and 1.0
@@ -90,26 +103,32 @@ protected:
 class VarioSoundGenerator : public TaskBase
 {
 public:
-    VarioSoundGenerator(uint32_t sampleRate = 16000) 
+    VarioSoundGenerator() 
         : TaskBase("Vario", 1024, 1)
-        , mSource(32767.0, 0.0, sampleRate) 
+        , mSource()
         , mOutputPtr(nullptr) 
+        , mPlayMode(PLAY_BEEP)
         , mPlayFreq(0.0f)
         , mLastSample{ 0, 0 }
     {
     }
 
+
+    enum PlayMode {
+        PLAY_BEEP,
+        PLAY_FILE
+    };
+
+
 public:
-    bool begin(AudioOutput* output) 
+    bool begin(AudioOutput* output, uint32_t sampleRate = 44100) 
     {
-        uint32_t sampleRate = mSource.getSampleRate();
-        int16_t bitPerSample = 16; // mSource.getBitPerSample();
         mSource.setFrequency(0);
-        mSource.begin();
+        mSource.begin(sampleRate);
 
         mOutputPtr = output;
         mOutputPtr->SetRate(sampleRate);
-        mOutputPtr->SetBitsPerSample(bitPerSample);
+        mOutputPtr->SetBitsPerSample(16);
         mOutputPtr->SetChannels(1);
         mOutputPtr->begin();
 
@@ -141,34 +160,32 @@ protected:
 
         while (1)
         {
+            bool updated = (activeFreq != mPlayFreq || mPlayFreq > 0) ? true : false;
+
             if (activeFreq != mPlayFreq)
             {
                 mSource.setFrequency(mPlayFreq);
+                activeFreq = mPlayFreq;
+            }
 
-                /*
+            if (updated)
+            {
                 if (mPlayFreq > 0)
                 {
-                    mSource.setFrequency(mPlayFreq);
+                    int16_t sample;
+                    mSource.read(&sample, 2);
+
+                    mLastSample[AudioOutput::LEFTCHANNEL] = sample;
+                    mLastSample[AudioOutput::RIGHTCHANNEL] = sample;
                 }
                 else
                 {
                     mLastSample[AudioOutput::LEFTCHANNEL] = 0;
                     mLastSample[AudioOutput::RIGHTCHANNEL] = 0;
-
-                    USBSerial.printf("new sample: %d\r\n", 0);
                 }
-                */
 
-                activeFreq = mPlayFreq;
+                mOutputPtr->ConsumeSample(mLastSample);
             }
-
-            int16_t sample;
-            mSource.read(&sample, 2);
-
-            mLastSample[AudioOutput::LEFTCHANNEL] = sample;
-            mLastSample[AudioOutput::RIGHTCHANNEL] = 0;
-            
-            mOutputPtr->ConsumeSample(mLastSample);
         }
     }
 
@@ -176,6 +193,7 @@ protected:
     VarioSoundSource    mSource;
     AudioOutput*        mOutputPtr;
 
+    volatile PlayMode   mPlayMode;
     volatile int        mPlayFreq;
 
     int16_t             mLastSample[2];
@@ -187,7 +205,7 @@ protected:
 TCA9554       io;
 ES8311        codec;
 
-VarioSoundGenerator audioGen(44100);
+VarioSoundGenerator audioGen;
 AudioOutputI2SEx audioOut;
 
 
@@ -201,7 +219,7 @@ void setup()
     io.setConfig(0b00001111);
     delay(10);
 
-    codec.codec_config(AUDIO_HAL_44K_SAMPLES);
+    codec.codec_config(AUDIO_HAL_16K_SAMPLES);
     codec.codec_set_voice_volume(72);
     uint16_t id;
     uint8_t version;
@@ -212,14 +230,10 @@ void setup()
 	TaskWatchdog::begin(1000);
 	TaskWatchdog::add(NULL);    
 
-    //src = new VarioSoundSource(32767.0f, 0.0f, 16000);
-    //reinterpret_cast<VarioSoundSource *>(src)->setFrequency(560.0f);
-    //reinterpret_cast<VarioSoundSource *>(src)->begin();
-
     audioOut.SetPinout(GPIO_I2S_MCLK, GPIO_I2S_SCLK, GPIO_I2S_LRCK, GPIO_I2S_DOUT);
     audioOut.SetOutputModeMono(true);
 
-    audioGen.begin(&audioOut);
+    audioGen.begin(&audioOut, 16000);
 }
 
 void loop()
