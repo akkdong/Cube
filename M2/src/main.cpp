@@ -26,6 +26,9 @@
 #include "Variometer.h"
 #include "VarioSentence.h"
 #include "LocationParser.h"
+#include "Beeper.h"
+
+#include "TaskWatchdog.h"
 
 #define VFILTER_HARINAIR_KF2     1
 #define VFILTER_HARINAIR_KF3     2
@@ -138,6 +141,7 @@ lv_obj_t*                   app_volume = nullptr;
 Variometer                  vario;
 LocationParser              locParser;
 VarioSentence               varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE);
+Beeper                      beeper;
 
 #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
 VarioFilter_HarInAirKF2     varioFilter;
@@ -195,19 +199,33 @@ void lv_tick_task(void *arg)
 void setup()
 {
   //
-  Serial.begin(115200);
+  USBSerial.begin(115200);
   Serial2.begin(9600, SERIAL_8N1, 33, -1);
   Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
-  Serial.println("M2 H/W Test");
+  USBSerial.println("M2 H/W Test");
+
+  //
+	TaskWatchdog::begin(1000);
+	TaskWatchdog::add(NULL);  
 
   //adc_init();
 
   // io-expander default setttings
   expander.setOutput(0b10110000);
   expander.setConfig(0b00001111);
+  //
+  codec.codec_config(AUDIO_HAL_24K_SAMPLES);
+  codec.codec_set_voice_volume(78);
+  #if DEBUG
+  uint16_t id;
+  uint8_t version;
+  codec.read_chipid(id, version);
+  USBSerial.printf("Codec ID: %04X, version: %02X\r\n", id, version);    
+  #endif
+
 	// setup-barometer
 	baro.begin(Bme280TwoWireAddress::Primary, &Wire);
-	baro.setSettings(varioSettings());	  
+	baro.setSettings(varioSettings());	 
   // setup humidity & tempearture
   ht.begin();
   //
@@ -228,21 +246,24 @@ void setup()
 
   while(1)
   {
+    //
+	  TaskWatchdog::reset();    
+
     //bsp_update();
     lv_task_handler();
     delay(2);
 
     // forward serial to bluetooth and reverse : debug purpose only
-    while (Serial.available())
+    while (USBSerial.available())
     {
-        int ch = Serial.read();
+        int ch = USBSerial.read();
         bleDevice.write(ch);
     }
 
     while (bleDevice.available())
     {
         int ch = bleDevice.read();
-        Serial.write(ch);
+        USBSerial.write(ch);
     }	    
 
     app_update();
@@ -255,7 +276,7 @@ void loop()
   while (Serial2.available())
   {
     int ch = Serial2.read();
-    Serial.write(ch);
+    USBSerial.write(ch);
   }
 
   uint32_t tick = millis();
@@ -264,7 +285,7 @@ void loop()
     #if 0
     uint16_t x, y;
     if(touch.getPosition(&x, &y)) 
-      Serial.printf("Pos: %d, %d\r\n", x, y);
+      USBSerial.printf("Pos: %d, %d\r\n", x, y);
 
     delay(20);
     #endif
@@ -275,13 +296,13 @@ void loop()
 
     float t = baro.getTemperature();
     float p = baro.getPressure();
-    Serial.printf("BARO: %u, %f, %f\r\n", tick, t, p);
+    USBSerial.printf("BARO: %u, %f, %f\r\n", tick, t, p);
 
     ht.measure();
-    Serial.printf("HT: %f, %f\r\n", ht.getTemperature(), ht.getHumidity());
+    USBSerial.printf("HT: %f, %f\r\n", ht.getTemperature(), ht.getHumidity());
 
     uint16_t voltage = adc_get_voltage();
-    Serial.printf("BAT: %d\r\n", voltage);
+    USBSerial.printf("BAT: %d\r\n", voltage);
   }
   #endif
 }
@@ -326,6 +347,14 @@ extern const lv_img_dsc_t paper_plane;
 extern const lv_img_dsc_t bluetooth;
 extern const lv_img_dsc_t map_marker;
 extern const lv_img_dsc_t volume;
+
+static Tone melodyStart[] =
+{
+    { NOTE_C5, 400, 500 },
+    { NOTE_E5, 400, 500 },
+    { NOTE_G5, 400, 500 },
+};
+
 
 //
 //
@@ -469,9 +498,12 @@ void app_begin()
 
   vario.begin(CreateBarometer(), &varioFilter);
   locParser.begin(CreateLocationDataSource());
+  beeper.begin(CreateTonePlayer());
+
+  beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
 
   //
-  tick_update_time = get_tick();  
+  tick_update_time = get_tick();
 }
 
 
@@ -514,6 +546,7 @@ void app_update()
 
   locParser.update();
   int varioUpdated = vario.update();
+  beeper.update();
 
   if (locParser.availableLocation())
   {
@@ -543,6 +576,9 @@ void app_update()
 
     vSpeed += app_conf->speedVertActive;
     //LOGi("%f, %f", app_conf->altitudeBaro * 100.0f , app_conf->speedVertActive * 100.0f);
+
+    /*if (!ble_isConnected())*/
+        beeper.setVelocity(app_conf->speedVertActive);
 
     //tick[count] = millis();
     count += 1;
@@ -580,7 +616,7 @@ void app_update()
       if (ch < 0)
       break;
       
-      ble_writeBuffered(ch); // Serial.write(ch);
+      ble_writeBuffered(ch); // USBSerial.write(ch);
 
       if (ch == '\n')
       {
@@ -604,7 +640,7 @@ void app_update()
       if (ch < 0)
         break;
       
-      ble_writeBuffered(ch); // Serial.write(ch)
+      ble_writeBuffered(ch); // USBSerial.write(ch)
 
       if (ch == '\n')
       {

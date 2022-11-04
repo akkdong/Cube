@@ -315,7 +315,7 @@ bool AudioOutputI2SEx::ConsumeSample(int16_t sample[2])
     //    return i2s_write_bytes((i2s_port_t)portNo, (const char *)&s32, sizeof(uint32_t), 0);
 
     size_t i2s_bytes_written;
-    i2s_write((i2s_port_t)portNo, (const char*)&s32, sizeof(uint32_t), &i2s_bytes_written, portMAX_DELAY);
+    i2s_write((i2s_port_t)portNo, (const char*)&s32, sizeof(uint32_t), &i2s_bytes_written, /*portMAX_DELAY*/ 1000);
     return i2s_bytes_written == sizeof(uint32_t);
   #elif defined(ESP8266)
     uint32_t s32 = ((Amplify(ms[RIGHTCHANNEL])) << 16) | (Amplify(ms[LEFTCHANNEL]) & 0xffff);
