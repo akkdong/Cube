@@ -46,4 +46,38 @@ private:
 };
 
 
+///////////////////////////////////////////////////////////////////////////
+//
+
+class EXIO : public TCA9554
+{
+public:
+    EXIO() {}
+
+    enum PIN {
+        EXT_IO0,
+        EXT_IO1,
+        EXT_IO2,
+        EXT_IO3,
+        EXT_LCD_BL,
+        EXT_AUDIO_PA,
+        EXT_BOOST_EN,
+        EXT_TOUCH_RST,
+    };
+
+    void update();
+
+    int get(PIN pin);
+
+protected:
+    uint8_t     DIR;
+    uint8_t     CFG;
+    uint8_t     DAT;
+};
+
+/////////////////////////////////////////////////////////////////////////////////////
+//
+
+extern TCA9554 exio;
+
 #endif

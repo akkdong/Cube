@@ -45,3 +45,10 @@ void TCA9554::setPolarity(uint8_t value)
 {
     writeRegister(POLARITY_INVERSION_REG, value);
 }
+
+
+
+///////////////////////////////////////////////////////////////////////////
+//
+
+TCA9554 IO;

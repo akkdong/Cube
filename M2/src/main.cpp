@@ -24,9 +24,15 @@
 #include "lv_page.h"
 
 #include "Variometer.h"
+#include "VarioLogger.h"
 #include "VarioSentence.h"
 #include "LocationParser.h"
 #include "Beeper.h"
+
+#include "SPIFFS.h"
+#include "SdCard.h"
+#include "agl.h"
+#include "BatteryVoltage.h"
 
 #include "TaskWatchdog.h"
 
@@ -111,7 +117,6 @@ static Bme280Settings varioSettings()
 //
 //
 
-TCA9554       expander(TCA9554A_ADDR, Wire);
 Bme280TwoWire	baro;
 HTU21D        ht;
 ES8311        codec;
@@ -140,8 +145,12 @@ lv_obj_t*                   app_volume = nullptr;
 //
 Variometer                  vario;
 LocationParser              locParser;
+VarioLogger                 igc;
 VarioSentence               varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE);
 Beeper                      beeper;
+BatteryVoltage              battery;
+
+AGL                         agl;
 
 #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
 VarioFilter_HarInAirKF2     varioFilter;
@@ -205,14 +214,11 @@ void setup()
   USBSerial.println("M2 H/W Test");
 
   //
-	TaskWatchdog::begin(1000);
-	TaskWatchdog::add(NULL);  
-
-  //adc_init();
+  battery.begin();
 
   // io-expander default setttings
-  expander.setOutput(0b10110000);
-  expander.setConfig(0b00001111);
+  exio.setOutput(0b10110000);
+  exio.setConfig(0b00001111);
   //
   codec.codec_config(AUDIO_HAL_24K_SAMPLES);
   codec.codec_set_voice_volume(78);
@@ -222,6 +228,32 @@ void setup()
   codec.read_chipid(id, version);
   USBSerial.printf("Codec ID: %04X, version: %02X\r\n", id, version);    
   #endif
+
+	// check sd-card & ready for use
+	SD_CARD.begin();
+
+	if (SD_CARD.valid())
+	{
+    #if 0
+		FirmwareUpdater fu;
+
+		if (fu.checkUpdate())
+		{
+			//
+			fu.performUpdate(display);
+			//
+			ESP.restart();
+		}		
+		// else go down
+    #endif
+	}
+	else
+	{
+		USBSerial.printf("SD_CARD is invalid!!\n");
+	}
+
+	// load last device-context
+	SPIFFS.begin();  
 
 	// setup-barometer
 	baro.begin(Bme280TwoWireAddress::Primary, &Wire);
@@ -233,6 +265,10 @@ void setup()
   //bsp_i2s_init(I2S_NUM_0, 16000);
   //
   bleDevice.begin();
+
+  //
+	TaskWatchdog::begin(1000);
+	TaskWatchdog::add(NULL);  
 
   //
   lv_init();
@@ -548,16 +584,32 @@ void app_update()
   int varioUpdated = vario.update();
   beeper.update();
 
+  // UI: update GPS fixed state
+  // status.GPS = locParser.isFixed() ? 1 : 0;
+
   if (locParser.availableLocation())
   {
     LOGd("[GPS] %f,%f %f", locParser.getLongitude(), locParser.getLatitude(), locParser.getAltitude());
 
+    //app_conf->latitudeLast = app_conf->latitude;
+    //app_conf->longitudeLast = app_conf->longigute;
+    //app_conf->headingLast = app_conf->heading;
+
     app_conf->latitude = locParser.getLatitude();
     app_conf->longitude = locParser.getLongitude();
-    app_conf->altitudeGPS = locParser.getAltitude();
     app_conf->speedGround = locParser.getSpeed();
     app_conf->heading = locParser.getHeading();
+    app_conf->altitudeGPS = locParser.getAltitude();
+    //app_conf->altitudeGround = agl.getGroundLevel(app_conf->latitude, app_conf->longitude);
+    //app_conf->altitudeAGL = app_conf->altitudeGPS - app_conf->altitudeGround;
+    //app_conf->altitudeRef1 = ...
+    //app_conf->timeCurrent = locParser.getDateTime();
     app_conf->dirty = 1;
+
+    //
+    // update device-mode : vario_only, vario_gps, setting, simulate, ...
+    // update vario-mode: ready, landing, flying, circling, (gliding)
+    //
 
     locParser.resetLocation();
   }
@@ -570,6 +622,7 @@ void app_update()
     static float vSpeed = 0;
 
     app_conf->altitudeBaro = vario.getAltitudeFiltered();
+    //app_conf->altitudeCalibrated = vario.getCalibratedAltitude();
     app_conf->pressure = vario.getPressure();
     app_conf->temperature = vario.getTemperature();
     app_conf->speedVertActive = vario.getVelocity();
@@ -577,12 +630,17 @@ void app_update()
     vSpeed += app_conf->speedVertActive;
     //LOGi("%f, %f", app_conf->altitudeBaro * 100.0f , app_conf->speedVertActive * 100.0f);
 
+    //varioCalcualtor.add(app_conf->speedVertActive);
+    //
+    // update history
+    //
+
     /*if (!ble_isConnected())*/
         beeper.setVelocity(app_conf->speedVertActive);
 
     //tick[count] = millis();
     count += 1;
-    if ((count % (1000 / VARIOMETER_SENTENCE_DELAY)) == 0)
+    if (count * (1000 / SENSOR_UPDATE_FREQUENCY) >= VARIOMETER_SENTENCE_DELAY)
     {
       app_conf->speedVertLazy = vSpeed / count;
       app_conf->dirty = 1;
@@ -599,11 +657,21 @@ void app_update()
       float velocity = app_conf->speedVertLazy;
       float temperature = app_conf->temperature;
       float pressure = app_conf->pressure; // to hPa
+      //float battery = adc.getVoltage();
 
       varioNmea.begin(height, velocity, temperature, pressure, -1);
     }
   }
 
+  // check igc-logging
+  if (igc.isLogging() && locParser.availableIGC())
+  {
+    float altitude = vario.getAltitude();
+    igc.updateBaroAltitude(altitude);
+
+    while (locParser.availableIGC())
+      igc.write(locParser.readIGC());
+  }
 
   // vario-sentense available?
   if ((bt_lock_state == 0 && varioNmea.available()) || (bt_lock_state == 1))
@@ -651,7 +719,18 @@ void app_update()
 
     if (bt_lock_state == 0 /*|| bleDevice.uartBufferIsFull()*/)
       ble_flush();
-  }    
+  }
+
+  // battery
+  if (battery.update())
+  {
+    // update UI
+    // app_conf.deviceState.batteryPower = battery.getVoltage();
+    
+  }
+
+  // key(?)
+  // ...    
 }
 
 void app_update_time()

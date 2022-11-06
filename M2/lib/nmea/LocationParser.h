@@ -9,7 +9,7 @@
 
 #include "abstract/LocationDataSource.h"
 
-#define MAX_NMEA_PARSER_BUFFER          (128)
+#define MAX_NMEA_PARSER_BUFFER					(128)
 
 #define MAX_IGC_SENTENCE						(37)	// B-sentence max size
 														// ex: B1602405407121N00249342WA0028000421\r\n

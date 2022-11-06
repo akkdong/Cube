@@ -95,6 +95,8 @@
  * 
  */
 
+#define GPIO_EXT_MASK       (0x80)
+
 #define GPIO_EXT_IO0        (0)
 #define GPIO_EXT_IO1        (1)
 #define GPIO_EXT_IO2        (2)

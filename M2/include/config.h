@@ -13,11 +13,48 @@
 #endif
 
 
+// Variometer default settings
+//
+
+#define VARIOMETER_TIME_ZONE					(9)	// GMT+9
+#define VARIOMETER_BEEP_VOLUME					(100)	// percentage (0 ~ 100)
+#define VARIOMETER_EFFECT_VOLUME				(100)
+
+#define VARIOMETER_SINKING_THRESHOLD 			(-3.0)
+#define VARIOMETER_CLIMBING_THRESHOLD 			(0.2)
+#define VARIOMETER_SENSITIVITY 					(0.12)
+#define VARIOMETER_MIN_VELOCITY					(-10)
+#define VARIOMETER_MAX_VELOCITY					(10)
+
 #define VARIOMETER_LXNAV_SENTENCE				(1)
 #define VARIOMETER_LK8_SENTENCE					(2)
 #define VARIOMETER_DEFAULT_NMEA_SENTENCE		VARIOMETER_LK8_SENTENCE
 
-#define VARIOMETER_SENTENCE_DELAY				(200)  //  tick = 1000/25 = 40, 5 tick = 200
+#define VARIOMETER_SENTENCE_DELAY				(1000)  //  tick = 1000/25 = 40, 25 tick = 1000
+#define VARIOMETER_DEFAULT_DAMPING_FACTOR 		(0.05)	// x1 = x0 + (x1 - x0) * damping_factor
 
+#define SENSOR_UPDATE_FREQUENCY                 (25)    // 25Hz
+
+
+// Kalman filter settings
+//
+
+// Variometer class configuration
+#define POSITION_MEASURE_STANDARD_DEVIATION 	(0.1)
+#define ACCELERATION_MEASURE_STANDARD_DEVIATION (0.3)
+
+// KalmanFilter class configuration
+#define KF_ZMEAS_VARIANCE       				(500.0f)
+#define KF_ZACCEL_VARIANCE      				(8000.0f)
+#define KF_ACCELBIAS_VARIANCE   				(1.0f)
+
+
+// Flight detection settings
+//
+
+#define FLIGHT_START_MIN_SPEED 					(6.0)		// 6Km/h
+#define FLIGHT_STOP_MIN_SPEED					(2.0)
+#define FLIGHT_LANDING_THRESHOLD 				(10000)		// 10s
+#define FLIGHT_LOGGING_INTERVAL					(1000)		// 1s
 
 #endif // __CONFIG_H__

@@ -20,11 +20,14 @@
 #include "sampleaac.h"
 #include "viola.h"
 
+#include "SD.h"
+
 #define TEST_ADC        1
 #define TEST_AAC        2
 #define TEST_WAV        3
+#define TEST_SD         4
 
-#define TEST_METHOD     TEST_AAC
+#define TEST_METHOD     TEST_SD
 
 #if TEST_METHOD != TEST_ADC
 #if TEST_METHOD == TEST_AAC
@@ -44,30 +47,94 @@ TCA9554       io;
 ES8311        codec;
 
 
+#if TEST_METHOD == TEST_SD
+void listDir(fs::FS &fs, const char * dirname, uint8_t levels){
+    USBSerial.printf("Listing directory: %s\n", dirname);
+
+    File root = fs.open(dirname);
+    if(!root){
+        USBSerial.println("Failed to open directory");
+        return;
+    }
+    if(!root.isDirectory()){
+        USBSerial.println("Not a directory");
+        return;
+    }
+
+    File file = root.openNextFile();
+    while(file){
+        if(file.isDirectory()){
+            USBSerial.print("  DIR : ");
+            USBSerial.println(file.name());
+            if(levels){
+                listDir(fs, file.path(), levels -1);
+            }
+        } else {
+            USBSerial.print("  FILE: ");
+            USBSerial.print(file.name());
+            USBSerial.print("  SIZE: ");
+            USBSerial.println(file.size());
+        }
+        file = root.openNextFile();
+    }
+}
+
+#include "driver/spi_common.h"
+#include "vfs_api.h"
+#include "sd_diskio.h"
+
+class MySD : public SDFS
+{
+public:
+    MySD() : SDFS(FSImplPtr(new VFSImpl())), _spi(SPI2_HOST) {
+
+    }
+    bool begin() {
+        _spi.begin(GPIO_SPI_SCLK, GPIO_SPI_MISO, GPIO_SPI_MOSI, GPIO_SPI_CS_SD);
+
+        _pdrv = sdcard_init(GPIO_SPI_CS_SD, &_spi, 8000000);
+        if(_pdrv == 0xFF) {
+            return false;
+        }
+
+        if(!sdcard_mount(_pdrv, "/sd", 5, false)){
+            sdcard_unmount(_pdrv);
+            sdcard_uninit(_pdrv);
+            _pdrv = 0xFF;
+            return false;
+        }
+
+        _impl->mountpoint("/sd");
+        return true;
+    }
+
+    SPIClass _spi;
+};
+
+MySD    sd;
+
+#endif
+
 void setup()
 {
-    Serial.begin(115200);
-    USBSerial.begin();
+    USBSerial.begin(115200);
     Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
-    Serial.println("HW Test...");
     USBSerial.println("HW Test...");
 
-    io.setOutput(0b10110000);
+    io.setOutput(0b00100000); // 0b10110000
     io.setConfig(0b00001111);    
 
-    adc_init();
-
+    #if TEST_METHOD == TEST_AAC || TEST_METHOD == TEST_WAV
     codec.codec_config(AUDIO_HAL_32K_SAMPLES);
     codec.codec_set_voice_volume(80);
     uint16_t id;
     uint8_t version;
     codec.read_chipid(id, version);
     USBSerial.printf("ID: %04X, version: %02X\r\n", id, version);
-
-    audioLogger = &Serial;
+    #endif
 
     #if TEST_METHOD == TEST_ADC
-    // nop
+    adc_init();
     #elif TEST_METHOD == TEST_AAC
     audioSrc = new AudioFileSourcePROGMEM(sampleaac, sizeof(sampleaac));
 
@@ -89,7 +156,35 @@ void setup()
     stub[0]->SetGain(0.3);
 
     audioGen[0] = new AudioGeneratorWAV();
-    audioGen[0]->begin(audioSrc[0], audioOut);    
+    audioGen[0]->begin(audioSrc[0], audioOut);
+    #elif TEST_METHOD == TEST_SD
+    if (!sd.begin())
+    {
+        USBSerial.println("Card mount failed!");
+        return;
+    }
+    uint8_t cardType = sd.cardType();
+
+    if(cardType == CARD_NONE){
+        USBSerial.println("No SD card attached");
+        return;
+    }
+
+    USBSerial.print("SD Card Type: ");
+    if(cardType == CARD_MMC){
+        USBSerial.println("MMC");
+    } else if(cardType == CARD_SD){
+        USBSerial.println("SDSC");
+    } else if(cardType == CARD_SDHC){
+        USBSerial.println("SDHC");
+    } else {
+        USBSerial.println("UNKNOWN");
+    } 
+
+    uint64_t cardSize = sd.cardSize() / (1024 * 1024);
+    USBSerial.printf("SD Card Size: %lluMB\n", cardSize);
+
+    listDir(sd, "/Music", 0);       
     #endif
 }
 
