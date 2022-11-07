@@ -10,7 +10,6 @@
 
 #include "board.h"
 #include "config.h"
-#include "logger.h"
 #include "utils.h"
 #include "Beeper.h"
 

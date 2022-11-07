@@ -4,10 +4,13 @@
 #include <Arduino.h>
 
 #include "board.h"
+#include "logger.h"
 #include "adc_driver.h"
 #include "es8311.h"
 #include "tca9554.h"
 #include "bme280.h"
+#include "TaskBase.h"
+#include "keypad.h"
 
 #include "AudioFileSourceFunction.h"
 #include "AudioFileSourcePROGMEM.h"
@@ -26,8 +29,9 @@
 #define TEST_AAC        2
 #define TEST_WAV        3
 #define TEST_SD         4
+#define TEST_KEYPAD     5
 
-#define TEST_METHOD     TEST_SD
+#define TEST_METHOD     TEST_KEYPAD
 
 #if TEST_METHOD != TEST_ADC
 #if TEST_METHOD == TEST_AAC
@@ -43,7 +47,6 @@ float hz = 440.f;
 AudioOutputI2SEx* audioOut;
 #endif
 
-TCA9554       io;
 ES8311        codec;
 
 
@@ -115,14 +118,36 @@ MySD    sd;
 
 #endif
 
+
+#if TEST_METHOD == TEST_KEYPAD
+
+#include "../src/vario_porting/KeypadInput.cpp"
+
+struct MyKeypadCallback : public KeypadCallback
+{
+    virtual void OnPressed(uint8_t key) {
+        USBSerial.printf("OnPressed: %x\r\n", key);
+    }
+    virtual void OnLongPressed(uint8_t key) {
+        USBSerial.printf("OnLongPressed: %x\r\n", key);
+    }
+    virtual void OnReleased(uint8_t key) {
+        USBSerial.printf("OnReleased: %x\r\n", key);
+    }
+} _callback;
+
+Keypad keypad(&_callback);
+
+#endif
+
 void setup()
 {
     USBSerial.begin(115200);
     Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
     USBSerial.println("HW Test...");
 
-    io.setOutput(0b00100000); // 0b10110000
-    io.setConfig(0b00001111);    
+    exio.setOutput(0b00100000); // 0b10110000 : TOUCH, BOOST, AUDIO, LCD, IO3, IO2, IO1, IO0
+    exio.setConfig(0b00001111);    
 
     #if TEST_METHOD == TEST_AAC || TEST_METHOD == TEST_WAV
     codec.codec_config(AUDIO_HAL_32K_SAMPLES);
@@ -184,7 +209,9 @@ void setup()
     uint64_t cardSize = sd.cardSize() / (1024 * 1024);
     USBSerial.printf("SD Card Size: %lluMB\n", cardSize);
 
-    listDir(sd, "/Music", 0);       
+    listDir(sd, "/Music", 0);
+    #elif TEST_METHOD == TEST_KEYPAD
+    keypad.begin(CreateKeypadInput());
     #endif
 }
 
@@ -238,6 +265,14 @@ void loop()
             }
         }
     }
-     
+#elif TEST_METHOD == TEST_KEYPAD
+    #if RAW_TEST
+    uint8_t input = exio.getInput();
+    USBSerial.printf("INPUT: %X, %d\r\n", input, digitalRead(GPIO_KEY));
+    delay(1000);
+    #else
+    keypad.update();
+    delay(10);
+    #endif
 #endif
 }

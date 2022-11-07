@@ -10,7 +10,7 @@
 #define TIME_DEBOUNCE       (100)
 #define TIME_LONG_PRESS     (2000)
 
-#define KEY_COUNT           (5)
+#define KEY_COUNT           (4)
 
 
 /////////////////////////////////////////////////////////////////////////////////////

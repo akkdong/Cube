@@ -13,9 +13,10 @@
 Keypad::Keypad(KeypadCallback* callback)
     : keyInput(NULL)
     , keyMap {
-        { GPIO_EXT_MASK | GPIO_EXT_IO0,	1, 	KEY_RETURN,      RELEASE, 0 },
-        { GPIO_EXT_MASK | GPIO_EXT_IO1, 1, 	KEY_LEFT_ARROW,  RELEASE, 0 },
-        { GPIO_EXT_MASK | GPIO_EXT_IO2, 1, 	KEY_RIGHT_ARROW, RELEASE, 0 },
+        { GPIO_KEY,                     0,  KEY_ESC,         RELEASE, 0 }, // active-low
+        { GPIO_EXT_MASK | GPIO_EXT_IO0,	0, 	KEY_RETURN,      RELEASE, 0 }, // active-low, extended-key
+        { GPIO_EXT_MASK | GPIO_EXT_IO1, 0, 	KEY_LEFT_ARROW,  RELEASE, 0 }, // active-low, extended-key
+        { GPIO_EXT_MASK | GPIO_EXT_IO2, 0, 	KEY_RIGHT_ARROW, RELEASE, 0 }  // active-low, extended-key
     }
     , callback(callback)
 {
