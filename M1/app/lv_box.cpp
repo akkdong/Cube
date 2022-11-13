@@ -92,7 +92,8 @@ const lv_font_t*    font_body = &lv_font_montserrat_48;
 #define COMPASS_RADIUS      53
 
 #ifndef ARDUINO
-static lv_color_t buf_compass[LV_CANVAS_BUF_SIZE_TRUE_COLOR(COMPASS_WIDTH, COMPASS_HEIGHT)];
+//static lv_color_t buf_compass[LV_CANVAS_BUF_SIZE_TRUE_COLOR(COMPASS_WIDTH, COMPASS_HEIGHT)];
+static lv_color_t* buf_compass = NULL;
 #else
 static lv_color_t* buf_compass = NULL;
 #endif
@@ -138,7 +139,8 @@ void lv_compass_draw(lv_obj_t* canvas, lv_coord_t heading, lv_coord_t bearing, i
     lv_draw_rect_dsc_init(&rect_dsc);
 
     // erase background
-    lv_canvas_fill_bg(canvas, lv_color_hex(0xFFFFFF), LV_OPA_100);
+    //lv_canvas_fill_bg(canvas, lv_color_hex(0xFFFFFF), LV_OPA_100);
+    lv_canvas_fill_bg(canvas, LV_COLOR_CHROMA_KEY, LV_OPA_TRANSP);
 
     // draw circle
     arc_dsc.color = lv_color_hex(0x000000);
@@ -272,6 +274,12 @@ void lv_box_init()
         size_t size = sizeof(lv_color_t) * LV_CANVAS_BUF_SIZE_TRUE_COLOR(COMPASS_WIDTH, COMPASS_HEIGHT);
         buf_compass = (lv_color_t *)ps_malloc(size);
     }
+    #else
+    if (buf_compass == NULL)
+    {
+        size_t size = LV_CANVAS_BUF_SIZE_TRUE_COLOR_ALPHA(COMPASS_WIDTH, COMPASS_HEIGHT);
+        buf_compass = (lv_color_t *)malloc(size);
+    }
     #endif
 
     if (!box_def_style)
@@ -288,6 +296,7 @@ void lv_box_init()
         lv_style_set_border_side(box_def_style, LV_BORDER_SIDE_NONE);
 
         lv_style_set_bg_color(box_def_style, lv_color_hex(0xFFFFFF));
+        lv_style_set_bg_opa(box_def_style, LV_OPA_0);
     }
 
     if (!scrn_offline)
@@ -326,6 +335,8 @@ lv_obj_t* lv_box_create(lv_obj_t* parent, const char* title, const char* desc)
     if (box_def_style)
         lv_obj_add_style(box, box_def_style, 0);
 
+    lv_obj_clear_flag(box, LV_OBJ_FLAG_CLICKABLE);
+
     box_info_t* info = (box_info_t *)lv_mem_alloc(sizeof(box_info_t));
     if (info)
     {
@@ -349,8 +360,10 @@ lv_obj_t* lv_box_create_canvas(lv_obj_t* box, void* buf, int32_t w, int32_t h)
         return NULL;
 
     lv_obj_set_align(canvas, LV_ALIGN_CENTER);
-    lv_canvas_set_buffer(canvas, buf, w, h, LV_IMG_CF_TRUE_COLOR);
-    lv_canvas_fill_bg(canvas, lv_color_hex(0xFFFFFF), LV_OPA_100);
+    lv_canvas_set_buffer(canvas, buf, w, h, LV_IMG_CF_TRUE_COLOR_ALPHA); // LV_IMG_CF_TRUE_COLOR_CHROMA_KEYED
+    
+    //lv_canvas_fill_bg(canvas, lv_color_hex(0xFFFFFF), LV_OPA_100);
+    lv_canvas_fill_bg(canvas, LV_COLOR_CHROMA_KEY, LV_OPA_TRANSP);
 
     return canvas;
 }

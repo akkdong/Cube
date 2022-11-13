@@ -14,7 +14,8 @@
 #include "Application.h"
 #include "Beeper.h"
 
-
+#include "startupWindow.h"
+#include "flightWindow.h"
 
 
 extern "C" app_conf_t* app_get_conf()
@@ -37,6 +38,11 @@ extern "C" void page_event_cb(lv_event_t* event)
 {
     uint32_t key = lv_indev_get_key(lv_indev_get_act());
     LOGi("Page Event: %d, %d", event->code, key);
+}
+
+extern "C" void page_event_clicked(lv_event_t* event)
+{
+    LOGi("Page Event: %d", event->code);
 }
 
 
@@ -83,11 +89,39 @@ static Tone melodyStart[] =
 };
 
 
+#if 0
 extern const lv_img_dsc_t paper_plane;
 extern const lv_img_dsc_t bluetooth;
 extern const lv_img_dsc_t map_marker;
 extern const lv_img_dsc_t volume;
 
+
+extern "C" bool get_imgfont(const lv_font_t * font, void * img_src, uint16_t len, uint32_t unicode, uint32_t unicode_next)
+{
+    if (unicode == 0xF001)
+    {
+        memcpy(img_src, &bluetooth, sizeof(lv_img_dsc_t));
+        return true;
+    }
+    else if (unicode == 0xF002)
+    {
+        memcpy(img_src, &map_marker, sizeof(lv_img_dsc_t));
+        return true;
+    }
+    else if (unicode == 0xF003)
+    {
+        memcpy(img_src, &volume, sizeof(lv_img_dsc_t));
+        return true;
+    }
+    else if (unicode == 0xF004)
+    {
+        memcpy(img_src, &paper_plane, sizeof(lv_img_dsc_t));
+        return true;
+    }
+
+    return false;
+}
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // class Application implementation
@@ -112,6 +146,7 @@ void Application::begin()
     font_normal = LV_FONT_DEFAULT;
     font_small = &lv_font_montserrat_12;
 
+#if 0
     //
     lv_box_init();
 
@@ -143,6 +178,7 @@ void Application::begin()
     lv_obj_align(clock, LV_ALIGN_RIGHT_MID, 0, 0);
     lv_label_set_text(clock, "");
 
+    /*
     lv_obj_t* icon_logo = lv_img_create(ann);
     lv_img_set_src(icon_logo, &paper_plane);
     
@@ -161,6 +197,17 @@ void Application::begin()
     lv_obj_t* icon_volume = lv_img_create(ann);
     lv_img_set_src(icon_volume, &volume);
     lv_obj_align(icon_volume, LV_ALIGN_LEFT_MID, 72, 0);
+    */
+
+    //
+    lv_font_t* img_font = lv_imgfont_create(16, get_imgfont);
+    img_font->fallback = &lv_font_montserrat_16;
+
+    lv_obj_t* status = lv_label_create(ann);
+    lv_obj_set_style_text_font(status, img_font, 0);
+    lv_obj_set_style_text_color(status, lv_color_hex(0xFF0020), 0);
+    lv_obj_align(status, LV_ALIGN_LEFT_MID, 0, 0);
+    lv_label_set_text(status, "\uF004 \uF001 \uF002 \uF003"); // EF 80 84 20 EF 80 81 20 ...
 
     lv_obj_t* page = lv_obj_create(scr);
     lv_obj_set_style_pad_hor(page, 0, 0);
@@ -168,10 +215,11 @@ void Application::begin()
     lv_obj_set_pos(page, 0, 32);
     lv_obj_set_size(page, 480, 320 - 32);
     lv_obj_set_style_border_width(page, 0, 0);
-    lv_obj_set_style_bg_color(page, lv_color_hex(0xE0E0E6), 0);
+    lv_obj_set_style_bg_color(page, lv_color_hex(0xE0E000), 0);
 
     bsp_regiter_keypad_receiver(page);
     lv_obj_add_event_cb(page, page_event_cb, LV_EVENT_KEY, 0);
+    lv_obj_add_event_cb(page, page_event_clicked, LV_EVENT_CLICKED, 0);
 
     // page
     //      box position/dimention
@@ -179,13 +227,18 @@ void Application::begin()
     lv_page_create(page, page_1);
 
 
+
     app_annun = ann;
     app_page = page;
 
     app_clock = clock;
-    app_bluetooth = icon_bluetooth;
-    app_gps = icon_gps;
-    app_volume = icon_volume;
+    //app_bluetooth = icon_bluetooth;
+    //app_gps = icon_gps;
+    //app_volume = icon_volume;
+#else
+    Screen* screen = Screen::instance();
+    screen->activateWindow(new FlightWindow);
+#endif
 
     //
     //
@@ -242,11 +295,24 @@ void Application::update()
     
     update_time();
 
+    #if 0
     if (app_conf->dirty)
     {
         lv_page_update(app_page);
         app_conf->dirty = 0;
     }
+    #else
+    static uint32_t lastTick = get_tick();
+    uint32_t tick = get_tick();
+    if (tick - lastTick > 500)
+    {
+        Window* active = Screen::instance()->peekWindow();
+        if (active)
+            active->update();
+
+        lastTick = tick;
+    }
+    #endif
 
     // reset-watchdog
     // keybd-update
@@ -420,13 +486,25 @@ void Application::update_time()
         }
 
         //
+        #if 0
         time_t t = time(NULL) /*+ 9 * 60 * 60*/;
         struct tm* _tm = localtime(&t);
         
         char sz[32];
         sprintf(sz, "%d:%02d:%02d", _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
         lv_label_set_text(app_clock, sz);
+        #endif
 
         tick_update_time = tick;
     }
+}
+
+
+
+
+
+void test()
+{
+    Screen* screen = Screen::instance();
+    screen->activateWindow(new StartupWindow); // or Screen::Activate(new StartupWindow)
 }

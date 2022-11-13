@@ -29,46 +29,70 @@ widget
 #include <stdlib.h>
 #endif
 #include "lvgl.h"
+#include "displayBase.h"
+
+
+////////////////////////////////////////////////////////////////////////////////////
+// struct WidgetUpdater
+
+class Annunciator;
+class NumberBox;
+class CompassWidget;
+class VariometerWidget;
+class VarioProfile;
+class AltitudeProfile;
+class ThermalAssistant;
+
+struct WidgetUpdater
+{
+    virtual void onUpdate(Annunciator *) = 0;
+    virtual void onUpdate(NumberBox *) = 0;
+    virtual void onUpdate(CompassWidget *) = 0;
+    virtual void onUpdate(VariometerWidget *) = 0;
+    virtual void onUpdate(VarioProfile *) = 0;
+    virtual void onUpdate(AltitudeProfile *) = 0;
+    virtual void onUpdate(ThermalAssistant *) = 0;
+};
 
 
 
 ////////////////////////////////////////////////////////////////////////////////////
 // class Widget
 
-class Widget
+class Widget : public DisplayObject
 {
 public:
     Widget();
+    virtual ~Widget();
+
+    enum Type {
+        WIDGET_NUMBER_BOX,
+        WIDGET_COMPASS,
+        WIDGET_VARIOMETER,
+        WIDGET_PROFILE_VARIO,
+        WIDGET_PROFILE_ALTITUDE,
+        WIDGET_THERMAL_ASSISTANT,
+    };
 
 public:
-    //
-    operator lv_obj_t* () { return widget; }
+    bool                    create(DisplayObject* parent) override;
+//  void                    update() override;
 
-    //
-    virtual void            create(lv_obj_t* parent) = 0;
-    virtual void            update() = 0;
-
-    void                    set_position(int x, int y);
-    void                    set_size(int w, int h);
-
+    void                    setUpdater(WidgetUpdater* updater) { this->updater = updater; }
 
     //
     static void             init();
 
 protected:
-    virtual void            onCreate();
 
 protected:
     //
-    lv_obj_t*               widget;
+    WidgetUpdater*          updater;
 
     //
-    static lv_style_t*      def_style;
-
-    static const lv_font_t* font_title;
-    static const lv_font_t* font_subtitle;
-    static const lv_font_t* font_body;
+    static lv_style_t*      style_default;
 };
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -81,20 +105,26 @@ public:
 
 public:
     //
-    void                    create(lv_obj_t* parent) override;
     void                    update() override;
 
-protected:
-    virtual void            onCreate();
+    //
+    void                    setStatus(const char* status);
+    void                    setClock(const char* text);
+    void                    setFont(const lv_font_t* font);
 
 protected:
+    void                    onCreate(DisplayObject* parent) override;
+
+protected:
+    #if 0
     lv_obj_t*               logo;
     lv_obj_t*               gps;        // invalid, unfixed, fixed
     lv_obj_t*               bluetooth;  // invalid, disconnected, connected
     lv_obj_t*               sdcard;     // invalid, no-card, ready, logging
     lv_obj_t*               volume;     // mute, low, middle, loud
+    #endif
 
-    lv_obj_t*               power;      // ? icon, voltage, percentage
+    lv_obj_t*               status;      // ? icon, voltage, percentage
     lv_obj_t*               clock;      // [YYYY-MM-DD] HH-MM-DD
 };
 
@@ -107,15 +137,80 @@ class NumberBox : public Widget
 public:
     NumberBox();
 
+    enum BoxType {
+        UNDEF = 0,
+        ALTITUDE_GROUND,
+        ALTITUDE_BARO,
+        ALTITUDE_AGL,       // Height Above Ground Level
+        ALTITUDE_PROFILE,
+        SPEED_GROUND,
+        SPEED_AIR,
+        SPEED_VERTICAL,
+        SPEED_VERTICAL_LAZY,
+        TRACK_HEADING,
+        TARCK_BEARING,
+        TIME_FLIGHT,
+        TIME_CURRENT,
+        TIME_TO_NEXT_WAYPOINT,
+        TIME_REMAIN,
+        DISTANCE_TAKEOFF,
+        DISTANCE_LANDING,
+        DISTANCE_NEXT_WAYPOINT,
+        DISTANCE_FLIGHT,    // odometer
+        GLIDE_RATIO,
+        COMPASS,
+        VSPEED_BAR,
+        VSPEED_PROFILE,
+        TRACK_FLIGHT,
+        SENSOR_PRESSURE,
+        SENSOR_TEMPERATURE,
+        SENSOR_HUMIDITY,
+        END_OF_BOX,
+        BOX_COUNT = END_OF_BOX,        
+    };
+
+    enum BorderType {
+        BORDER_NONE = 0,
+        BORDER_LEFT = (1 << 0),
+        BORDER_RIGHT = (1 << 1),
+        BORDER_TOP = (1 << 2),
+        BORDER_BOTTOM = (1 << 3),
+        BORDER_ALL = BORDER_LEFT | BORDER_RIGHT | BORDER_TOP | BORDER_BOTTOM,
+    };
+
 public:
     //
-    void                    create(lv_obj_t* parent) override;
     void                    update() override;
 
+    //
+    BoxType                 getType() { return boxType; }
+    void                    setType(uint32_t type);
+
+    void                    setValue(const char* value);
+
 protected:
-    lv_obj_t*               title;
-    lv_obj_t*               desc;
-    lv_obj_t*               content;
+    void                    onCreate(DisplayObject* parent) override;
+
+    const char*             getTitle(BoxType type);
+    const char*             getDescription(BoxType type);
+
+    void                    setTitle(const char* title);
+    void                    setDescription(const char* desc);
+
+
+protected:
+    lv_obj_t*               titleObj;
+    lv_obj_t*               descObj;
+    lv_obj_t*               valueObj;
+
+    BorderType              borderType;
+    const char*             titleText;
+    const char*             descText;
+    BoxType                 boxType;
+
+    static const lv_font_t* font_title;
+    static const lv_font_t* font_subtitle;
+    static const lv_font_t* font_body;
 };
 
 
@@ -125,33 +220,101 @@ protected:
 class CanvasWidget : public Widget
 {
 public:
-    CanvasWidget(int width, int height) {
-        size_t size = LV_CANVAS_BUF_SIZE_TRUE_COLOR(width, height);
-        #ifdef ARDUINO
-        canvas_buffer = ps_malloc(size);
-        #else
-        canvas_buffer = malloc(size);
-        #endif
-        //ASSERT(canvas_buffer);
-    }
+    CanvasWidget(int width, int height);
+    ~CanvasWidget();
+
+public:
+    //
+    void                    onCreate(DisplayObject* parent) override;
+    void                    update() override;
+
+    //
+    void                    drawArc(lv_coord_t x, lv_coord_t y, lv_coord_t r, int32_t start_angle, int32_t end_angle, const lv_draw_arc_dsc_t * draw_dsc);
+    void                    drawPolygon(const lv_point_t points[], uint32_t point_cnt, const lv_draw_rect_dsc_t * draw_dsc);
+    
+protected:
+    int                     _w, _h;
+    void*                   _buffer;
+    lv_obj_t*               _canvas;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////
+// class CanvasVirtualWidget
+
+class CanvasVirtualWidget : public Widget
+{
+protected:
+    CanvasVirtualWidget(CanvasWidget* ref);
+
+public:
+    bool                    create(DisplayObject* parent) override;
+
+    lv_obj_t *              getObject() override;
+    void                    setPosition(int x, int y) override;
+    void                    setSize(int w, int h) override;
 
 protected:
-    void*                   canvas_buffer;
+    CanvasWidget*           _ref;
+    int                     _x, _y, _w, _h;
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////
+// class CompassWidget
+
+class CompassWidget : public CanvasVirtualWidget
+{
+public:
+    CompassWidget(CanvasWidget* ref);
+
+public:
+    //
+    void                    onCreate(DisplayObject* parent) override;
+
+    //
+    void                    update() override;
+    void                    draw(lv_coord_t heading, lv_coord_t bearing, int32_t method);
+
+protected:
+};
+
+
+////////////////////////////////////////////////////////////////////////////////////
+// class VariometerWidget
+
+class VariometerWidget : public CanvasVirtualWidget
+{
+public:
+    VariometerWidget(CanvasWidget* ref);
+
+public:
+    //
+    void                    onCreate(DisplayObject* parent) override;
+
+    //
+    void                    update() override;
+
+protected:
 };
 
 
 ////////////////////////////////////////////////////////////////////////////////////
 // class ThermalAssistant
 
-class ThermalAssistant : public CanvasWidget
+class ThermalAssistant : public CanvasVirtualWidget
 {
 public:
-    ThermalAssistant(int width, int height);
+    ThermalAssistant(CanvasWidget* ref);
 
 public:
     //
-    void                    create(lv_obj_t* parent) override;
+    void                    onCreate(DisplayObject* parent) override;
+
+    //
     void                    update() override;
+
+protected:
 };
 
 
