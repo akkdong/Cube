@@ -237,7 +237,7 @@ void Application::begin()
     //app_volume = icon_volume;
 #else
     Screen* screen = Screen::instance();
-    screen->activateWindow(new FlightWindow);
+    screen->activateWindow(new StartupWindow);
 #endif
 
     //
@@ -497,14 +497,4 @@ void Application::update_time()
 
         tick_update_time = tick;
     }
-}
-
-
-
-
-
-void test()
-{
-    Screen* screen = Screen::instance();
-    screen->activateWindow(new StartupWindow); // or Screen::Activate(new StartupWindow)
 }

@@ -66,7 +66,7 @@ WidgetLayout _layout_1[] =
     {
         FlightWindow::WIDGET_BOX_6,
         300, 192, 180, 96, 
-        NumberBox::SPEED_VERTICAL, 
+        NumberBox::SPEED_VERTICAL_LAZY, 
     },
     {
         FlightWindow::WIDGET_COMPASS, 
@@ -75,7 +75,7 @@ WidgetLayout _layout_1[] =
     },
     {
         FlightWindow::WIDGET_VARIOMETER,
-        180, 120, 120, 168, 
+        200, 120, 80, 168, 
         0
     },
 };
@@ -132,6 +132,10 @@ FlightWindow::~FlightWindow()
 void FlightWindow::onCreate(DisplayObject* parent)
 {
     //
+    lv_obj_set_style_bg_color(_this, lv_color_hex(0xFFFFFF), 0);
+    //lv_obj_set_style_bg_opa(_this, LV_OPA_TRANSP, 0);
+
+    //
     fontCustom = lv_imgfont_create(16, getCustomFont);
     fontCustom->fallback = &lv_font_montserrat_16;
 
@@ -147,7 +151,6 @@ void FlightWindow::onCreate(DisplayObject* parent)
     bkgndCanvas.create(this);
     bkgndCanvas.setPosition(0, MAX_ANNUNCIATOR_HEIGHT);
     bkgndCanvas.setSize(LCD_WIDTH, LCD_HEIGHT - MAX_ANNUNCIATOR_HEIGHT);
-    lv_obj_set_style_bg_color(bkgndCanvas.getObject(), lv_color_hex(0x00FF00), 0);
 
     for (int i = 0; i < sizeof(widgets) / sizeof(widgets[0]); i++)
     {
@@ -329,6 +332,8 @@ void FlightWindow::onUpdate(CompassWidget* compass)
 
 void FlightWindow::onUpdate(VariometerWidget* variometer)
 {
+    app_conf_t* conf = app_get_conf();
+    variometer->draw(conf->speedVertLazy);
 }
 
 void FlightWindow::onUpdate(VarioProfile *)

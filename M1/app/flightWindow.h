@@ -36,12 +36,12 @@ public:
     };
 
 public:
-    virtual void    update();
+    //
+    void            update() override;
 
-    virtual void    onCreate(DisplayObject* parent);
-
-    virtual void    onActive();
-    virtual void    onClose();
+    void            onCreate(DisplayObject* parent) override;
+    void            onActive() override;
+    void            onClose() override;
 
 protected:
     Widget*         createWidget(Widget::Type type);

@@ -52,6 +52,7 @@ bool Screen::create(DisplayObject* /*parent*/)
         return false;
 
     lv_obj_set_style_bg_color(_this, lv_color_hex(0xFF0000), 0);
+    lv_obj_set_style_bg_opa(_this, LV_OPA_COVER, 0);
     lv_scr_load(_this);
 
     return true;

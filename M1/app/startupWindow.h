@@ -6,6 +6,7 @@
 
 #include "screen.h"
 
+
 ///////////////////////////////////////////////////////////////////////////////////
 // class StartupWindow
 
@@ -13,12 +14,18 @@ class StartupWindow : public Window
 {
 public:
     StartupWindow();
+    virtual ~StartupWindow();
 
 public:
-    virtual void onActivate();
+    void            onCreate(DisplayObject* parent) override;
+    void            onActive() override;
 
+protected:
+    bool            process();
+    void            start();
 
-    static void _onInitialize(void* userData);
+    static void     _onSwitch(void* userData);
+    static void     _onTimer(lv_timer_t* timer);
 };
 
 

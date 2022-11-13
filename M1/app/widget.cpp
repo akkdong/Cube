@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <math.h>
+#include <algorithm>
 
 #include "device_defines.h"
 #include "logger.h"
@@ -421,7 +422,8 @@ void CanvasWidget::onCreate(DisplayObject* parent)
     //
     lv_obj_set_style_pad_hor(_this, 0, 0);
     lv_obj_set_style_pad_ver(_this, 0, 0);
-    lv_obj_set_style_bg_color(_this, lv_color_hex(0xE0E0FF), 0);
+    lv_obj_set_style_bg_color(_this, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_bg_opa(_this, LV_OPA_TRANSP, 0);
 
     //
     _canvas = lv_canvas_create(_this);
@@ -440,6 +442,30 @@ void CanvasWidget::update()
 
     // each canvas-virtual-object will draw on this canvas
     // ...
+}
+
+void CanvasWidget::drawRect(lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h, const lv_draw_rect_dsc_t * draw_dsc)
+{
+    if (_canvas)
+        lv_canvas_draw_rect(_canvas, x, y, w, h, draw_dsc);
+}
+
+void CanvasWidget::drawText(lv_coord_t x, lv_coord_t y, lv_coord_t max_w, lv_draw_label_dsc_t * draw_dsc, const char * txt)
+{
+    if (_canvas)
+        lv_canvas_draw_text(_canvas, x, y, max_w, draw_dsc, txt);
+}
+
+void CanvasWidget::drawImage(lv_coord_t x, lv_coord_t y, const void * src, const lv_draw_img_dsc_t * draw_dsc)
+{
+    if (_canvas)
+        lv_canvas_draw_img(_canvas, x, y, src, draw_dsc);
+}
+
+void CanvasWidget::drawLine(const lv_point_t points[], uint32_t point_cnt, const lv_draw_line_dsc_t * draw_dsc)
+{
+    if (_canvas)
+        lv_canvas_draw_line(_canvas, points, point_cnt, draw_dsc);
 }
 
 void CanvasWidget::drawArc(lv_coord_t x, lv_coord_t y, lv_coord_t r, int32_t start_angle, int32_t end_angle, const lv_draw_arc_dsc_t * draw_dsc)
@@ -559,7 +585,7 @@ void CompassWidget::draw(lv_coord_t heading, lv_coord_t bearing, int32_t method)
     arc_dsc.opa = LV_OPA_40;
     arc_dsc.blend_mode = LV_BLEND_MODE_NORMAL;
     arc_dsc.rounded = 0;
-    _ref->drawArc(base_x, base_y, COMPASS_RADIUS, 0, 360, &arc_dsc);
+    _ref->drawArc(base_x, base_y, COMPASS_RADIUS + 2, 0, 360, &arc_dsc);
 
     // draw north-triangle
     angle = 0 - up; // real-north = rotate counterclockwise
@@ -666,6 +692,71 @@ void VariometerWidget::update()
         updater->onUpdate(this);
 }
 
+void VariometerWidget::draw(float vario)
+{
+    lv_draw_rect_dsc_t rect_dsc;
+    lv_draw_line_dsc_t line_dsc;
+    lv_point_t points[3];
+
+    lv_draw_rect_dsc_init(&rect_dsc);    
+    lv_draw_line_dsc_init(&line_dsc);
+
+    lv_coord_t x = 6 + _x;
+    lv_coord_t y = 6 + _y;
+    lv_coord_t w = _w - 12;
+    lv_coord_t h = _h - 12;
+
+    rect_dsc.outline_color = lv_color_hex(0x000000);
+    rect_dsc.outline_width = 1;
+    rect_dsc.outline_opa = LV_OPA_50;
+    rect_dsc.bg_color = lv_color_hex(0x000000);
+    rect_dsc.bg_opa = LV_OPA_TRANSP;
+
+    _ref->drawRect(x, y, w, h, &rect_dsc);
+
+    line_dsc.color = lv_color_hex(0x808080);
+    line_dsc.width = 1;
+    points[0].x = x;
+    points[0].y = y + h / 2;
+    points[1].x = x + w;
+    points[1].y = y + h / 2;
+    _ref->drawLine(points, 2, &line_dsc);
+
+    x += 4;
+    y += 4;
+    w -= 8;
+    h -= 8;
+
+    lv_coord_t h_half = h / 2;
+    lv_coord_t h_mid = h / 2 + y;
+
+    //vario = std::clamp<float>(vario, -5.0f, 5.0f);
+    if (vario < -5.0f)
+        vario = -5.0f;
+    if (vario > 5.0f)
+        vario = 5.0f;
+    float v1, v2;
+
+    if (vario > 0.0f)
+    {
+        v1 = vario;
+        v2 = 0.0f;
+    }
+    else 
+    {        
+        v1 = 0.0f;
+        v2 = vario;
+    }
+
+    lv_coord_t y1 = h_mid - h_half * v1 / 5.0f;
+    lv_coord_t y2 = h_mid - h_half * v2 / 5.0f;
+
+    rect_dsc.outline_width = 0;
+    rect_dsc.bg_color = vario < 0.0f ? lv_color_hex(0x0000FF) : lv_color_hex(0xFF0000);
+    rect_dsc.bg_opa = LV_OPA_COVER;
+
+    _ref->drawRect(x, y1 < y2 ? y1 : y2, w, y2 - y1, &rect_dsc);    
+}
 
 
 
