@@ -48,4 +48,12 @@
 #define VARIOMETER_SENTENCE_DELAY				(1000)   // tick = 1000/25 = 40, 25 tick = 1000
 #define SENSOR_UPDATE_FREQUENCY                 (25)    // 25Hz
 
+
+#define KEY_ENTER           (0xB0)
+#define KEY_LEFT            (0xD8)
+#define KEY_RIGHT           (0xD7)
+#define KEY_UP              (0xDA)
+#define KEY_DOWN            (0xD9)
+
+
 #endif // __DEVICE_DEFINES_H__

@@ -51,7 +51,7 @@ void Widget::init()
         lv_style_set_border_width(style_default, 0/*1*/);
         lv_style_set_border_side(style_default, LV_BORDER_SIDE_NONE);
 
-        lv_style_set_bg_color(style_default, lv_color_hex(0xFFFFFF));
+        lv_style_set_bg_color(style_default, lv_color_hex(0xE0E0E0));
         lv_style_set_bg_opa(style_default, LV_OPA_0);
     }
 }
@@ -68,7 +68,7 @@ Annunciator::Annunciator()
 
 }
 
-void Annunciator::onCreate(DisplayObject* parent)
+void Annunciator::onCreate()
 {
     //
     lv_obj_t* ann = this->getObject();
@@ -153,7 +153,7 @@ void NumberBox::update()
         updater->onUpdate(this);
 }
 
-void NumberBox::onCreate(DisplayObject* parent)
+void NumberBox::onCreate()
 {
     /*
     // update properties
@@ -417,7 +417,7 @@ CanvasWidget::~CanvasWidget()
     #endif
 }
 
-void CanvasWidget::onCreate(DisplayObject* parent)
+void CanvasWidget::onCreate()
 {
     //
     lv_obj_set_style_pad_hor(_this, 0, 0);
@@ -492,6 +492,7 @@ CanvasVirtualWidget::CanvasVirtualWidget(CanvasWidget* ref)
     , _y(0)
     , _w(0)
     , _h(0)
+    , _show(true)
 {
 
 }
@@ -502,7 +503,8 @@ bool CanvasVirtualWidget::create(DisplayObject* parent)
     {
         //if (lv_obj_get_parent(_ref->getObject()) == parent->getObject())
         {
-            this->onCreate(parent);
+            // skip object-creation, just call onCreate only
+            this->onCreate();
 
             return true;
         }
@@ -513,7 +515,13 @@ bool CanvasVirtualWidget::create(DisplayObject* parent)
 
 lv_obj_t* CanvasVirtualWidget::getObject()
 {
-    return _ref ? _ref->getObject() : NULL;
+    //return _ref ? _ref->getObject() : NULL;
+    return NULL;
+}
+
+bool CanvasVirtualWidget::getVisible()
+{
+    return _ref && _show ? true : false;
 }
 
 void CanvasVirtualWidget::setPosition(int x, int y)
@@ -528,6 +536,11 @@ void CanvasVirtualWidget::setSize(int w, int h)
     _h = h;
 }
 
+void CanvasVirtualWidget::setVisible(bool show)
+{
+    _show = show;
+}
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -539,7 +552,7 @@ CompassWidget::CompassWidget(CanvasWidget* ref)
 
 }
 
-void CompassWidget::onCreate(DisplayObject* parent)
+void CompassWidget::onCreate()
 {
 
 }
@@ -680,7 +693,7 @@ VariometerWidget::VariometerWidget(CanvasWidget* ref)
 
 }
 
-void VariometerWidget::onCreate(DisplayObject* parent)
+void VariometerWidget::onCreate()
 {
 
 }
@@ -766,12 +779,10 @@ void VariometerWidget::draw(float vario)
 ThermalAssistant::ThermalAssistant(CanvasWidget* ref)
     : CanvasVirtualWidget(ref)
 {
-
 }
 
-void ThermalAssistant::onCreate(DisplayObject* parent)
+void ThermalAssistant::onCreate()
 {
-
 }
 
 void ThermalAssistant::update()

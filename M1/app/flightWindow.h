@@ -39,12 +39,17 @@ public:
     //
     void            update() override;
 
-    void            onCreate(DisplayObject* parent) override;
+    void            onCreate() override;
     void            onActive() override;
     void            onClose() override;
 
+    void            onKeyDown(uint16_t key) override;
+    void            onKeyLongDown(uint16_t key) override;
+    void            onKeyUp(uint16_t key) override;    
+
 protected:
-    Widget*         createWidget(Widget::Type type);
+    Widget*         createWidget(Widget::Type type, DisplayObject* parent);
+    void            layoutWidget(int layout);
 
     //
     void            onUpdate(Annunciator *);
@@ -61,7 +66,8 @@ protected:
 protected:
     Annunciator     annunciator;
     CanvasWidget    bkgndCanvas;
-    Widget*         widgets[WIDGET_COUNT]; 
+    Widget*         widgets[WIDGET_COUNT];
+    int             activeLayout;
 
     lv_font_t*      fontCustom;
 

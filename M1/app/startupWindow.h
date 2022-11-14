@@ -17,7 +17,7 @@ public:
     virtual ~StartupWindow();
 
 public:
-    void            onCreate(DisplayObject* parent) override;
+    void            onCreate() override;
     void            onActive() override;
 
 protected:

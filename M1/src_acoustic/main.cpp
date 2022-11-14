@@ -82,13 +82,13 @@ public:
 
     virtual void OnPressed(uint8_t key) {
         Serial.printf("Key pressed: %02X\n", key);
-        if (key != KEY_RETURN)
+        if (key != KEY_ENTER)
             bleDevice.press(key);
     }
 
     virtual void OnLongPressed(uint8_t key) {
         Serial.printf("Key long-pressed: %02X\n", key);
-        if (key == KEY_RETURN)
+        if (key == KEY_ENTER)
         {
             Serial.println("Turn-off Variometer!!");
 
@@ -98,7 +98,7 @@ public:
 
     virtual void OnReleased(uint8_t key) {
         Serial.printf("Key released: %02X\n", key);
-        if (key != KEY_RETURN)
+        if (key != KEY_ENTER)
             bleDevice.release(key);
     }
 };

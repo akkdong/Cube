@@ -15,11 +15,11 @@
 Keypad::Keypad(KeypadCallback* callback)
     : keyInput(NULL)
     , keyMap {
-        { BTN_SEL, 		0, 	KEY_RETURN,         RELEASE },
-        { BTN_LEFT, 	1, 	KEY_LEFT_ARROW,     RELEASE },
-        { BTN_RIGHT, 	1, 	KEY_RIGHT_ARROW,    RELEASE },
-        { BTN_UP, 		1, 	KEY_UP_ARROW,       RELEASE },
-        { BTN_DOWN, 	1, 	KEY_DOWN_ARROW,     RELEASE },
+        { BTN_SEL, 		0, 	KEY_ENTER,    RELEASE },
+        { BTN_LEFT, 	1, 	KEY_LEFT,     RELEASE },
+        { BTN_RIGHT, 	1, 	KEY_RIGHT,    RELEASE },
+        { BTN_UP, 		1, 	KEY_UP,       RELEASE },
+        { BTN_DOWN, 	1, 	KEY_DOWN,     RELEASE },
     }
     , callback(callback)
 {

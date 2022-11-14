@@ -113,7 +113,7 @@ public:
     void                    setFont(const lv_font_t* font);
 
 protected:
-    void                    onCreate(DisplayObject* parent) override;
+    void                    onCreate() override;
 
 protected:
     #if 0
@@ -189,7 +189,7 @@ public:
     void                    setValue(const char* value);
 
 protected:
-    void                    onCreate(DisplayObject* parent) override;
+    void                    onCreate() override;
 
     const char*             getTitle(BoxType type);
     const char*             getDescription(BoxType type);
@@ -225,7 +225,7 @@ public:
 
 public:
     //
-    void                    onCreate(DisplayObject* parent) override;
+    void                    onCreate() override;
     void                    update() override;
 
     //
@@ -255,12 +255,15 @@ public:
     bool                    create(DisplayObject* parent) override;
 
     lv_obj_t *              getObject() override;
+    bool                    getVisible() override;
     void                    setPosition(int x, int y) override;
     void                    setSize(int w, int h) override;
+    void                    setVisible(bool show) override;
 
 protected:
     CanvasWidget*           _ref;
     int                     _x, _y, _w, _h;
+    bool                    _show;
 };
 
 
@@ -274,7 +277,7 @@ public:
 
 public:
     //
-    void                    onCreate(DisplayObject* parent) override;
+    void                    onCreate() override;
 
     //
     void                    update() override;
@@ -294,7 +297,7 @@ public:
 
 public:
     //
-    void                    onCreate(DisplayObject* parent) override;
+    void                    onCreate() override;
 
     //
     void                    update() override;
@@ -314,7 +317,7 @@ public:
 
 public:
     //
-    void                    onCreate(DisplayObject* parent) override;
+    void                    onCreate() override;
 
     //
     void                    update() override;

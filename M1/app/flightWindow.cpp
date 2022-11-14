@@ -82,13 +82,55 @@ WidgetLayout _layout_1[] =
 
 WidgetLayout _layout_2[] =
 {
-
+    {
+        FlightWindow::WIDGET_COMPASS, 
+        0, 20, 240, 240, 
+        0
+    },
+    {
+        FlightWindow::WIDGET_BOX_1,
+        300, 0, 180, 72, 
+        NumberBox::ALTITUDE_GROUND, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_2,
+        300, 72, 180, 72, 
+        NumberBox::TRACK_HEADING, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_3,
+        300, 144, 180, 72, 
+        NumberBox::SPEED_GROUND, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_4,
+        300, 215, 180, 72, 
+        NumberBox::SPEED_VERTICAL_LAZY, 
+    },
 };
 
 WidgetLayout _layout_3[] =
 {
-
+    {
+        FlightWindow::WIDGET_BOX_1,
+        0, 0, 280, 82, 
+        NumberBox::SPEED_VERTICAL_LAZY, 
+    },
 };
+
+struct LayoutInfo
+{
+    WidgetLayout*   layout;
+    int             size;
+};
+
+LayoutInfo _layout[] = 
+{
+    { _layout_1, sizeof(_layout_1) / sizeof(_layout_1[0]) },
+    { _layout_2, sizeof(_layout_2) / sizeof(_layout_2[0]) },
+    { _layout_3, sizeof(_layout_3) / sizeof(_layout_3[0]) },
+};
+
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -119,6 +161,7 @@ FlightWindow::FlightWindow()
     : annunciator()
     , bkgndCanvas(LCD_WIDTH, LCD_HEIGHT - MAX_ANNUNCIATOR_HEIGHT)
     , fontCustom(NULL)
+    , activeLayout(0)
 {
     memset(widgets, 0, sizeof(widgets));
 }
@@ -129,11 +172,15 @@ FlightWindow::~FlightWindow()
         delete widgets[i];
 }
 
-void FlightWindow::onCreate(DisplayObject* parent)
+void FlightWindow::onCreate()
 {
-    //
+    // flight-window background
+    #ifdef ARDUINO
     lv_obj_set_style_bg_color(_this, lv_color_hex(0xFFFFFF), 0);
-    //lv_obj_set_style_bg_opa(_this, LV_OPA_TRANSP, 0);
+    #else
+    // to test a widget with transparent background
+    lv_obj_set_style_bg_color(_this, lv_color_hex(0xFFE0E0), 0);
+    #endif
 
     //
     fontCustom = lv_imgfont_create(16, getCustomFont);
@@ -154,20 +201,21 @@ void FlightWindow::onCreate(DisplayObject* parent)
 
     for (int i = 0; i < sizeof(widgets) / sizeof(widgets[0]); i++)
     {
-        widgets[i] = createWidget(widgetType[i]);
+        widgets[i] = createWidget(widgetType[i], &bkgndCanvas);
         if (!widgets[i])
             continue;
-            
+
         widgets[i]->setUpdater(this);
-        widgets[i]->create(&bkgndCanvas);
+        widgets[i]->setVisible(false);
         
-        lv_obj_add_flag(widgets[i]->getObject(), LV_OBJ_FLAG_HIDDEN);
+        //lv_obj_add_flag(widgets[i]->getObject(), LV_OBJ_FLAG_HIDDEN);
     }
 
     // load-layout
     // ...
 
     // layout-widgets
+    #if 0
     //for (int i = 0; i < sizeof(widgets) / sizeof(widgets[0]); i++)
     //    lv_obj_add_flag(widgets[i]->getObject(), LV_OBJ_FLAG_HIDDEN);
 
@@ -175,8 +223,10 @@ void FlightWindow::onCreate(DisplayObject* parent)
     {
         WidgetLayout* layout = &_layout_1[i];
         Widget* widget = widgets[layout->id];
+        if (!widget)
+            continue;
 
-        widget->setPosition(layout->x, layout->y /*+ MAX_ANNUNCIATOR_HEIGHT*/);
+        widget->setPosition(layout->x, layout->y);
         widget->setSize(layout->w, layout->h);
 
         switch (widgetType[layout->id])
@@ -188,17 +238,58 @@ void FlightWindow::onCreate(DisplayObject* parent)
 
         lv_obj_clear_flag(widget->getObject(), LV_OBJ_FLAG_HIDDEN);
     }
+    #endif
+    layoutWidget(activeLayout);
 }
 
 void FlightWindow::onActive()
 {
-
 }
 
 void FlightWindow::onClose()
 {
-
 }
+
+void FlightWindow::onKeyDown(uint16_t key)
+{
+    int layout = activeLayout;
+
+    if (key == KEY_LEFT)
+    {
+        // move to previous layout
+        layout = activeLayout - 1;
+        if (layout < 0)
+            layout = sizeof(_layout) / sizeof(_layout[0]) - 1;
+    }
+    else if (key == KEY_RIGHT)
+    {
+        // move to next layout
+        layout = (activeLayout + 1) % (sizeof(_layout) / sizeof(_layout[0]));
+    }
+
+    if (layout != activeLayout)
+    {
+        activeLayout = layout;
+
+        layoutWidget(activeLayout);
+        update();
+    }
+}
+
+void FlightWindow::onKeyLongDown(uint16_t key)
+{
+    if (key == KEY_ENTER)
+    {
+        // enter configuration menu
+        // ...
+    }
+}
+
+void FlightWindow::onKeyUp(uint16_t key)
+{
+}
+
+
 
 void FlightWindow::update()
 {
@@ -206,28 +297,81 @@ void FlightWindow::update()
     bkgndCanvas.update();
 
     for (int i = 0; i < sizeof(widgets) / sizeof(widgets[0]); i++)
-        widgets[i]->update();
+    {
+        if (widgets[i])
+            widgets[i]->update();
+    }
 }
 
-Widget* FlightWindow::createWidget(Widget::Type type)
+Widget* FlightWindow::createWidget(Widget::Type type, DisplayObject* parent)
 {
+    Widget* widget = NULL;
+
     switch (type)
     {
     case Widget::WIDGET_NUMBER_BOX:
-        return new NumberBox;
+        widget = new NumberBox;
+        break;
     case Widget::WIDGET_COMPASS:
-        return new CompassWidget(&bkgndCanvas);
+        widget = new CompassWidget(&bkgndCanvas);
+        break;
     case Widget::WIDGET_VARIOMETER:
-        return new VariometerWidget(&bkgndCanvas);
+        widget = new VariometerWidget(&bkgndCanvas);
+        break;
     case Widget::WIDGET_PROFILE_VARIO:
-        return new NumberBox;
+        //widget = new VarioProfile;
+        break;
     case Widget::WIDGET_PROFILE_ALTITUDE:
-        return new NumberBox;
+        //widget = new AltitudeProfile;
+        break;
     case Widget::WIDGET_THERMAL_ASSISTANT:
-        return new ThermalAssistant(&bkgndCanvas);
+        widget = new ThermalAssistant(&bkgndCanvas);
+        break;
     }
 
-    return NULL;
+    if (widget && !widget->create(parent))
+    {
+        delete widget;
+        widget = NULL;
+    }
+
+    return widget;
+}
+
+void FlightWindow::layoutWidget(int layout)
+{
+    LOGv("layout widgets #%d", layout);
+
+    // hide all-widget
+    for (int i = 0; i < sizeof(widgets) / sizeof(widgets[0]); i++)
+    {
+        if (!widgets[i])
+            continue;
+
+        widgets[i]->setVisible(false); // lv_obj_add_flag(widgets[i]->getObject(), LV_OBJ_FLAG_HIDDEN);
+    }
+
+    // 
+    LayoutInfo* info = &_layout[layout];
+    for (int i = 0; i < info->size; i++)
+    {
+        WidgetLayout* layout = &info->layout[i];
+        Widget* widget = widgets[layout->id];
+        if (!widget)
+            continue;
+
+        widget->setPosition(layout->x, layout->y);
+        widget->setSize(layout->w, layout->h);
+
+        switch (widgetType[layout->id])
+        {
+        case Widget::WIDGET_NUMBER_BOX:
+            ((NumberBox *)widget)->setType(layout->data);
+            break;
+        }
+
+        widget->setVisible(true); // lv_obj_clear_flag(widget->getObject(), LV_OBJ_FLAG_HIDDEN);
+    }    
 }
 
 //
@@ -326,12 +470,18 @@ void FlightWindow::onUpdate(NumberBox* box)
 
 void FlightWindow::onUpdate(CompassWidget* compass)
 {
+    if (!compass->getVisible())
+        return;
+
     app_conf_t* conf = app_get_conf();
     compass->draw(conf->heading, conf->bearing, 1);
 }
 
 void FlightWindow::onUpdate(VariometerWidget* variometer)
 {
+    if (!variometer->getVisible())
+        return;
+
     app_conf_t* conf = app_get_conf();
     variometer->draw(conf->speedVertLazy);
 }

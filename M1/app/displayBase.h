@@ -49,13 +49,25 @@ public:
         if (!_this)
             return false;
 
-        this->onCreate(parent);
+        // Should I call onCreate asynchrously or directly?
+        #if 0
+        lv_async_call(_onCreate, this);
+        #else
+        this->onCreate();
+        #endif
+
         return true;
     }
     virtual void update() {}
 
     virtual lv_obj_t * getObject() { 
         return _this; 
+    }
+    virtual bool getVisible() {
+        if (!_this)
+            return false;
+
+        return !lv_obj_has_flag(_this, LV_OBJ_FLAG_HIDDEN);
     }
     virtual void setPosition(int x, int y) {
         if (_this)
@@ -65,9 +77,22 @@ public:
         if (_this)
             lv_obj_set_size(_this, w, h);
     }
+    virtual void setVisible(bool show) {
+        if (_this) {
+            if (show)
+                lv_obj_clear_flag(_this, LV_OBJ_FLAG_HIDDEN);
+            else
+                lv_obj_add_flag(_this, LV_OBJ_FLAG_HIDDEN);
+        }
+    }
 
-    virtual void onCreate(DisplayObject* parent) {}
+    virtual void onCreate() {}
     virtual void onDestroy() {}
+
+protected:
+    static void _onCreate(void* userData) {
+        ((DisplayObject *)userData)->onCreate();
+    }
 
 protected:
     lv_obj_t*      _this;

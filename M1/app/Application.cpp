@@ -449,26 +449,45 @@ void Application::update()
 
 void Application::OnPressed(uint8_t key) 
 {
-    LOGv("Key pressed: %02X\n", key);
-    if (key != KEY_RETURN)
+    LOGv("Key pressed: %02X", key);
+    #if ENABLE_BLE_KEYBOARD
+    if (key != KEY_ENTER)
         ble_press(key);
+    #else
+    Window* active = Screen::instance()->peekWindow();
+    if (active)
+        active->onKeyDown(key);
+    #endif
 }
 
 void Application::OnLongPressed(uint8_t key) 
 {
-    LOGv("Key long-pressed: %02X\n", key);
-    if (key == KEY_RETURN)
+    LOGv("Key long-pressed: %02X", key);
+    if (key == KEY_ENTER)
     {
         LOGi("Turn-off Variometer!!");
         bsp_power_on(false);
     }
+    else
+    {
+        Window* active = Screen::instance()->peekWindow();
+        if (active)
+            active->onKeyLongDown(key);
+    }
+
 }
 
 void Application::OnReleased(uint8_t key) 
 {
-    LOGv("Key released: %02X\n", key);
-    if (key != KEY_RETURN)
+    LOGv("Key released: %02X", key);
+    #if ENABLE_BLE_KEYBOARD
+    if (key != KEY_ENTER)
         ble_release(key);
+    #else
+    Window* active = Screen::instance()->peekWindow();
+    if (active)
+        active->onKeyUp(key);
+    #endif
 }  
 
 void Application::update_time()
