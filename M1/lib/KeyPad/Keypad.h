@@ -6,8 +6,8 @@
 
 #include "abstract/KeypadInput.h"
 
-#define TIME_DEBOUNCE       (100)
-#define TIME_LONG_PRESS     (2000)
+#define TIME_DEBOUNCE       (60)
+#define TIME_LONG_PRESS     (1600)
 
 #define KEY_COUNT           (5)
 

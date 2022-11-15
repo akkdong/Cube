@@ -8,6 +8,7 @@
 #include "logger.h"
 
 #include "flightWindow.h"
+#include "settingWindow.h"
 #include "widget.h"
 
 #define MAX_ANNUNCIATOR_HEIGHT      (32)
@@ -183,8 +184,9 @@ void FlightWindow::onCreate()
     #endif
 
     //
-    fontCustom = lv_imgfont_create(16, getCustomFont);
+    fontCustom = lv_imgfont_create(18, getCustomFont);
     fontCustom->fallback = &lv_font_montserrat_16;
+    fontCustom->base_line = 3;
 
     //
     annunciator.create(this);
@@ -193,7 +195,7 @@ void FlightWindow::onCreate()
     annunciator.setPosition(0, 0);
     annunciator.setSize(LCD_WIDTH, MAX_ANNUNCIATOR_HEIGHT);
     annunciator.setFont(fontCustom);
-    annunciator.setStatus("\uF001 \uF002 \uF003 \uF004 \t 100%");
+    annunciator.setStatus(LV_SYMBOL_GPS " \uF001 \uF002 \uF003 \uF004 \t 100% " LV_SYMBOL_BATTERY_FULL);
 
     bkgndCanvas.create(this);
     bkgndCanvas.setPosition(0, MAX_ANNUNCIATOR_HEIGHT);
@@ -246,6 +248,11 @@ void FlightWindow::onActive()
 {
 }
 
+void FlightWindow::onFallback(Result result, Window* from)
+{
+    LOGv("FlightWindow::onFallback(%d)", result);
+}
+
 void FlightWindow::onClose()
 {
 }
@@ -278,10 +285,11 @@ void FlightWindow::onKeyDown(uint16_t key)
 
 void FlightWindow::onKeyLongDown(uint16_t key)
 {
-    if (key == KEY_ENTER)
+    if (key == KEY_DOWN)
     {
         // enter configuration menu
-        // ...
+        Screen* screen = Screen::instance();
+        screen->activateWindow(new SettingWindow);
     }
 }
 

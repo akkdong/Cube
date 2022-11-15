@@ -41,6 +41,7 @@ public:
 
     void            onCreate() override;
     void            onActive() override;
+    void            onFallback(Result result, Window* from) override;
     void            onClose() override;
 
     void            onKeyDown(uint16_t key) override;
