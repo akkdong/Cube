@@ -83,28 +83,28 @@ WidgetLayout _layout_1[] =
 WidgetLayout _layout_2[] =
 {
     {
-        FlightWindow::WIDGET_COMPASS, 
-        0, 20, 240, 240, 
+        FlightWindow::WIDGET_THERMAL_ASSISTANT, 
+        0, 0, 320, 288, 
         0
     },
     {
         FlightWindow::WIDGET_BOX_1,
-        300, 0, 180, 72, 
+        320, 0, 160, 72, 
         NumberBox::ALTITUDE_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_2,
-        300, 72, 180, 72, 
+        320, 72, 160, 72, 
         NumberBox::TRACK_HEADING, 
     },
     {
         FlightWindow::WIDGET_BOX_3,
-        300, 144, 180, 72, 
+        320, 144, 160, 72, 
         NumberBox::SPEED_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_4,
-        300, 215, 180, 72, 
+        320, 215, 160, 72, 
         NumberBox::SPEED_VERTICAL_LAZY, 
     },
 };
@@ -136,7 +136,7 @@ LayoutInfo _layout[] =
 ///////////////////////////////////////////////////////////////////////////////////
 // class FlightWindow static members
 
-const Widget::Type FlightWindow::widgetType[] = {
+const Widget::Type FlightWindow::widgetID2Type[] = {
     Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_1,
     Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_2,
     Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_3,
@@ -146,10 +146,10 @@ const Widget::Type FlightWindow::widgetType[] = {
     Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_7,
     Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_8,
     Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_9,
+    Widget::WIDGET_PROFILE, // WIDGET_PROFILE_VARIO,
+    Widget::WIDGET_PROFILE, // WIDGET_PROFILE_ALTITUDE,
     Widget::WIDGET_COMPASS, // WIDGET_COMPASS,
     Widget::WIDGET_VARIOMETER, // WIDGET_VARIOMETER,
-    Widget::WIDGET_PROFILE_VARIO, // WIDGET_PROFILE_VARIO,
-    Widget::WIDGET_PROFILE_ALTITUDE, // WIDGET_PROFILE_ALTITUDE,
     Widget::WIDGET_THERMAL_ASSISTANT, // WIDGET_THERMAL_ASSISTANT,    
 };
 
@@ -201,7 +201,7 @@ void FlightWindow::onCreate()
 
     for (int i = 0; i < sizeof(widgets) / sizeof(widgets[0]); i++)
     {
-        widgets[i] = createWidget(widgetType[i], &bkgndCanvas);
+        widgets[i] = createWidget(widgetID2Type[i], &bkgndCanvas);
         if (!widgets[i])
             continue;
 
@@ -229,7 +229,7 @@ void FlightWindow::onCreate()
         widget->setPosition(layout->x, layout->y);
         widget->setSize(layout->w, layout->h);
 
-        switch (widgetType[layout->id])
+        switch (widgetID2Type[layout->id])
         {
         case Widget::WIDGET_NUMBER_BOX:
             ((NumberBox *)widget)->setType(layout->data);
@@ -312,17 +312,14 @@ Widget* FlightWindow::createWidget(Widget::Type type, DisplayObject* parent)
     case Widget::WIDGET_NUMBER_BOX:
         widget = new NumberBox;
         break;
+    case Widget::WIDGET_PROFILE:
+        widget = new ProfileWidget;
+        break;
     case Widget::WIDGET_COMPASS:
         widget = new CompassWidget(&bkgndCanvas);
         break;
     case Widget::WIDGET_VARIOMETER:
         widget = new VariometerWidget(&bkgndCanvas);
-        break;
-    case Widget::WIDGET_PROFILE_VARIO:
-        //widget = new VarioProfile;
-        break;
-    case Widget::WIDGET_PROFILE_ALTITUDE:
-        //widget = new AltitudeProfile;
         break;
     case Widget::WIDGET_THERMAL_ASSISTANT:
         widget = new ThermalAssistant(&bkgndCanvas);
@@ -363,10 +360,13 @@ void FlightWindow::layoutWidget(int layout)
         widget->setPosition(layout->x, layout->y);
         widget->setSize(layout->w, layout->h);
 
-        switch (widgetType[layout->id])
+        switch (widgetID2Type[layout->id])
         {
         case Widget::WIDGET_NUMBER_BOX:
             ((NumberBox *)widget)->setType(layout->data);
+            break;
+        case Widget::WIDGET_PROFILE:
+            ((ProfileWidget *)widget)->setDataType((ProfileWidget::DataType)layout->data);
             break;
         }
 
@@ -468,6 +468,10 @@ void FlightWindow::onUpdate(NumberBox* box)
     box->setValue(value);
 }
 
+void FlightWindow::onUpdate(ProfileWidget *)
+{
+}
+
 void FlightWindow::onUpdate(CompassWidget* compass)
 {
     if (!compass->getVisible())
@@ -486,16 +490,15 @@ void FlightWindow::onUpdate(VariometerWidget* variometer)
     variometer->draw(conf->speedVertLazy);
 }
 
-void FlightWindow::onUpdate(VarioProfile *)
+void FlightWindow::onUpdate(ThermalAssistant* assistant)
 {
-}
+    if (!assistant->getVisible())
+        return;
 
-void FlightWindow::onUpdate(AltitudeProfile *)
-{
-}
-
-void FlightWindow::onUpdate(ThermalAssistant *)
-{
+    assistant->drawTrack();
+    assistant->drawCompass();
+    assistant->drawWindDirection();
+    assistant->drawFlight();
 }
 
 

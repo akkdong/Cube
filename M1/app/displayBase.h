@@ -45,12 +45,12 @@ public:
 
 public:
     virtual bool create(DisplayObject* parent) {
-        _this = lv_obj_create(parent ? parent->getObject() : NULL);
+        _this = createObject(parent ? parent->getObject() : NULL);
         if (!_this)
             return false;
 
         // Should I call onCreate asynchrously or directly?
-        #if 0
+        #if 1
         lv_async_call(_onCreate, this);
         #else
         this->onCreate();
@@ -58,25 +58,30 @@ public:
 
         return true;
     }
+
     virtual void update() {}
 
     virtual lv_obj_t * getObject() { 
         return _this; 
     }
+
     virtual bool getVisible() {
         if (!_this)
             return false;
 
         return !lv_obj_has_flag(_this, LV_OBJ_FLAG_HIDDEN);
     }
+
     virtual void setPosition(int x, int y) {
         if (_this)
             lv_obj_set_pos(_this, x, y);
     }
+
     virtual void setSize(int w, int h) {
         if (_this)
             lv_obj_set_size(_this, w, h);
     }
+    
     virtual void setVisible(bool show) {
         if (_this) {
             if (show)
@@ -88,6 +93,11 @@ public:
 
     virtual void onCreate() {}
     virtual void onDestroy() {}
+
+protected:
+    virtual lv_obj_t * createObject(lv_obj_t* parent) {
+        return lv_obj_create(parent);
+    }
 
 protected:
     static void _onCreate(void* userData) {

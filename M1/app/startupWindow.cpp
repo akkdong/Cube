@@ -67,7 +67,7 @@ bool StartupWindow::process()
         lv_label_set_text(label, sz);
     }
 
-    return ++count < 6 ? true : false;
+    return ++count < 4 ? true : false;
 }
 
 void StartupWindow::start()

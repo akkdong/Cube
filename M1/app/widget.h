@@ -37,20 +37,18 @@ widget
 
 class Annunciator;
 class NumberBox;
+class ProfileWidget;
 class CompassWidget;
 class VariometerWidget;
-class VarioProfile;
-class AltitudeProfile;
 class ThermalAssistant;
 
 struct WidgetUpdater
 {
     virtual void onUpdate(Annunciator *) = 0;
     virtual void onUpdate(NumberBox *) = 0;
+    virtual void onUpdate(ProfileWidget *) = 0;
     virtual void onUpdate(CompassWidget *) = 0;
     virtual void onUpdate(VariometerWidget *) = 0;
-    virtual void onUpdate(VarioProfile *) = 0;
-    virtual void onUpdate(AltitudeProfile *) = 0;
     virtual void onUpdate(ThermalAssistant *) = 0;
 };
 
@@ -67,23 +65,20 @@ public:
 
     enum Type {
         WIDGET_NUMBER_BOX,
+        WIDGET_PROFILE,
         WIDGET_COMPASS,
         WIDGET_VARIOMETER,
-        WIDGET_PROFILE_VARIO,
-        WIDGET_PROFILE_ALTITUDE,
         WIDGET_THERMAL_ASSISTANT,
     };
 
 public:
-    bool                    create(DisplayObject* parent) override;
-//  void                    update() override;
-
     void                    setUpdater(WidgetUpdater* updater) { this->updater = updater; }
 
     //
     static void             init();
 
 protected:
+    lv_obj_t*               createObject(lv_obj_t* parent) override;
 
 protected:
     //
@@ -113,7 +108,7 @@ public:
     void                    setFont(const lv_font_t* font);
 
 protected:
-    void                    onCreate() override;
+    lv_obj_t*               createObject(lv_obj_t* parent) override;
 
 protected:
     #if 0
@@ -215,6 +210,38 @@ protected:
 
 
 ////////////////////////////////////////////////////////////////////////////////////
+// class ProfileWidget
+
+class ProfileWidget : public Widget
+{
+public:
+    enum DataType {
+        UNDEFINED,
+        VSPEED,
+        ALTITUDE,
+    };
+
+public:
+    ProfileWidget();
+
+public:
+    //
+    void                    update() override;
+
+    //
+    void                    setDataType(DataType type) { dataType = type; }
+
+protected:
+    lv_obj_t*               createObject(lv_obj_t* parent) override;
+
+
+protected:
+    DataType                dataType;
+};
+
+
+
+////////////////////////////////////////////////////////////////////////////////////
 // class CanvasWidget
 
 class CanvasWidget : public Widget
@@ -225,7 +252,6 @@ public:
 
 public:
     //
-    void                    onCreate() override;
     void                    update() override;
 
     //
@@ -237,9 +263,11 @@ public:
     void                    drawPolygon(const lv_point_t points[], uint32_t point_cnt, const lv_draw_rect_dsc_t * draw_dsc);
     
 protected:
+    lv_obj_t*               createObject(lv_obj_t* parent) override;
+
+protected:
     int                     _w, _h;
     void*                   _buffer;
-    lv_obj_t*               _canvas;
 };
 
 
@@ -277,9 +305,6 @@ public:
 
 public:
     //
-    void                    onCreate() override;
-
-    //
     void                    update() override;
     void                    draw(lv_coord_t heading, lv_coord_t bearing, int32_t method);
 
@@ -296,9 +321,6 @@ public:
     VariometerWidget(CanvasWidget* ref);
 
 public:
-    //
-    void                    onCreate() override;
-
     //
     void                    update() override;
     void                    draw(float vario);
@@ -317,10 +339,12 @@ public:
 
 public:
     //
-    void                    onCreate() override;
-
-    //
     void                    update() override;
+
+    void                    drawTrack();
+    void                    drawCompass();
+    void                    drawWindDirection();
+    void                    drawFlight();
 
 protected:
 };

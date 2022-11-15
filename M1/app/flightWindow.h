@@ -27,10 +27,10 @@ public:
         WIDGET_BOX_7,
         WIDGET_BOX_8,
         WIDGET_BOX_9,
-        WIDGET_COMPASS,
-        WIDGET_VARIOMETER,
         WIDGET_PROFILE_VARIO,
         WIDGET_PROFILE_ALTITUDE,
+        WIDGET_COMPASS,
+        WIDGET_VARIOMETER,
         WIDGET_THERMAL_ASSISTANT,
         WIDGET_COUNT
     };
@@ -54,10 +54,9 @@ protected:
     //
     void            onUpdate(Annunciator *);
     void            onUpdate(NumberBox *);
+    void            onUpdate(ProfileWidget *);
     void            onUpdate(CompassWidget *);
     void            onUpdate(VariometerWidget *);
-    void            onUpdate(VarioProfile *);
-    void            onUpdate(AltitudeProfile *);
     void            onUpdate(ThermalAssistant *); 
 
     //
@@ -71,7 +70,7 @@ protected:
 
     lv_font_t*      fontCustom;
 
-    static const Widget::Type widgetType[WIDGET_COUNT]; // NumberBox(9), Compass, Variometer, Profile(vario), Profile(altitude), Thermal-assistant
+    static const Widget::Type widgetID2Type[WIDGET_COUNT]; // NumberBox(9), Profile(2), Compass, Variometer, Thermal-assistant
 };
 
 #endif // __FLIGHT_WINDOW_H__

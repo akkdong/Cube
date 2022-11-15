@@ -27,15 +27,17 @@ Widget::~Widget()
     // nop
 }
 
-bool Widget::create(DisplayObject* parent)
+lv_obj_t* Widget::createObject(lv_obj_t* parent)
 {
-    if (!DisplayObject::create(parent))
-        return false;
+    LOGv("Widget::createObject()");
+    lv_obj_t* obj = DisplayObject::createObject(parent);
+    if (!obj)
+        return NULL;
 
     if (style_default)
-        lv_obj_add_style(_this, style_default, 0);
+        lv_obj_add_style(obj, style_default, 0);
 
-    return true;
+    return obj;
 }
 
 void Widget::init()
@@ -68,10 +70,13 @@ Annunciator::Annunciator()
 
 }
 
-void Annunciator::onCreate()
+lv_obj_t* Annunciator::createObject(lv_obj_t* parent)
 {
-    //
-    lv_obj_t* ann = this->getObject();
+    LOGv("Annunciator::createObject()");
+    lv_obj_t* ann = Widget::createObject(parent);
+    if (!ann)
+        return NULL;
+
     lv_obj_set_style_pad_hor(ann, 4, 0);
     lv_obj_set_style_pad_ver(ann, 0, 0);
     lv_obj_set_style_radius(ann, 0, 0);
@@ -81,7 +86,7 @@ void Annunciator::onCreate()
     lv_obj_set_style_bg_opa(ann, LV_OPA_100, 0);
 
     // create sub-objects
-    status = lv_label_create(this->getObject());
+    status = lv_label_create(ann);
     if (status)
     {
         lv_obj_set_style_text_font(status, &lv_font_montserrat_16, 0);
@@ -90,7 +95,7 @@ void Annunciator::onCreate()
         lv_label_set_text(status, "");
     }
 
-    clock = lv_label_create(this->getObject());
+    clock = lv_label_create(ann);
     if (clock)
     {
         lv_obj_set_style_text_font(clock, &lv_font_montserrat_16, 0);
@@ -98,6 +103,8 @@ void Annunciator::onCreate()
         lv_obj_align(clock, LV_ALIGN_RIGHT_MID, 0, 0);
         lv_label_set_text(clock, "00:00:00");
     }
+
+    return ann;
 }
 
 void Annunciator::update()
@@ -390,6 +397,30 @@ void NumberBox::setDescription(const char* desc)
     }
 }
 
+
+
+
+////////////////////////////////////////////////////////////////////////////////////
+// class ProfileWidget
+
+ProfileWidget::ProfileWidget() : dataType(UNDEFINED)
+{
+}
+
+//
+void ProfileWidget::update()
+{
+    if (updater)
+        updater->onUpdate(this);
+}
+
+lv_obj_t* ProfileWidget::createObject(lv_obj_t* parent)
+{
+    return Widget::createObject(parent);
+}
+
+
+
 ////////////////////////////////////////////////////////////////////////////////////
 // class CanvasWidget
 
@@ -397,7 +428,6 @@ CanvasWidget::CanvasWidget(int width, int height)
     : _w(width)
     , _h(height)
     , _buffer(NULL)
-    , _canvas(NULL)
 {
     size_t size = LV_CANVAS_BUF_SIZE_TRUE_COLOR_ALPHA(width, height);
     #ifdef ARDUINO
@@ -417,28 +447,47 @@ CanvasWidget::~CanvasWidget()
     #endif
 }
 
-void CanvasWidget::onCreate()
+lv_obj_t* CanvasWidget::createObject(lv_obj_t* parent)
 {
-    //
-    lv_obj_set_style_pad_hor(_this, 0, 0);
-    lv_obj_set_style_pad_ver(_this, 0, 0);
-    lv_obj_set_style_bg_color(_this, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_set_style_bg_opa(_this, LV_OPA_TRANSP, 0);
+    #if 0
+    lv_obj_t* obj = Widget::createObject(parent);
+    if (!obj)
+        return NULL;
+
+    lv_obj_set_style_pad_hor(obj, 0, 0);
+    lv_obj_set_style_pad_ver(obj, 0, 0);
+    lv_obj_set_style_bg_color(obj, lv_color_hex(0xFFFFFF), 0);
+    lv_obj_set_style_bg_opa(obj, LV_OPA_TRANSP, 0);
 
     //
-    _canvas = lv_canvas_create(_this);
-    if (!_canvas)
-        return;
+    _canvas = lv_canvas_create(obj);
+    if (_canvas)
+    {
+        lv_obj_set_align(_canvas, LV_ALIGN_CENTER);
+        lv_canvas_set_buffer(_canvas, _buffer, _w, _h, LV_IMG_CF_TRUE_COLOR_ALPHA);
+        lv_canvas_fill_bg(_canvas, lv_color_hex(0xFFFFFF), LV_OPA_TRANSP);
+    }
 
-    lv_obj_set_align(_canvas, LV_ALIGN_CENTER);
-    lv_canvas_set_buffer(_canvas, _buffer, _w, _h, LV_IMG_CF_TRUE_COLOR_ALPHA);
-    lv_canvas_fill_bg(_canvas, lv_color_hex(0xFFFFFF), LV_OPA_TRANSP);
+    return obj;
+    #else
+    lv_obj_t* obj = lv_canvas_create(parent);
+    if (!obj)
+        return NULL;
+
+    lv_obj_set_style_pad_hor(obj, 0, 0);
+    lv_obj_set_style_pad_ver(obj, 0, 0);
+
+    lv_canvas_set_buffer(obj, _buffer, _w, _h, LV_IMG_CF_TRUE_COLOR_ALPHA);
+    lv_canvas_fill_bg(obj, lv_color_hex(0xFFFFFF), LV_OPA_TRANSP);
+    #endif
+
+    return obj;
 }
 
 void CanvasWidget::update()
 {
     // erase backgournd
-    lv_canvas_fill_bg(_canvas, lv_color_hex(0xFFFFFF), LV_OPA_TRANSP);
+    lv_canvas_fill_bg(_this, lv_color_hex(0xFFFFFF), LV_OPA_TRANSP);
 
     // each canvas-virtual-object will draw on this canvas
     // ...
@@ -446,38 +495,32 @@ void CanvasWidget::update()
 
 void CanvasWidget::drawRect(lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h, const lv_draw_rect_dsc_t * draw_dsc)
 {
-    if (_canvas)
-        lv_canvas_draw_rect(_canvas, x, y, w, h, draw_dsc);
+    lv_canvas_draw_rect(_this, x, y, w, h, draw_dsc);
 }
 
 void CanvasWidget::drawText(lv_coord_t x, lv_coord_t y, lv_coord_t max_w, lv_draw_label_dsc_t * draw_dsc, const char * txt)
 {
-    if (_canvas)
-        lv_canvas_draw_text(_canvas, x, y, max_w, draw_dsc, txt);
+    lv_canvas_draw_text(_this, x, y, max_w, draw_dsc, txt);
 }
 
 void CanvasWidget::drawImage(lv_coord_t x, lv_coord_t y, const void * src, const lv_draw_img_dsc_t * draw_dsc)
 {
-    if (_canvas)
-        lv_canvas_draw_img(_canvas, x, y, src, draw_dsc);
+    lv_canvas_draw_img(_this, x, y, src, draw_dsc);
 }
 
 void CanvasWidget::drawLine(const lv_point_t points[], uint32_t point_cnt, const lv_draw_line_dsc_t * draw_dsc)
 {
-    if (_canvas)
-        lv_canvas_draw_line(_canvas, points, point_cnt, draw_dsc);
+    lv_canvas_draw_line(_this, points, point_cnt, draw_dsc);
 }
 
 void CanvasWidget::drawArc(lv_coord_t x, lv_coord_t y, lv_coord_t r, int32_t start_angle, int32_t end_angle, const lv_draw_arc_dsc_t * draw_dsc)
 {
-    if (_canvas)
-        lv_canvas_draw_arc(_canvas, x, y, r, start_angle, end_angle, draw_dsc);
+    lv_canvas_draw_arc(_this, x, y, r, start_angle, end_angle, draw_dsc);
 }
 
 void CanvasWidget::drawPolygon(const lv_point_t points[], uint32_t point_cnt, const lv_draw_rect_dsc_t * draw_dsc)
 {
-    if (_canvas)
-        lv_canvas_draw_polygon(_canvas, points, point_cnt, draw_dsc);
+    lv_canvas_draw_polygon(_this, points, point_cnt, draw_dsc);
 }
 
 
@@ -499,18 +542,20 @@ CanvasVirtualWidget::CanvasVirtualWidget(CanvasWidget* ref)
 
 bool CanvasVirtualWidget::create(DisplayObject* parent)
 {
-    if (_ref && _ref->getObject())
-    {
-        //if (lv_obj_get_parent(_ref->getObject()) == parent->getObject())
-        {
-            // skip object-creation, just call onCreate only
-            this->onCreate();
+    if (!_ref || !_ref->getObject())
+        return false;
 
-            return true;
-        }
-    }
+    //if (lv_obj_get_parent(_ref->getObject()) != parent->getObject())
+    //  return false;
 
-    return false;
+    // skip object-creation, just call onCreate only
+    #if 1
+    lv_async_call(_onCreate, this);
+    #else
+    this->onCreate();
+    #endif
+
+    return true;
 }
 
 lv_obj_t* CanvasVirtualWidget::getObject()
@@ -548,11 +593,6 @@ void CanvasVirtualWidget::setVisible(bool show)
 
 CompassWidget::CompassWidget(CanvasWidget* ref)
     : CanvasVirtualWidget(ref)
-{
-
-}
-
-void CompassWidget::onCreate()
 {
 
 }
@@ -693,11 +733,6 @@ VariometerWidget::VariometerWidget(CanvasWidget* ref)
 
 }
 
-void VariometerWidget::onCreate()
-{
-
-}
-
 void VariometerWidget::update()
 {
     // draw on reference-canvas
@@ -711,7 +746,7 @@ void VariometerWidget::draw(float vario)
     lv_draw_line_dsc_t line_dsc;
     lv_point_t points[3];
 
-    lv_draw_rect_dsc_init(&rect_dsc);    
+    lv_draw_rect_dsc_init(&rect_dsc);
     lv_draw_line_dsc_init(&line_dsc);
 
     lv_coord_t x = 6 + _x;
@@ -781,13 +816,35 @@ ThermalAssistant::ThermalAssistant(CanvasWidget* ref)
 {
 }
 
-void ThermalAssistant::onCreate()
-{
-}
-
 void ThermalAssistant::update()
 {
     // draw on reference-canvas
     if (updater)
         updater->onUpdate(this);
+}
+
+void ThermalAssistant::drawTrack()
+{
+    lv_draw_rect_dsc_t rect_dsc;
+    lv_draw_rect_dsc_init(&rect_dsc);
+
+    rect_dsc.outline_color = lv_color_hex(0xFF0000);
+    rect_dsc.outline_width = 1;
+    rect_dsc.outline_opa = LV_OPA_COVER;
+    rect_dsc.bg_color = lv_color_hex(0x00FF00);
+    rect_dsc.bg_opa = LV_OPA_20;
+
+    _ref->drawRect(_x, _y, _w, _h, &rect_dsc);
+}
+
+void ThermalAssistant::drawCompass()
+{
+}
+
+void ThermalAssistant::drawWindDirection()
+{
+}
+
+void ThermalAssistant::drawFlight()
+{
 }
