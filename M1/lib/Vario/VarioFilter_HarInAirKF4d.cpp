@@ -168,7 +168,7 @@ void VarioFilter_HarInAirKF4d::update(float zm, float am, float* pz, float* pv)
 
 	//
 	#if 0
-	uint32_t lastTick = get_tick();
+	uint32_t lastTick = millis();
 	float dt = ((float)(lastTick - t_)) / 1000.0;
 	t_ = lastTick;
 	#else
@@ -310,6 +310,6 @@ void VarioFilter_HarInAirKF4d::reset(float altitude)
 	Pbb = 1500.0f;
 
 	//
-	t_ = get_tick();
+	t_ = millis();
 }
 

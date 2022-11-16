@@ -80,7 +80,7 @@ void Beeper::update()
 {
     if (toneAct)
     {
-        uint32_t tick = get_tick();
+        uint32_t tick = millis();
         uint32_t duration = tick - tickStart;
 
         if (toneState == PLAY)
@@ -109,7 +109,7 @@ void Beeper::update()
 
         //
         tonePlayer->play(toneAct->freq);
-        tickStart = get_tick();
+        tickStart = millis();
         toneState = PLAY;
     }
 
@@ -123,7 +123,7 @@ void Beeper::update()
 
         //
         tonePlayer->play(toneAct->freq);
-        tickStart = get_tick();
+        tickStart = millis();
         toneState = PLAY;
     }
 }

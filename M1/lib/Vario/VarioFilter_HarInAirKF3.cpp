@@ -40,7 +40,7 @@ void VarioFilter_HarInAirKF3::update(float altitude, float va, float* altitudeFi
 {
 	// delta time
 	#if 0
-	uint32_t lastTick = get_tick();
+	uint32_t lastTick = millis();
 	float dt = ((float)(lastTick - t_)) / 1000.0;
 	t_ = lastTick;
 	#else
@@ -130,7 +130,7 @@ void VarioFilter_HarInAirKF3::reset(float altitude)
 {
 	z_ = altitude;
 	v_ = 0.0f; // vInitial;
-	t_ = get_tick();
+	t_ = millis();
 
 	aBias_ = 0.0f; // aBiasInitial;
 

@@ -43,7 +43,7 @@ void Keypad::update()
         uint8_t state = RELEASE; // release
         if ((key->active == 0 && value == 0) || (key->active != 0 && value != 0))
             state = PRESS; // press
-        uint32_t tick = get_tick();
+        uint32_t tick = millis();
 
         switch (key->state)
         {

@@ -279,7 +279,7 @@ void Application::begin()
     beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
 
     //
-    tick_update_time = get_tick();
+    tick_update_time = millis();
 }
 
 void Application::end()
@@ -302,8 +302,8 @@ void Application::update()
         app_conf->dirty = 0;
     }
     #else
-    static uint32_t lastTick = get_tick();
-    uint32_t tick = get_tick();
+    static uint32_t lastTick = millis();
+    uint32_t tick = millis();
     if (tick - lastTick > 500)
     {
         Window* active = Screen::instance()->peekWindow();
@@ -492,7 +492,7 @@ void Application::OnReleased(uint8_t key)
 
 void Application::update_time()
 {
-    uint32_t tick = get_tick();
+    uint32_t tick = millis();
     if (tick_update_time - tick > 1000)
     {
         //

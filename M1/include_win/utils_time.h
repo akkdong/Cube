@@ -17,6 +17,11 @@ inline uint32_t get_tick() {
     return SDL_GetTicks();
 }
 
+inline uint32_t millis() {
+    return SDL_GetTicks();
+}
+
+
 #ifdef __cplusplus
 }
 #endif

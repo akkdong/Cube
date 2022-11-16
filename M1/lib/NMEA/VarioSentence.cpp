@@ -23,7 +23,7 @@ VarioSentence::VarioSentence(char type) : sentenceType(type)
 	varioSentence = ((sentenceType == VARIOMETER_LK8_SENTENCE) ?
 				(IVarioSentence *)&LK8 : (IVarioSentence *)&LxNav);
 				
-	lastTick = get_tick();
+	lastTick = millis();
 }
 	
 void VarioSentence::begin(float height, float vel, float temp, float bat)
@@ -48,7 +48,7 @@ int VarioSentence::read()
 
 int VarioSentence::checkInterval()
 {
-	uint32_t tick = get_tick();
+	uint32_t tick = millis();
 	if (! varioSentence->available() && (tick - lastTick) > VARIOMETER_SENTENCE_DELAY)
 	{
 		lastTick = tick;
