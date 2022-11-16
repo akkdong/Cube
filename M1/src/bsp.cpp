@@ -108,8 +108,13 @@ void bsp_gui_init()
 
 void bsp_update()
 {
-	lv_timer_handler();
-	delay(2);
+	static uint32_t lastTick = millis();
+	uint32_t tick = millis();
+	if (tick - lastTick >= 5)
+	{
+		lv_timer_handler();
+		lastTick = tick;
+	}
 
     // forward serial to bluetooth and reverse : debug purpose only
     while (Serial.available())

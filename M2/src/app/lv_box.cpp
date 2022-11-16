@@ -87,9 +87,9 @@ const lv_font_t*    font_body = &font_en_bold_64; // lv_font_montserrat_48
 // compass
 //
 
-#define COMPASS_WIDTH       106
-#define COMPASS_HEIGHT      106
-#define COMPASS_RADIUS      53
+#define COMPASS_WIDTH       180
+#define COMPASS_HEIGHT      180
+#define COMPASS_RADIUS      90
 
 #ifndef ARDUINO
 static lv_color_t buf_compass[LV_CANVAS_BUF_SIZE_TRUE_COLOR(COMPASS_WIDTH, COMPASS_HEIGHT)];

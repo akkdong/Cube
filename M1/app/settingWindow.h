@@ -27,7 +27,10 @@ public:
 
     void            onKeyDown(uint16_t key) override;
     void            onKeyLongDown(uint16_t key) override;
-    void            onKeyUp(uint16_t key) override;     
+    void            onKeyUp(uint16_t key) override;
+
+protected:
+    lv_obj_t*       createObject(lv_obj_t* parent) override;
 
 protected:
 
