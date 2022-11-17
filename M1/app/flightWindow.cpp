@@ -242,6 +242,8 @@ void FlightWindow::onCreate()
     }
     #endif
     layoutWidget(activeLayout);
+
+    lv_obj_add_event_cb(_this, _onClickBackground, LV_EVENT_CLICKED, this);
 }
 
 void FlightWindow::onActive()
@@ -539,4 +541,9 @@ bool FlightWindow::getCustomFont(const lv_font_t * font, void * img_src, uint16_
     }
 
     return false;
+}
+
+void FlightWindow::_onClickBackground(lv_event_t* event)
+{
+    LOGi("Page Event: %d", event->code);
 }

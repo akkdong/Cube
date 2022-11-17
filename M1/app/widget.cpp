@@ -36,6 +36,8 @@ lv_obj_t* Widget::createObject(lv_obj_t* parent)
 
     if (style_default)
         lv_obj_add_style(obj, style_default, 0);
+    
+    lv_obj_clear_flag(obj, LV_OBJ_FLAG_CLICKABLE);
 
     return obj;
 }

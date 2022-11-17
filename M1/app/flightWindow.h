@@ -63,6 +63,8 @@ protected:
     //
     static bool     getCustomFont(const lv_font_t * font, void * img_src, uint16_t len, uint32_t unicode, uint32_t unicode_next);
 
+    static void     _onClickBackground(lv_event_t* event);
+
 protected:
     Annunciator     annunciator;
     CanvasWidget    bkgndCanvas;

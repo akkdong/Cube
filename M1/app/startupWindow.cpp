@@ -10,6 +10,13 @@
 
 
 ///////////////////////////////////////////////////////////////////////////////////
+//
+
+extern const lv_img_dsc_t startup;
+
+
+
+///////////////////////////////////////////////////////////////////////////////////
 // class StartupWindow
 
 StartupWindow::StartupWindow()
@@ -25,10 +32,19 @@ StartupWindow::~StartupWindow()
 void StartupWindow::onCreate()
 {
     // startup background
-    lv_obj_set_style_bg_color(_this, lv_color_hex(0xA0A0A0), 0);
+    lv_obj_set_style_bg_color(_this, lv_color_hex(0xFFFFFF), 0);
     lv_obj_set_style_bg_opa(_this, LV_OPA_COVER, 0);
 
     //
+    lv_obj_t* logo_img = lv_img_create(_this);
+    if (logo_img)
+    {
+        lv_img_set_src(logo_img, &startup);
+        lv_obj_align(logo_img, LV_ALIGN_CENTER, 0, -32);
+    }
+
+    //
+    /*
     lv_obj_t* logo = lv_label_create(_this);
     if (logo)
     {
@@ -37,6 +53,7 @@ void StartupWindow::onCreate()
         lv_obj_set_style_text_color(logo, lv_color_hex(0xFFFF00), 0);
         lv_obj_align(logo, LV_ALIGN_CENTER, 0, -60);
     }
+    */
 
     lv_obj_t* count = lv_label_create(_this);
     if (count)
