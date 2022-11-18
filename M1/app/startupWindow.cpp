@@ -3,6 +3,7 @@
 
 #include <stdint.h>
 #include <stdio.h>
+#include "device_defines.h"
 #include "logger.h"
 
 #include "startupWindow.h"
@@ -41,6 +42,10 @@ void StartupWindow::onCreate()
     {
         lv_img_set_src(logo_img, &startup);
         lv_obj_align(logo_img, LV_ALIGN_CENTER, 0, -32);
+    
+        //lv_img_set_pivot(logo_img, 0, 0);
+        //lv_img_set_angle(logo_img, 450);
+        //lv_img_set_zoom(logo_img, 200);
     }
 
     //

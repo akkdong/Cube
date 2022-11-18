@@ -11,10 +11,10 @@ extern "C" {
 #include <time.h>
 
 #define MAX_STRING_SIZE					(16)
-#define MAX_VARIO_HISTORY				(60)
+#define MAX_VARIO_HISTORY				(120)
 #define MAX_VARIO_TONE					(12)
 
-#define MAX_TRACK_HISTORY				(30)
+#define MAX_TRACK_HISTORY				(120)
 
 typedef struct app_conf
 {

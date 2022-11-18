@@ -309,6 +309,7 @@ public:
     void                    draw(lv_coord_t heading, lv_coord_t bearing, int32_t method);
 
 protected:
+    void                    drawArrow(lv_coord_t cx, lv_coord_t cy, lv_coord_t radius, lv_coord_t angle, lv_color_t color);
 };
 
 

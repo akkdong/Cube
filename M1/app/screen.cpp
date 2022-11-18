@@ -95,6 +95,22 @@ void Screen::switchWindow(Window* window)
     activateWindow(window);
 }
 
+void Screen::showPowerOff()
+{
+    lv_obj_t* bkgnd = lv_obj_create(_this);
+    lv_obj_set_pos(bkgnd, 0, 0);
+    lv_obj_set_size(bkgnd, LCD_WIDTH, LCD_HEIGHT);
+    lv_obj_set_style_bg_color(bkgnd, lv_color_hex(0x808080), 0);
+    lv_obj_set_style_bg_opa(bkgnd, LV_OPA_50, 0);
+
+    lv_obj_t* label = lv_label_create(bkgnd);
+    lv_obj_set_style_text_font(label, &lv_font_montserrat_48, 0);
+    lv_obj_set_style_text_color(label, lv_color_hex(0xFF0FF00), 0);
+    lv_obj_set_style_text_opa(label, LV_OPA_COVER, 0);
+    lv_obj_align(label, LV_ALIGN_CENTER, 0, -40);
+    lv_label_set_text(label, "Turn-off Device!!");
+}
+
 Screen* Screen::instance() 
 {
     static Screen  screen;

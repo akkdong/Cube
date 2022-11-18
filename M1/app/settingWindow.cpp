@@ -49,7 +49,7 @@ void SettingWindow::onKeyDown(uint16_t key)
     }
 }
 
-void SettingWindow::onKeyLongDown(uint16_t key)
+void SettingWindow::onLongKeyDown(uint16_t key)
 {
 
 }

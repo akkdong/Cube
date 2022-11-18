@@ -52,9 +52,9 @@ public:
 
 protected:
     // KeypadCallback
-    virtual void OnPressed(uint8_t key);
-    virtual void OnLongPressed(uint8_t key);
-    virtual void OnReleased(uint8_t key);
+    void        onPressed(uint8_t key) override;
+    void        onLongPressed(uint8_t key) override;
+    void        onReleased(uint8_t key) override;
 
 protected:
     void        init_config(app_conf_t* conf);
@@ -67,6 +67,11 @@ protected:
     const lv_font_t *           font_small;
 
     app_conf_t*                 app_conf;
+
+    vario_conf_t                varioConf;
+    vario_status_t              varioStatus;
+    flight_stat_t               flightStats;
+    flight_state_t              flightState;
 
     lv_obj_t*                   app_annun;
     lv_obj_t*                   app_page;

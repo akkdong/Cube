@@ -26,7 +26,7 @@ public:
     void            onClose() override;
 
     void            onKeyDown(uint16_t key) override;
-    void            onKeyLongDown(uint16_t key) override;
+    void            onLongKeyDown(uint16_t key) override;
     void            onKeyUp(uint16_t key) override;
 
 protected:

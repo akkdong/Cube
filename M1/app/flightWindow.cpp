@@ -285,7 +285,7 @@ void FlightWindow::onKeyDown(uint16_t key)
     }
 }
 
-void FlightWindow::onKeyLongDown(uint16_t key)
+void FlightWindow::onLongKeyDown(uint16_t key)
 {
     if (key == KEY_DOWN)
     {
@@ -488,7 +488,7 @@ void FlightWindow::onUpdate(CompassWidget* compass)
         return;
 
     app_conf_t* conf = app_get_conf();
-    compass->draw(conf->heading, conf->bearing, 1);
+    compass->draw(conf->heading, /*conf->bearing*/ -1, 1);
 }
 
 void FlightWindow::onUpdate(VariometerWidget* variometer)

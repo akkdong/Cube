@@ -637,6 +637,7 @@ void CompassWidget::draw(lv_coord_t heading, lv_coord_t bearing, int32_t method)
     lv_coord_t base_y = this->_h / 2 + _y;
     lv_coord_t angle, up = 0;
     lv_coord_t radius = this->_w / 2 - 6;
+    lv_point_t points;
 
     if (method == 2 && bearing < 0) // bearing < 0 : n/a
         method = 1;
@@ -649,12 +650,11 @@ void CompassWidget::draw(lv_coord_t heading, lv_coord_t bearing, int32_t method)
 
     lv_draw_arc_dsc_t arc_dsc;
     lv_draw_rect_dsc_t rect_dsc;
-    lv_draw_line_dsc_t line_dsc;
-    lv_point_t points[4];
+    lv_draw_img_dsc_t image_dsc;
 
     lv_draw_arc_dsc_init(&arc_dsc);
-    lv_draw_line_dsc_init(&line_dsc);
     lv_draw_rect_dsc_init(&rect_dsc);
+    lv_draw_img_dsc_init(&image_dsc);
 
     // erase background
     //lv_canvas_fill_bg(canvas, lv_color_hex(0xFFFFFF), LV_OPA_100);
@@ -668,103 +668,61 @@ void CompassWidget::draw(lv_coord_t heading, lv_coord_t bearing, int32_t method)
     arc_dsc.opa = LV_OPA_40;
     arc_dsc.blend_mode = LV_BLEND_MODE_NORMAL;
     arc_dsc.rounded = 0;
+
     _ref->drawArc(base_x, base_y, radius + 2, 0, 360, &arc_dsc);
 
-    // draw north-triangle
+    // draw north-letter
     angle = 0 - up; // real-north = rotate counterclockwise
 
-    points[0].x = base_x + (lv_coord_t)(radius * sin(angle * DEG_TO_RAD));
-    points[0].y = base_y - (lv_coord_t)(radius * cos(angle * DEG_TO_RAD));
-    points[1].x = base_x + (lv_coord_t)(radius / 3 * sin((angle + 180) * DEG_TO_RAD));
-    points[1].y = base_y - (lv_coord_t)(radius / 3 * cos((angle + 180) * DEG_TO_RAD));
-    points[2].x = base_x + (lv_coord_t)(radius * sin((angle - 140) * DEG_TO_RAD));
-    points[2].y = base_y - (lv_coord_t)(radius * cos((angle - 140) * DEG_TO_RAD));
-
-    rect_dsc.bg_opa = LV_OPA_60;
-    rect_dsc.bg_color = lv_color_hex(0x0000FF);
-    //rect_dsc.border_width = 1;
-    //rect_dsc.border_color = lv_color_hex(0x000000);
-    //rect_dsc.border_opa = LV_OPA_20;
-    _ref->drawPolygon(points, 3, &rect_dsc);
-
-    points[2].x = base_x + (lv_coord_t)(radius * sin((angle + 140) * DEG_TO_RAD));
-    points[2].y = base_y - (lv_coord_t)(radius * cos((angle + 140) * DEG_TO_RAD));
-
-    rect_dsc.bg_opa = LV_OPA_80;
-    _ref->drawPolygon(points, 3, &rect_dsc);
-
-    //
-    lv_draw_img_dsc_t image_dsc;
-    lv_draw_img_dsc_init(&image_dsc);
     image_dsc.recolor = lv_color_hex(0xFF0000);
     image_dsc.recolor_opa = LV_OPA_COVER;
     //image_dsc.zoom = 256;
     //image_dsc.angle = 450;
 
-    points[3].x = base_x + (lv_coord_t)((radius - 10) * sin(angle * DEG_TO_RAD));
-    points[3].y = base_y - (lv_coord_t)((radius - 10) * cos(angle * DEG_TO_RAD));
+    points.x = base_x + (lv_coord_t)((radius - 10) * sin(angle * DEG_TO_RAD));
+    points.y = base_y - (lv_coord_t)((radius - 10) * cos(angle * DEG_TO_RAD));
 
-    _ref->drawImage(points[3].x - 6, points[3].y - 6, &letter_n_16, &image_dsc);
+    int offsetx = letter_n_16.header.w / 2;
+    int offsety = letter_n_16.header.h / 2;
 
+    _ref->drawImage(points.x - offsetx, points.y - offsety, &letter_n_16, &image_dsc);
 
     // draw heading
-    if (/*method != 1*/ true)
-    {
-        angle = heading - up; // rotate counterclockwise
+    angle = heading - up; // rotate counterclockwise
+    drawArrow(base_x, base_y, radius, angle, lv_color_hex(0x303030));
 
-        /*
-        points[0].x = 0;
-        points[0].y = radius;
-        points[1].x = 0 - radius / 5;
-        points[1].y = radius / 2;
-        points[2].x = radius / 5;
-        points[2].y = radius / 2;
-
-        RotateAndTranslate(points, base_x, base_y, 0 - angle);
-        */
-        points[0].x = base_x + (lv_coord_t)(radius * sin(angle * DEG_TO_RAD));
-        points[0].y = base_y - (lv_coord_t)(radius * cos(angle * DEG_TO_RAD));
-        points[1].x = base_x + (lv_coord_t)(radius * sin((angle + 18) * DEG_TO_RAD) / 2);
-        points[1].y = base_y - (lv_coord_t)(radius * cos((angle + 18) * DEG_TO_RAD) / 2);
-        points[2].x = base_x + (lv_coord_t)(radius * sin((angle - 18) * DEG_TO_RAD) / 2);
-        points[2].y = base_y - (lv_coord_t)(radius * cos((angle - 18) * DEG_TO_RAD) / 2);
-
-        rect_dsc.bg_opa = LV_OPA_60;
-        rect_dsc.bg_color = lv_color_hex(0x0000FF);
-        _ref->drawPolygon(points, 3, &rect_dsc);
-    }
-
-    // bearing
+    // draw bearing
     if (bearing >= 0)
     {
         angle = bearing - up; // rotate counterclockwise
-
-        /*
-        points[0].x = 0;
-        points[0].y = radius;
-        points[1].x = 0 - radius / 5;
-        points[1].y = radius * 2;
-        points[2].x = radius / 5;
-        points[2].y = radius * 2;
-
-        RotateAndTranslate(points, base_x, base_y, 0 - angle);
-        */
-        points[0].x = base_x + (lv_coord_t)(radius * sin(angle * DEG_TO_RAD));
-        points[0].y = base_y - (lv_coord_t)(radius * cos(angle * DEG_TO_RAD));
-        points[1].x = base_x + (lv_coord_t)(radius * sin((angle + 18) * DEG_TO_RAD) / 2);
-        points[1].y = base_y - (lv_coord_t)(radius * cos((angle + 18) * DEG_TO_RAD) / 2);
-        points[2].x = base_x + (lv_coord_t)(radius * sin((angle - 18) * DEG_TO_RAD) / 2);
-        points[2].y = base_y - (lv_coord_t)(radius * cos((angle - 18) * DEG_TO_RAD) / 2);
-
-        rect_dsc.bg_opa = LV_OPA_80;
-        rect_dsc.bg_color = lv_color_hex(0x00FF00);
-        rect_dsc.border_width = 1;
-        rect_dsc.border_color = lv_color_hex(0x000000);
-        _ref->drawPolygon(points, 3, &rect_dsc);
+        drawArrow(base_x, base_y, radius - 5, angle, lv_color_hex(0xF01010));
     }
 }
 
+void CompassWidget::drawArrow(lv_coord_t cx, lv_coord_t cy, lv_coord_t radius, lv_coord_t angle, lv_color_t color)
+{
+    lv_draw_rect_dsc_t rect_dsc;
+    lv_point_t points[4];
 
+    points[0].x = cx + (lv_coord_t)(radius * sin(angle * DEG_TO_RAD));
+    points[0].y = cy - (lv_coord_t)(radius * cos(angle * DEG_TO_RAD));
+    points[1].x = cx + (lv_coord_t)(radius / 3 * sin((angle + 180) * DEG_TO_RAD));
+    points[1].y = cy - (lv_coord_t)(radius / 3 * cos((angle + 180) * DEG_TO_RAD));
+    points[2].x = cx + (lv_coord_t)(radius * sin((angle - 140) * DEG_TO_RAD));
+    points[2].y = cy - (lv_coord_t)(radius * cos((angle - 140) * DEG_TO_RAD));
+
+    lv_draw_rect_dsc_init(&rect_dsc);
+    rect_dsc.bg_color = color;
+    rect_dsc.bg_opa = LV_OPA_COVER;
+    _ref->drawPolygon(points, 3, &rect_dsc);
+
+    points[2].x = cx + (lv_coord_t)(radius * sin((angle + 140) * DEG_TO_RAD));
+    points[2].y = cy - (lv_coord_t)(radius * cos((angle + 140) * DEG_TO_RAD));
+
+    rect_dsc.bg_color = lv_color_lighten(color, LV_OPA_30);
+    rect_dsc.bg_opa = LV_OPA_COVER;
+    _ref->drawPolygon(points, 3, &rect_dsc);  
+}
 
 
 

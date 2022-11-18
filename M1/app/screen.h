@@ -35,7 +35,7 @@ public:
     virtual void    onFallback(Result result, Window* from) {}
 
     virtual void    onKeyDown(uint16_t key) {};
-    virtual void    onKeyLongDown(uint16_t key) {};
+    virtual void    onLongKeyDown(uint16_t key) {};
     virtual void    onKeyUp(uint16_t key) {};
 };
 
@@ -57,6 +57,8 @@ public:
     void            fallbackWindow(Result result);
 
     void            switchWindow(Window* window);
+
+    void            showPowerOff();
 
     static Screen*  instance();
     Window*         peekWindow();
