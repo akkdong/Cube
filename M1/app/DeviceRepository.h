@@ -25,6 +25,16 @@ public:
 
 	DeviceContext*				getContext() { return contextPtr; }
 
+    //
+	size_t                      updateVSpeedHistory(float speed);
+	size_t                      updateTrackHistory(float lat, float lon, float speedVert);
+
+    size_t                      getVSpeedCount();
+    size_t                      getTrackCount();
+
+    void                        resetFlightState();
+    void                        resetFlightStats();
+
 protected:
 
 protected:

@@ -260,8 +260,10 @@ void Application::update()
             setDeviceTime(context->varioState.timeCurrent);
 
             // why don't you calibarate a bit latter. :  wait for GPS to stabilize.
-            vario.calibrateAltitude(context->varioState.altitudeGPS);
-            vario.calibrateSeaLevel(context->varioState.altitudeGPS);
+            //vario.calibrateAltitude(context->varioState.altitudeGPS);
+            //vario.calibrateSeaLevel(context->varioState.altitudeGPS);
+            // calibrate after 60 seconds
+            lv_timer_create(onCalibrateAltitude, 60 * 1000, this);
 
             // gps-fixed melody
             //beeper.playMelody(toneFixed, sizeof(toneFixed) / sizeof(toneFixed[0]));
@@ -330,7 +332,7 @@ void Application::update()
             context->varioState.speedVertLazy = speedCalculator.get();
             dispNeedUpdate = true;
 
-            context->updateVSpeedHistory(context->varioState.speedVertLazy);
+            DeviceRepository::instance().updateVSpeedHistory(context->varioState.speedVertLazy);
         }
 
         /*if (!ble_isConnected())*/
@@ -466,7 +468,7 @@ void Application::updateFlightState()
 	context->flightState.distFlight += GET_DISTANCE(context->varioState.latitude, context->varioState.longitude, 
 			context->varioState.latitudeLast, context->varioState.longitudeLast);
 	// add new track point & calculate relative distance
-	context->updateTrackHistory(context->varioState.latitude, context->varioState.longitude, context->varioState.speedVertLazy);
+	DeviceRepository::instance().updateTrackHistory(context->varioState.latitude, context->varioState.longitude, context->varioState.speedVertLazy);
 
 	// update flight statistics
 	context->flightStats.altitudeMax = _MAX(context->flightStats.altitudeMax, context->varioState.altitudeGPS);
@@ -640,8 +642,9 @@ void Application::startFlight()
     // set altitude reference-1
     context->varioSettings.altitudeRef1 = context->varioState.altitudeGPS;
 
-    // reset-flight-state
-    // reset-flight-stats
+    // reset flight-state/stats
+    DeviceRepository::instance().resetFlightState();
+    DeviceRepository::instance().resetFlightStats();
 
     // init flight-state
     context->flightState.takeOffTime = context->varioState.timeCurrent;
@@ -650,7 +653,7 @@ void Application::startFlight()
     context->flightState.bearingTakeoff = -1;
     //context->flightState.flightMode = FMODE_FLYING;
     context->flightState.frontPoint = context->flightState.rearPoint = 0;
-
+    // init flight-stats
     context->flightStats.altitudeMax = context->varioState.altitudeGPS;
     context->flightStats.altitudeMin = context->varioState.altitudeGPS;
 
@@ -709,4 +712,20 @@ void Application::startVario()
     dispNeedUpdate = true;
 
     LOGv("Application::startVario()");
+}
+
+void Application::onCalibrateAltitude(struct _lv_timer_t * timer)
+{
+    Application* app = (Application *)timer->user_data;
+    app->calibrateAltitude();
+
+    lv_timer_del(timer);
+}
+
+void Application::calibrateAltitude()
+{
+    LOGv("Application::calibrateAltitude()");
+
+    vario.calibrateAltitude(context->varioState.altitudeGPS);
+    vario.calibrateSeaLevel(context->varioState.altitudeGPS);
 }

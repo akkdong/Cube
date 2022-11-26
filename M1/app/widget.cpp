@@ -7,6 +7,7 @@
 
 #include "device_defines.h"
 #include "logger.h"
+#include "utils.h"
 #include "widget.h"
 
 
@@ -248,7 +249,7 @@ const char* NumberBox::getTitle(BoxType type)
     case SPEED_VERTICAL:
         return "Speed V.";
     case SPEED_VERTICAL_LAZY:
-        return "Speed V.";
+        return "Speed Vz.";
     case TRACK_HEADING:
         return "Track Hd.";
     case TARCK_BEARING:
@@ -829,10 +830,16 @@ void ThermalAssistant::update()
         updater->onUpdate(this);
 }
 
-void ThermalAssistant::drawTrack()
+void ThermalAssistant::drawTrack(FlightState& state, float heading)
 {
+#define ZOOM_FACTOR			(0.6)
+
+    // 
     lv_draw_rect_dsc_t rect_dsc;
+    lv_draw_arc_dsc_t arc_dsc;
+
     lv_draw_rect_dsc_init(&rect_dsc);
+    lv_draw_arc_dsc_init(&arc_dsc);
 
     rect_dsc.outline_color = lv_color_hex(0xFF0000);
     rect_dsc.outline_width = 1;
@@ -840,7 +847,69 @@ void ThermalAssistant::drawTrack()
     rect_dsc.bg_color = lv_color_hex(0x00FF00);
     rect_dsc.bg_opa = LV_OPA_20;
 
+    arc_dsc.color = lv_color_hex(0x000000);
+    arc_dsc.width = 1;
+    arc_dsc.start_angle = 0;
+    arc_dsc.end_angle = 360;
+    arc_dsc.opa = LV_OPA_COVER;    
+
+
+    // draw border & background
     _ref->drawRect(_x, _y, _w, _h, &rect_dsc);
+
+
+	// draw track
+    rect_dsc.outline_color = lv_color_hex(0x000000);
+    rect_dsc.bg_opa = LV_OPA_TRANSP;
+
+	float theta = TO_RADIAN(180 - heading);
+
+	for (int i = state.rearPoint; i != state.frontPoint; )
+	{
+#if 1 // 0 clock is heading
+		float x0 = state.trackDistance[i].dx * ZOOM_FACTOR;
+		float y0 = state.trackDistance[i].dy * ZOOM_FACTOR;
+
+		int16_t x = (_x + _w / 2) - (int16_t)(x0 * cos(theta) - y0 * sin(theta));
+		int16_t y = (_y + _h / 2) - (int16_t)(x0 * sin(theta) + y0 * cos(theta));
+#else // 0 clock is north
+		int16_t x = _x + _w / 2;
+		int16_t y = _y + _h / 2;
+
+		x -= state.trackDistance[i].dx * ZOOM_FACTOR;
+		y += state.trackDistance[i].dy * ZOOM_FACTOR;
+#endif
+
+		if (_x + 2 < x && _y + 2 < y && x < _x + _w - 2 && y < _y + _h - 2)
+		{
+			if (state.trackPoints[i].vario < 0)
+			{
+				_ref->drawRect(x - 2, y - 2, 4, 4, &rect_dsc);
+			}
+			else
+			{
+				int16_t r = 2;
+
+				if (state.trackPoints[i].vario > 1)
+					r = (state.trackPoints[i].vario > 2) ? 4 : 3;
+
+                _ref->drawArc(x, y, r, 0, 360, &arc_dsc);
+			}
+		}
+
+		i = (i + 1) % MAX_TRACK_HISTORY;
+	}
+
+	// draw glider
+    #if 0
+	{
+		int16_t cx = _x + _w / 2;
+		int16_t cy = _y + _h / 2;
+
+		drawLine(cx - 10, cy, cx, cy - 18, COLOR_BLACK);
+		drawLine(cx, cy - 18, cx + 10, cy, COLOR_BLACK);
+	}
+    #endif
 }
 
 void ThermalAssistant::drawCompass()
@@ -853,4 +922,5 @@ void ThermalAssistant::drawWindDirection()
 
 void ThermalAssistant::drawFlight()
 {
+    
 }

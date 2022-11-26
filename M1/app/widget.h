@@ -30,6 +30,7 @@ widget
 #endif
 #include "lvgl.h"
 #include "displayBase.h"
+#include "app.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////
@@ -342,7 +343,7 @@ public:
     //
     void                    update() override;
 
-    void                    drawTrack();
+    void                    drawTrack(FlightState& state, float heading);
     void                    drawCompass();
     void                    drawWindDirection();
     void                    drawFlight();
@@ -350,68 +351,5 @@ public:
 protected:
 };
 
-
-
-#if 0
-typedef struct _annunciator
-{
-    uint8_t     status;
-    time_t      time;
-    float       power;
-
-} annunciator_t;
-
-typedef struct _box_style
-{
-    const char* title;
-    const char* desc;
-    uint32_t    style;  // box-style: border
-
-    lv_font_t*  font_title;
-    lv_font_t*  font_desc;
-    lv_font_t*  font_value;
-
-
-} box_style_t;
-
-typedef struct _box_value
-{
-    uint8_t type; // value type
-    union {
-        int     i;
-        long    l;
-        float   f;
-        double  d;
-    } data;
-} box_value_t;
-
-lv_obj_t* widget_annunciator_create(lv_obj_t* parent, annunciator_t* data);
-lv_obj_t* widget_text_box_create(lv_obj_t* parent, box_style_t* style, box_value_t* value);
-lv_obj_t* widget_compas_create();
-lv_obj_t* widget_varometer_create();
-lv_obj_t* widget_vario_profile_create();
-lv_obj_t* widget_altitude_profile_create();
-lv_obj_t* widget_thermal_assistant_create();
-
-void annunciator_set_status(lv_obj_t* obj, uint8_t status);
-void annunciator_set_time(lv_obj_t* obj, time_t time);
-void annunciator_set_battery_power(lv_obj_t* obj, float voltage);
-
-void textbox_set_title(lv_obj_t* obj, const char* title);
-void textbox_set_description(lv_obj_t* obj, const char* desc);
-void textbox_set_integer(lv_obj_t*, long value);
-void textbox_set_number(lv_obj_t*, float value);
-void textbox_set_format();
-void textbox_set_style();
-void textbox_set_value_format();
-
-void variometer_set_value(lv_obj_t* obj, float value);
-
-void vario_profile_add_value(lv_obj_t* obj, float value);
-
-void altitude_profile_add_value(lv_obj_t* obj, float value);
-
-void thermal_assistant_add_position(lv_obj_t* obj, float lat, float lon, float speed);
-#endif
 
 #endif // __WIDGET_H__

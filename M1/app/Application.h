@@ -80,6 +80,8 @@ protected:
     void                        onLongPressed(uint8_t key) override;
     void                        onReleased(uint8_t key) override;
 
+    static void                 onCalibrateAltitude(struct _lv_timer_t * timer);
+
 protected:
     //void                      init_config(app_conf_t* conf);
     void                        update_time();
@@ -94,6 +96,8 @@ protected:
     void                        startFlight();
     void                        stopFlight();
     void                        startVario();
+
+    void                        calibrateAltitude();
     
 protected:
     //

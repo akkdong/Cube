@@ -102,17 +102,17 @@ WidgetLayout _layout_2[] =
     {
         FlightWindow::WIDGET_BOX_2,
         320, 72, 160, 72, 
-        NumberBox::TRACK_HEADING, 
+        NumberBox::SPEED_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_3,
         320, 144, 160, 72, 
-        NumberBox::SPEED_GROUND, 
+        NumberBox::SPEED_VERTICAL_LAZY, 
     },
     {
         FlightWindow::WIDGET_BOX_4,
         320, 215, 160, 72, 
-        NumberBox::SPEED_VERTICAL_LAZY, 
+        NumberBox::TRACK_HEADING, 
     },
 };
 
@@ -120,9 +120,66 @@ WidgetLayout _layout_3[] =
 {
     {
         FlightWindow::WIDGET_BOX_1,
-        0, 0, 280, 82, 
+        0, 0, 160, 72, 
+        NumberBox::ALTITUDE_GROUND, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_2,
+        0, 72, 160, 72, 
+        NumberBox::ALTITUDE_BARO, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_3,
+        0, 144, 160, 72, 
+        NumberBox::ALTITUDE_AGL, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_4,
+        0, 215, 160, 72, 
+        NumberBox::DISTANCE_FLIGHT, 
+    },
+
+    {
+        FlightWindow::WIDGET_BOX_5,
+        160, 0, 160, 72, 
+        NumberBox::SPEED_GROUND, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_6,
+        160, 72, 160, 72, 
+        NumberBox::SPEED_VERTICAL, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_7,
+        160, 144, 160, 72, 
         NumberBox::SPEED_VERTICAL_LAZY, 
     },
+    {
+        FlightWindow::WIDGET_BOX_8,
+        160, 215, 160, 72, 
+        NumberBox::DISTANCE_TAKEOFF, 
+    },
+
+    {
+        FlightWindow::WIDGET_BOX_9,
+        320, 0, 160, 72, 
+        NumberBox::TRACK_HEADING, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_10,
+        320, 72, 160, 72, 
+        NumberBox::TIME_FLIGHT, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_11,
+        320, 144, 160, 72, 
+        NumberBox::TIME_CURRENT, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_12,
+        320, 215, 160, 72, 
+        NumberBox::GLIDE_RATIO, 
+    },        
 };
 
 struct LayoutInfo
@@ -153,6 +210,9 @@ const Widget::Type FlightWindow::widgetID2Type[] = {
     Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_7,
     Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_8,
     Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_9,
+    Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_10,
+    Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_11,
+    Widget::WIDGET_NUMBER_BOX, // WIDGET_BOX_12,
     Widget::WIDGET_PROFILE, // WIDGET_PROFILE_VARIO,
     Widget::WIDGET_PROFILE, // WIDGET_PROFILE_ALTITUDE,
     Widget::WIDGET_COMPASS, // WIDGET_COMPASS,
@@ -394,11 +454,10 @@ void FlightWindow::layoutWidget(int layout)
 void FlightWindow::onUpdate(Annunciator* ann)
 {
     //
-    time_t t = time(NULL) /*+ 9 * 60 * 60*/;
-    struct tm* _tm = localtime(&t);
-    
+    // time_t t = time(NULL) /*+ 9 * 60 * 60*/;
     char sz[32];
-    sprintf(sz, "%d:%02d:%02d", _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
+    getTimeString(sz, time(NULL), true);
+
     ann->setClock(sz);
 }
 
@@ -406,7 +465,9 @@ void FlightWindow::onUpdate(NumberBox* box)
 {
     //app_conf_t* conf = app_get_conf();
     DeviceContext* context = DeviceRepository::instance().getContext();
+
     char value[32];
+    strcpy(value, "");
 
     switch (box->getType())
     {
@@ -439,30 +500,31 @@ void FlightWindow::onUpdate(NumberBox* box)
         sprintf(value, "%d", context->flightState.bearingNextPoint);
         break;
     case NumberBox::TIME_FLIGHT:
-        /*
-        if (context->varioState.timeFly > 0)
-        {
-            time_t temp = context->varioState.timeFly % 3600;
-            time_t h = context->varioState.timeFly / 3600;
-            time_t m = temp / 60;
-            time_t s = temp % 60;
-            if (h != 0)
-                sprintf(value, "%d:%02d:%02d", h, m, s);
-            else
-                sprintf(value, "%02d:%02d", m, s);
-        }
-        */
+        getElapsedTimeString(value, context->flightState.flightTime);
         break;
     case NumberBox::TIME_CURRENT:
+        if (context->varioState.timeCurrent == 0)
+            strcpy(value, "--:--");
+        else
+            getTimeString(value, time(NULL));
+        break;
     case NumberBox::TIME_TO_NEXT_WAYPOINT:
+        break;
     case NumberBox::TIME_REMAIN:
+        break;
     case NumberBox::DISTANCE_TAKEOFF:
+        sprintf(value, "%.1f", context->flightState.distTakeoff);
+        break;
     case NumberBox::DISTANCE_LANDING:
+        break;
     case NumberBox::DISTANCE_NEXT_WAYPOINT:
+        sprintf(value, "%.1f", context->flightState.distNextPoint);
+        break;
     case NumberBox::DISTANCE_FLIGHT:
+        sprintf(value, "%.1f", context->flightState.distFlight);
         break;
     case NumberBox::GLIDE_RATIO:
-        sprintf(value, "%.1", context->flightState.glideRatio);
+        sprintf(value, "%.1f", context->flightState.glideRatio);
         break;
     case NumberBox::COMPASS:
         sprintf(value, "%.0f", context->varioState.heading);
@@ -480,7 +542,6 @@ void FlightWindow::onUpdate(NumberBox* box)
     case NumberBox::SENSOR_HUMIDITY:
         break;
     default:
-        strcpy(value, "");
         break;
     }
 
@@ -516,7 +577,8 @@ void FlightWindow::onUpdate(ThermalAssistant* assistant)
     if (!assistant->getVisible())
         return;
 
-    assistant->drawTrack();
+    DeviceContext* context = DeviceRepository::instance().getContext();
+    assistant->drawTrack(context->flightState, /*context->varioState.heading*/ 0);
     assistant->drawCompass();
     assistant->drawWindDirection();
     assistant->drawFlight();
@@ -557,4 +619,30 @@ bool FlightWindow::getCustomFont(const lv_font_t * font, void * img_src, uint16_
 void FlightWindow::_onClickBackground(lv_event_t* event)
 {
     LOGi("Page Event: %d", event->code);
+}
+
+const char * FlightWindow::getElapsedTimeString(char* str, time_t t)
+{
+    time_t temp = t % 3600;
+    time_t h = t / 3600;
+    time_t m = temp / 60;
+    time_t s = temp % 60;
+
+    if (h != 0)
+        sprintf(str, "%d:%02d:%02d", h, m, s);
+    else
+        sprintf(str, "%02d:%02d", m, s);
+
+    return str;
+}
+
+const char * FlightWindow::getTimeString(char* str, time_t t, bool includeSecond)
+{
+	struct tm * _tm = localtime(&t);    
+    if (includeSecond)
+	    sprintf(str, "%02d:%02d:%02d", _tm->tm_hour, _tm->tm_min,_tm->tm_sec);
+    else
+        sprintf(str, "%02d:%02d", _tm->tm_hour, _tm->tm_min);
+
+    return str;
 }

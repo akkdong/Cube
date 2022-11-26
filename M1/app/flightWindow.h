@@ -27,6 +27,9 @@ public:
         WIDGET_BOX_7,
         WIDGET_BOX_8,
         WIDGET_BOX_9,
+        WIDGET_BOX_10,
+        WIDGET_BOX_11,
+        WIDGET_BOX_12,
         WIDGET_PROFILE_VARIO,
         WIDGET_PROFILE_ALTITUDE,
         WIDGET_COMPASS,
@@ -51,6 +54,9 @@ public:
 protected:
     Widget*         createWidget(Widget::Type type, DisplayObject* parent);
     void            layoutWidget(int layout);
+
+    const char *    getElapsedTimeString(char* str, time_t t);
+    const char *    getTimeString(char* str, time_t t, bool includeSecond = false);
 
     //
     void            onUpdate(Annunciator *);

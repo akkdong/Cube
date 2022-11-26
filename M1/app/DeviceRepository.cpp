@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #endif
 
 #include "device_defines.h"
@@ -16,6 +17,11 @@
 
 #include "DeviceRepository.h"
 
+
+#define RADIUS 					(6371000) // 6371e3
+
+#define TO_RADIAN(x)			((x)*(PI/180))
+#define GET_DISTANCE(angle)		(2.0 * RADIUS * sin(TO_RADIAN((angle) / 2)))
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -42,7 +48,7 @@ const VarioTone DeviceRepository::defaultTone[] =
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
-// 
+// class DeviceRepository
 
 DeviceRepository::DeviceRepository()
 {
@@ -150,4 +156,71 @@ void DeviceRepository::reset()
 	//
 	contextPtr->flightState.bearingTakeoff = -1;
 	contextPtr->flightState.glideRatio = -1;
+}
+
+
+size_t DeviceRepository::updateVSpeedHistory(float speed) 
+{
+	VarioState& state = contextPtr->varioState;
+
+	// push to front
+	state.speedVertHistory[state.historyFront] = speed;
+	// forward front-index
+	state.historyFront = (state.historyFront + 1) & (MAX_VARIO_HISTORY - 1); // % MAX_VARIO_HISTORY;
+	// check full
+	if (state.historyFront == state.historyRear)
+		state.historyRear = (state.historyRear + 1) & (MAX_VARIO_HISTORY - 1); // % MAX_VARIO_HISTORY;
+
+	return (state.historyFront - state.historyRear) & (MAX_VARIO_HISTORY - 1);
+}
+
+size_t DeviceRepository::updateTrackHistory(float lat, float lon, float speedVert) 
+{
+	FlightState& state = contextPtr->flightState;
+	int16_t latest = state.frontPoint;
+
+	// 
+	state.trackPoints[state.frontPoint] = TrackPoint(lat, lon, speedVert);
+	state.frontPoint = (state.frontPoint + 1) & (MAX_TRACK_HISTORY - 1);
+
+	if (state.rearPoint == state.frontPoint)
+		state.rearPoint = (state.rearPoint + 1) & (MAX_TRACK_HISTORY - 1);
+
+	// calculate relative distance : distance from latest point to each point
+	//int latest = (state.frontPoint + MAX_TRACK_HISTORY - 1) % MAX_TRACK_HISTORY;
+	for (int i = state.rearPoint; i != latest; )
+	{
+		state.trackDistance[i].dx = -GET_DISTANCE(state.trackPoints[latest].lon - state.trackPoints[i].lon);
+		state.trackDistance[i].dy = GET_DISTANCE(state.trackPoints[latest].lat - state.trackPoints[i].lat);
+
+		i = (i + 1) & (MAX_TRACK_HISTORY - 1);
+	}
+
+	state.trackDistance[latest].dx = 0;
+	state.trackDistance[latest].dy = 0;			
+
+	//LOGv("TrackPoint(%f,%f,%f) [%d-%d]", lat, lon, speedVert, state.rearPoint, state.frontPoint);
+	return (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
+}
+
+size_t DeviceRepository::getVSpeedCount()
+{
+	VarioState& state = contextPtr->varioState;
+	return (state.historyFront - state.historyRear) & (MAX_VARIO_HISTORY - 1);
+}
+
+size_t DeviceRepository::getTrackCount()
+{
+	FlightState& state = contextPtr->flightState;
+	return (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
+}
+
+void DeviceRepository::resetFlightState() 
+{ 
+	memset(&contextPtr->flightState, 0, sizeof(FlightState)); 
+}
+
+void DeviceRepository::resetFlightStats() 
+{ 
+	memset(&contextPtr->flightStats, 0, sizeof(FlightStats)); 
 }
