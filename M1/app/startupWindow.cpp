@@ -9,6 +9,8 @@
 #include "startupWindow.h"
 #include "flightWindow.h"
 
+#include "Application.h"
+
 
 ///////////////////////////////////////////////////////////////////////////////////
 //
@@ -27,7 +29,7 @@ StartupWindow::StartupWindow()
 
 StartupWindow::~StartupWindow()
 {
-    LOGv("StartupWindow::~StartupWindow()\n");
+    LOGv("StartupWindow::~StartupWindow()");
 }
 
 void StartupWindow::onCreate()
@@ -94,6 +96,8 @@ bool StartupWindow::process()
 
 void StartupWindow::start()
 {
+    Screen::instance()->getApplication()->startVario();
+
     FlightWindow* flight = new FlightWindow;
     Screen::instance()->switchWindow(flight);
 }

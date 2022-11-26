@@ -5,6 +5,7 @@
 #define __UTILS_H__
 
 #include "utils_time.h"
+#include "utils_geo.h"
 
 #ifdef __cplusplus
 extern "C" {

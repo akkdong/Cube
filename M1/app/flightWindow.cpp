@@ -4,9 +4,10 @@
 #include <stdio.h>
 #include <stdint.h>
 #include "device_defines.h"
-#include "lv_app.h"
+#include "app.h"
 #include "logger.h"
 
+#include "DeviceRepository.h"
 #include "flightWindow.h"
 #include "settingWindow.h"
 #include "widget.h"
@@ -41,42 +42,42 @@ WidgetLayout _layout_1[] =
 {
     {
         FlightWindow::WIDGET_BOX_1,
-        0, 0, 180, 96, 
+        0, 0, 180, 76, 
         NumberBox::ALTITUDE_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_2,
-        0, 96, 180, 96, 
+        0, 96 + 10, 180, 76, 
         NumberBox::TRACK_HEADING, 
     },
     {
         FlightWindow::WIDGET_BOX_3,
-        0, 192, 180, 96, 
+        0, 192 + 20, 180, 76, 
         NumberBox::SPEED_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_4,
-        300, 0, 180, 96, 
+        300, 0, 180, 76, 
         NumberBox::ALTITUDE_BARO, 
     },
     {
         FlightWindow::WIDGET_BOX_5,
-        300, 96, 180, 96, 
+        300, 96 + 10, 180, 76, 
         NumberBox::SENSOR_PRESSURE, 
     },
     {
         FlightWindow::WIDGET_BOX_6,
-        300, 192, 180, 96, 
+        300, 192 + 20, 180, 76, 
         NumberBox::SPEED_VERTICAL_LAZY, 
     },
     {
         FlightWindow::WIDGET_COMPASS, 
-        180, 0, 120, 120, 
+        190, 0, 100, 100, 
         0
     },
     {
         FlightWindow::WIDGET_VARIOMETER,
-        200, 120, 80, 168, 
+        200, 100, 80, 188, 
         0
     },
 };
@@ -88,6 +89,11 @@ WidgetLayout _layout_2[] =
         0, 0, 320, 288, 
         0
     },
+    {
+        FlightWindow::WIDGET_COMPASS, 
+        0, 0, 80, 80, 
+        0
+    },    
     {
         FlightWindow::WIDGET_BOX_1,
         320, 0, 160, 72, 
@@ -186,7 +192,7 @@ void FlightWindow::onCreate()
     //
     fontCustom = lv_imgfont_create(18, getCustomFont);
     fontCustom->fallback = &lv_font_montserrat_16;
-    fontCustom->base_line = 3;
+    fontCustom->base_line = 2;
 
     //
     annunciator.create(this);
@@ -398,44 +404,46 @@ void FlightWindow::onUpdate(Annunciator* ann)
 
 void FlightWindow::onUpdate(NumberBox* box)
 {
-    app_conf_t* conf = app_get_conf();
+    //app_conf_t* conf = app_get_conf();
+    DeviceContext* context = DeviceRepository::instance().getContext();
     char value[32];
 
     switch (box->getType())
     {
     case NumberBox::ALTITUDE_GROUND:
-        sprintf(value, "%.0f", conf->altitudeGPS);
+        sprintf(value, "%.0f", context->varioState.altitudeGPS);
         break;
     case NumberBox::ALTITUDE_BARO:
-        sprintf(value, "%.0f", conf->altitudeBaro);
+        sprintf(value, "%.0f", context->varioState.altitudeBaro);
         break;
     case NumberBox::ALTITUDE_AGL:
-        sprintf(value, "%.0f", conf->altitudeAGL);
+        sprintf(value, "%.0f", context->varioState.altitudeAGL);
         break;
     case NumberBox::ALTITUDE_PROFILE:
         break;
     case NumberBox::SPEED_GROUND:
-        sprintf(value, "%.0f", conf->speedGround);
+        sprintf(value, "%.0f", context->varioState.speedGround);
         break;
     case NumberBox::SPEED_AIR:
         break;
     case NumberBox::SPEED_VERTICAL:
-        sprintf(value, "%.1f", conf->speedVertActive);
+        sprintf(value, "%.1f", context->varioState.speedVertActive);
         break;
     case NumberBox::SPEED_VERTICAL_LAZY:
-        sprintf(value, "%.1f", conf->speedVertLazy);
+        sprintf(value, "%.1f", context->varioState.speedVertLazy);
         break;
     case NumberBox::TRACK_HEADING:
-        sprintf(value, "%d", conf->heading);
+        sprintf(value, "%d", context->varioState.heading);
         break;
     case NumberBox::TARCK_BEARING:
-        sprintf(value, "%d", conf->bearing);
+        sprintf(value, "%d", context->flightState.bearingNextPoint);
         break;
     case NumberBox::TIME_FLIGHT:
-        if (conf->timeFly > 0)
+        /*
+        if (context->varioState.timeFly > 0)
         {
-            time_t temp = conf->timeFly % 3600;
-            time_t h = conf->timeFly / 3600;
+            time_t temp = context->varioState.timeFly % 3600;
+            time_t h = context->varioState.timeFly / 3600;
             time_t m = temp / 60;
             time_t s = temp % 60;
             if (h != 0)
@@ -443,6 +451,7 @@ void FlightWindow::onUpdate(NumberBox* box)
             else
                 sprintf(value, "%02d:%02d", m, s);
         }
+        */
         break;
     case NumberBox::TIME_CURRENT:
     case NumberBox::TIME_TO_NEXT_WAYPOINT:
@@ -453,20 +462,20 @@ void FlightWindow::onUpdate(NumberBox* box)
     case NumberBox::DISTANCE_FLIGHT:
         break;
     case NumberBox::GLIDE_RATIO:
-        sprintf(value, "%.1", conf->glideRatio);
+        sprintf(value, "%.1", context->flightState.glideRatio);
         break;
     case NumberBox::COMPASS:
-        sprintf(value, "%.0f", conf->heading);
+        sprintf(value, "%.0f", context->varioState.heading);
         break;
     case NumberBox::VSPEED_BAR:
     case NumberBox::VSPEED_PROFILE:
     case NumberBox::TRACK_FLIGHT:
         break;
     case NumberBox::SENSOR_PRESSURE:
-        sprintf(value, "%.0f", conf->pressure);
+        sprintf(value, "%.0f", context->varioState.pressure);
         break;
     case NumberBox::SENSOR_TEMPERATURE:
-        sprintf(value, "%.1f", conf->temperature);
+        sprintf(value, "%.1f", context->varioState.temperature);
         break;
     case NumberBox::SENSOR_HUMIDITY:
         break;
@@ -487,8 +496,9 @@ void FlightWindow::onUpdate(CompassWidget* compass)
     if (!compass->getVisible())
         return;
 
-    app_conf_t* conf = app_get_conf();
-    compass->draw(conf->heading, /*conf->bearing*/ -1, 1);
+    //app_conf_t* conf = app_get_conf();
+    DeviceContext* context = DeviceRepository::instance().getContext();
+    compass->draw(context->varioState.heading, /*context->varioState.bearing*/ -1, 0);
 }
 
 void FlightWindow::onUpdate(VariometerWidget* variometer)
@@ -496,8 +506,9 @@ void FlightWindow::onUpdate(VariometerWidget* variometer)
     if (!variometer->getVisible())
         return;
 
-    app_conf_t* conf = app_get_conf();
-    variometer->draw(conf->speedVertLazy);
+    //app_conf_t* conf = app_get_conf();
+    DeviceContext* context = DeviceRepository::instance().getContext();
+    variometer->draw(context->varioState.speedVertLazy);
 }
 
 void FlightWindow::onUpdate(ThermalAssistant* assistant)

@@ -63,6 +63,10 @@ void bsp_hal_init()
 	// setup-wire
 	Wire.begin(I2C0_SDA, I2C0_SCL);
 
+	// setup SD & SPIFF 
+	// ...
+	// & load device-configuration
+
 	// setup-pwm
 	beep.begin(SineGenerator::USE_CHANNEL_1);
 	
@@ -73,6 +77,7 @@ void bsp_hal_init()
 	// setup-touch
 	touch.begin(); 
 
+	// start BLE (HID:Keyboard + SPP)
 	bleDevice.begin();
 }
 

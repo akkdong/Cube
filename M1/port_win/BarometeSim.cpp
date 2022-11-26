@@ -43,11 +43,11 @@ bool BarometerSim::getData(float* p, float* t)
     //
     #if 1
     updateCount += 1;
-    // period : 10 sec, tick : 1000 / 25 ms
+    // period : 60 sec, tick : 1000 / 25 ms
     // 1 period -> 10000 / (1000 / 25) = 250 tick
     // 1 tick = 2 * 3.14 / 250 rad
     
-    *p = 95000 + sin(updateCount * 2 * 3.14 / (10000 / (1000 / 25))) * 80 + (rand() % 90);
+    *p = 95000 + sin(updateCount * 2 * 3.14 / (60000 / (1000 / 25))) * 80 + (rand() % 90);
     *t = 15.0;
     #else
     *p = baro_data[updateCount].pressure;

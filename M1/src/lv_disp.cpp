@@ -10,7 +10,7 @@
 #include "logger.h"
 #include "FT6206.h"
 #include "lv_disp.h"
-#include "lv_app.h"
+#include "app.h"
 
 //
 //
@@ -158,7 +158,7 @@ void lv_disp_init()
 	}
 }
 
-
+#if __REMOVED__
 void lv_hal_loop()
 {
 	while(1)
@@ -171,3 +171,4 @@ void lv_hal_loop()
 		delay(10);
 	}
 }
+#endif

@@ -58,6 +58,20 @@ bool Screen::create(DisplayObject* /*parent*/)
     return true;
 }
 
+void Screen::setApplication(Application* app)
+{
+    if (_this)
+        lv_obj_set_user_data(_this, app);
+}
+
+Application* Screen::getApplication()
+{
+    if (!_this)
+        return nullptr;
+        
+    return (Application *)lv_obj_get_user_data(_this);
+}
+
 void Screen::activateWindow(Window* window) 
 {
     // create display object

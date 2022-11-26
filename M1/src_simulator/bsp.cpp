@@ -52,7 +52,7 @@ void bsp_gui_init()
 void bsp_update()
 {
 	lv_timer_handler();
-	SDL_Delay(5);
+	SDL_Delay(10);
 }
 
 

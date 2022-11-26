@@ -7,14 +7,20 @@
 #include <lvgl.h>
 #include "bsp.h"
 #include "logger.h"
-#include "lv_app.h"
-#include "lv_page.h"
+#include "app.h"
 
+#include "DeviceRepository.h"
 #include "Variometer.h"
 #include "VarioSentence.h"
 #include "LocationParser.h"
 #include "Beeper.h"
 #include "Keypad.h"
+#include "Battery.h"
+#include "Agl.h"
+#include "IGCLogger.h"
+#include "SpeedCalculator.h"
+#include "BluetoothManager.h"
+
 
 #define VFILTER_HARINAIR_KF2     1
 #define VFILTER_HARINAIR_KF3     2
@@ -39,47 +45,63 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // class Application
 
+class Window;
+class Widget;
+class StartupWindow;
+
 class Application : public KeypadCallback
 {
+    friend class Window;
+    friend class Widget;
+    friend class StartupWindow;
+
 public:
     Application();
 
-public:
-    void        begin();
-    void        end();
+    enum DeviceMode
+    {
+        MODE_INIT,
+        MODE_GROUND,
+        MODE_FLYING,
+        MODE_CIRCLING,
+        MODE_GLIDING,
+        MODE_SETTING,
+    };
 
-    void        update();
+public:
+    void                        begin();
+    void                        end();
+
+    void                        update();
 
 protected:
     // KeypadCallback
-    void        onPressed(uint8_t key) override;
-    void        onLongPressed(uint8_t key) override;
-    void        onReleased(uint8_t key) override;
+    void                        onPressed(uint8_t key) override;
+    void                        onLongPressed(uint8_t key) override;
+    void                        onReleased(uint8_t key) override;
 
 protected:
-    void        init_config(app_conf_t* conf);
-    void        update_time();
+    //void                      init_config(app_conf_t* conf);
+    void                        update_time();
+
+    void                        updateFlightState();
+
+    void                        startCircling();
+    void                        startGliding();
+    void                        stopCircling();
+    void                        stopGliding();
+
+    void                        startFlight();
+    void                        stopFlight();
+    void                        startVario();
     
 protected:
     //
-    const lv_font_t *           font_large;
-    const lv_font_t *           font_normal;
-    const lv_font_t *           font_small;
+    DeviceContext*              context;
+    DeviceMode                  mode;
 
-    app_conf_t*                 app_conf;
-
-    vario_conf_t                varioConf;
-    vario_status_t              varioStatus;
-    flight_stat_t               flightStats;
-    flight_state_t              flightState;
-
-    lv_obj_t*                   app_annun;
-    lv_obj_t*                   app_page;
-
-    lv_obj_t*                   app_clock;
-    lv_obj_t*                   app_bluetooth;
-    lv_obj_t*                   app_gps;
-    lv_obj_t*                   app_volume;
+    //uint8_t                     deviceMode; // undef, wakeup, vario, vario_and_gp, pref
+    //uint8_t                     varioMode; // init, landing, flying, circling
 
     //
     Variometer                  vario;
@@ -87,6 +109,11 @@ protected:
     VarioSentence               varioNmea;
     Beeper                      beeper;
     Keypad                      keyPad;
+    Battery                     battery;
+    AGL                         agl;
+    IGCLogger                   igc;
+    SpeedCalculator             speedCalculator;
+    BluetoothManager            bt;
 
     #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
     VarioFilter_HarInAirKF2     varioFilter;
@@ -99,10 +126,20 @@ protected:
     #endif
 
     //
+    #if 0
     int                         bt_lock_state; // 0: unlocked, 1: locked_by_vario, 2: locked_by_gps
-    uint8_t                     tick_update_time;
+    #endif
 
-    bool                        gps_fixed;
+    uint32_t                    tick_updateTime;
+    uint32_t                    tick_updateDisp;
+    uint32_t                    tick_stopBase;
+    uint32_t                    tick_silentBase;
+
+    bool                        gpsFixed;
+    bool                        dispNeedUpdate;
+
+    //
+    //uint32_t                    modeTick;
 };
 
 

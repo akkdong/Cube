@@ -10,6 +10,13 @@
 
 
 ///////////////////////////////////////////////////////////////////////////////////
+//
+
+class Application;
+
+
+
+///////////////////////////////////////////////////////////////////////////////////
 // class Window
 
 class Window : public DisplayObject
@@ -53,6 +60,9 @@ protected:
     virtual bool    create(DisplayObject* parent);
 
 public:
+    void            setApplication(Application* app);
+    Application*    getApplication();
+
     void            activateWindow(Window* window);
     void            fallbackWindow(Result result);
 

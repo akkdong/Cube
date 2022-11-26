@@ -1,61 +1,68 @@
-#if 0
+// main.cpp
+//
 
 #include <Arduino.h>
-#include <lvgl.h>
-#include <Arduino_GFX_Library.h>
 
 #include "device_defines.h"
+#include "logger.h"
 #include "bsp.h"
 
-#include "lv_hal_porting.h"
-#include "lv_app.h"
+#include "VarioSentence.h"
+#include "Variometer.h"
+#include "Keypad.h"
+#include "Digit.h"
+#include "Beeper.h"
+#include "Battery.h"
+#include "Agl.h"
+#include "IGCLogger.h"
+
+#include "Application.h"
 
 //
 //
 //
 
-static app_conf_t app_conf;
-
-
-//
-//
-//
-
-void power_event_cb(lv_event_t* evt)
+void setup()
 {
-	lv_event_code_t code = lv_event_get_code(evt);
-	if (code == LV_EVENT_RELEASED)
-	{
-		Serial.println("Turn of board power!!!");
-		bsp_power_on(false);
-	}
+    // initialize core & peripherals
+    LOGi("Start M1 Simulator!!");
+    bsp_hal_init();
+    // hold-on power: turn-on power-switch
+    bsp_power_on(true);
+
+    // initialzie lvgl, display, indev, ...
+    bsp_gui_init(); 
+    // turn-on lcd backlight
+    bsp_lcd_backlight(true);
+
+    LOGi("Total heap: %d", ESP.getHeapSize());
+    LOGi("Free heap: %d", ESP.getFreeHeap());
+    LOGi("Total PSRAM: %d", ESP.getPsramSize());
+    LOGi("Free PSRAM: %d", ESP.getFreePsram());    
+
+    //
+    DeviceRepository& repo = DeviceRepository::instance();
+    repo.reset();
+    repo.loadPref();    
+
+    //
+    Application app;
+
+    app.begin();
+
+    while (1)
+    {
+        // timer/task handler
+        bsp_update();
+
+        //
+        app.update();
+    }
 }
 
 
-//
-//
-//
-
-void setup() 
+void loop()
 {
-  // 
-  bsp_init();
-  bsp_power_on(true);
-
-  //
-  lv_init();  
-  lv_hal_setup();
-
-  //
-  app_config_init(&app_conf);
-  app_init();
-
-  bsp_lcd_backlight(true);
-  lv_hal_loop();
+    // never comes here
 }
 
-void loop() 
-{
-}
-
-#endif

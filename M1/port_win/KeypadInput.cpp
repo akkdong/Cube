@@ -122,6 +122,11 @@ public:
         return 0;
     }
 
+    static Uint32 TimerProc(Uint32 interval, void* param) {
+        ((KeypadInput *)param)->KeyProc();
+        return 0;
+    }
+
 protected:
     uint32_t        keyState;
 };
@@ -135,6 +140,7 @@ IKeypadInput* CreateKeypadInput()
     static KeypadInput _input;
 
     SDL_CreateThread(KeypadInput::ThreadProc, "KeyProc", (void *)&_input);
+    //SDL_AddTimer(100, KeypadInput::TimerProc, (void *)&_input);
 
     return &_input;
 }

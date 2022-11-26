@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include "device_defines.h"
 #include "logger.h"
-#include "lv_app.h"
+#include "app.h"
 #include "utils.h"
 #include "BLEVario.h"
 #include "Variometer.h"

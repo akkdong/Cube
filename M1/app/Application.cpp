@@ -3,6 +3,7 @@
 
 #ifdef ARDUINO
 #include <Arduino.h>
+#else
 #endif
 #include <sys/time.h>
 #include "device_defines.h"
@@ -12,74 +13,34 @@
 #include "timezone.h"
 
 #include "Application.h"
-#include "Beeper.h"
 
 #include "startupWindow.h"
 #include "flightWindow.h"
 
 
-extern "C" app_conf_t* app_get_conf()
-{
-    static app_conf_t conf;
+#define THRESHOLD_CIRCLING_HEADING				(6)
 
-    return &conf;
-}
-
-extern "C" void app_config_init(app_conf_t* conf)
-{
-	//
-    memset(conf, 0, sizeof(app_conf_t));
-
-    //
-    conf->bearing = -1;
-}
-
-extern "C" void page_event_cb(lv_event_t* event)
-{
-    uint32_t key = lv_indev_get_key(lv_indev_get_act());
-    LOGi("Page Event: %d, %d", event->code, key);
-}
-
-extern "C" void page_event_clicked(lv_event_t* event)
-{
-    LOGi("Page Event: %d", event->code);
-}
-
-
+#define MAX_GLIDING_COUNT						(10)
+#define MIN_GLIDING_COUNT						(0)
+#define GLIDING_START_COUNT						(6)
+#define GLIDING_EXIT_COUNT						(6)
+#define CIRCLING_EXIT_COUNT						(3)
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //
 
-lv_page_item_t page_1[] = {
-    {
-        ALTITUDE_GROUND, 0, 0, 180, 96, LV_BORDER_SIDE_FULL
-    },
-    {
-        TRACK_HEADING, 0, 96, 180, 96, LV_BORDER_SIDE_FULL 
-    },
-    {
-        SPEED_GROUND, 0, 192, 180, 96, LV_BORDER_SIDE_FULL
-    },
-    {
-        ALTITUDE_BARO, 300, 0, 180, 96, LV_BORDER_SIDE_FULL 
-    },
-    {
-        SENSOR_PRESSURE, 300, 96, 180, 96, LV_BORDER_SIDE_FULL 
-    },
-    {
-        SPEED_VERTICAL, 300, 192, 180, 96, LV_BORDER_SIDE_FULL 
-    },
-    {
-        COMPASS, 180, 0, 120, 120, LV_BORDER_SIDE_NONE
-    },
-    {
-        VSPEED_BAR, 180, 120, 120, 168, LV_BORDER_SIDE_FULL
-    },
-    {
-        END_OF_BOX
-    }
+enum _DeviceMode
+{
+    DEVICE_MODE_UNDEF,
+    DEVICE_MODE_VARIO,
+    DEVICE_MODE_VARIO_AND_GPS,
 };
+
+
+
+//////////////////////////////////////////////      //////////////////////////////////////////
+//
 
 static Tone melodyStart[] =
 {
@@ -89,161 +50,95 @@ static Tone melodyStart[] =
 };
 
 
-#if 0
-extern const lv_img_dsc_t paper_plane;
-extern const lv_img_dsc_t bluetooth;
-extern const lv_img_dsc_t map_marker;
-extern const lv_img_dsc_t volume;
-
-
-extern "C" bool get_imgfont(const lv_font_t * font, void * img_src, uint16_t len, uint32_t unicode, uint32_t unicode_next)
-{
-    if (unicode == 0xF001)
-    {
-        memcpy(img_src, &bluetooth, sizeof(lv_img_dsc_t));
-        return true;
-    }
-    else if (unicode == 0xF002)
-    {
-        memcpy(img_src, &map_marker, sizeof(lv_img_dsc_t));
-        return true;
-    }
-    else if (unicode == 0xF003)
-    {
-        memcpy(img_src, &volume, sizeof(lv_img_dsc_t));
-        return true;
-    }
-    else if (unicode == 0xF004)
-    {
-        memcpy(img_src, &paper_plane, sizeof(lv_img_dsc_t));
-        return true;
-    }
-
-    return false;
-}
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////////////
 // class Application implementation
 
 Application::Application() 
-    : varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
+    : context(nullptr)
+    , mode(MODE_INIT)
+    , varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
     , keyPad(this)
+    #if 0
     , bt_lock_state(0)
-    , gps_fixed(false)
+    #endif
+    , gpsFixed(false)
+    , dispNeedUpdate(false)
 {
     // ...
 }
 
 void Application::begin()
 {
+    // pre-initialize
+    // gpio
+    // serial
+    // wire
+    // beep
+    // external-devices(baro, touch, ...)
+    // BT(X)
+    // SPIFF
+    // ...
+
+    mode = MODE_INIT;
+
+    // start-vario
     //
-    app_conf = app_get_conf();
-    app_config_init(app_conf);
-
-    //
-    font_large = &lv_font_montserrat_48;
-    font_normal = LV_FONT_DEFAULT;
-    font_small = &lv_font_montserrat_12;
-
-#if 0
-    //
-    lv_box_init();
-
-    //
-    lv_obj_t* scr = lv_obj_create(NULL);
-    lv_scr_load(scr);
-
-    // annunciator height = 32
-    // page height = 320 - 32 = 288
-    // one box height = 288 / 3 = 96
-
-    lv_obj_t* ann = lv_obj_create(scr);
-    lv_obj_set_style_pad_hor(ann, 4, 0);
-    lv_obj_set_style_pad_ver(ann, 0, 0);
-    lv_obj_set_pos(ann, 0, 0);
-    lv_obj_set_size(ann, 480, 32);
-    lv_obj_set_style_radius(ann, 0, 0);
-    lv_obj_set_style_border_width(ann, 2, 0);
-    lv_obj_set_style_border_color(ann, lv_color_hex(0x343247), 0);
-    lv_obj_set_style_bg_color(ann, lv_color_hex(0x343247), 0);
-    //lv_obj_set_style_border_side(ann, LV_BORDER_SIDE_BOTTOM, 0);
-
-    // annunciator icons
-    // logo, gps, bluetooth, beep          time
-
-    lv_obj_t* clock = lv_label_create(ann);
-    lv_obj_set_style_text_font(clock, &lv_font_montserrat_16, 0);
-    lv_obj_set_style_text_color(clock, lv_color_hex(0xFFFFFF), 0);
-    lv_obj_align(clock, LV_ALIGN_RIGHT_MID, 0, 0);
-    lv_label_set_text(clock, "");
-
-    /*
-    lv_obj_t* icon_logo = lv_img_create(ann);
-    lv_img_set_src(icon_logo, &paper_plane);
+    // load-screen
+    // battery.begin()
+    // update battery power
+    // bt.begin()
+    // update bt status
+    // vario.begin()
+    // init device-tick
     
-    //lv_img_buf_set_palette(&paper_plane, 0, lv_color_hex(0x000000));
-    //lv_img_buf_set_palette(&paper_plane, 1, lv_color_hex(0xFFFFFF));
-    lv_obj_align(icon_logo, LV_ALIGN_LEFT_MID, 0, 0);
+    // loop
+    //
+    //   keybd.update()
+    //   vario.available()
+    //     update vario-state (speed, alt, pressure, temp, ...)
+    //     update vario-calculator(?)
+    //     update beep
+    //     update device-tick if device is not quiet
+    //     goto deep-sleep if device is quiet
+    //     update vario-nmea
+    //   nmea.update() && is available
+    //     update vario-state (lon, lat, alt, speed, heding, ...)
+    //     if it have been fix (READY_FLIGHT)
+    //       calibrate vario-altitude & sea-level
+    //       update device-time
+    //       change device-mode : VARIO_AND_GPS
+    //       change flight-mode : READY
+    //     if device-mode is VARIO_AND_GPS
+    //       check start-flight : whther flight_mode == READ and speed over threshold
+    //          start-flight 
+    //          ----------------------
+    //          auto-turn-on-sound?
+    //          play start-flight melody
+    //          start logging (if logging is enabled)
+    //          reset flight-state & stats
+    //          initialize flight-state (takeoff-time, position, ....)
+    //          change flight-mode: FLYING
+    //          reset flight-tick
+    //       update flight-state
+    //          flight-time, bearing, distance, altitude-stat
+    //          track history
+    //          gliding
+    //          flight-mode (flying, circling, gliding)
+    //       check stop-flight : threashold-(speed, timeout)   
+    //   update gps-status
+    //   update  logger/bt/battery, ...
 
-    lv_obj_t* icon_bluetooth = lv_img_create(ann);
-    lv_img_set_src(icon_bluetooth, &bluetooth);
-    lv_obj_align(icon_bluetooth, LV_ALIGN_LEFT_MID, 24, 0);
-
-    lv_obj_t* icon_gps = lv_img_create(ann);
-    lv_img_set_src(icon_gps, &map_marker);
-    lv_obj_align(icon_gps, LV_ALIGN_LEFT_MID, 48, 0);
-
-    lv_obj_t* icon_volume = lv_img_create(ann);
-    lv_img_set_src(icon_volume, &volume);
-    lv_obj_align(icon_volume, LV_ALIGN_LEFT_MID, 72, 0);
-    */
 
     //
-    lv_font_t* img_font = lv_imgfont_create(16, get_imgfont);
-    img_font->fallback = &lv_font_montserrat_16;
+    context = DeviceRepository::instance().getContext();
 
-    lv_obj_t* status = lv_label_create(ann);
-    lv_obj_set_style_text_font(status, img_font, 0);
-    lv_obj_set_style_text_color(status, lv_color_hex(0xFF0020), 0);
-    lv_obj_align(status, LV_ALIGN_LEFT_MID, 0, 0);
-    lv_label_set_text(status, "\uF004 \uF001 \uF002 \uF003"); // EF 80 84 20 EF 80 81 20 ...
-
-    lv_obj_t* page = lv_obj_create(scr);
-    lv_obj_set_style_pad_hor(page, 0, 0);
-    lv_obj_set_style_pad_ver(page, 0, 0);
-    lv_obj_set_pos(page, 0, 32);
-    lv_obj_set_size(page, 480, 320 - 32);
-    lv_obj_set_style_border_width(page, 0, 0);
-    lv_obj_set_style_bg_color(page, lv_color_hex(0xE0E000), 0);
-
-    bsp_regiter_keypad_receiver(page);
-    lv_obj_add_event_cb(page, page_event_cb, LV_EVENT_KEY, 0);
-    lv_obj_add_event_cb(page, page_event_clicked, LV_EVENT_CLICKED, 0);
-
-    // page
-    //      box position/dimention
-    //      box type: { title, sub-title, content }
-    lv_page_create(page, page_1);
-
-
-
-    app_annun = ann;
-    app_page = page;
-
-    app_clock = clock;
-    //app_bluetooth = icon_bluetooth;
-    //app_gps = icon_gps;
-    //app_volume = icon_volume;
-#else
+    //
     Screen* screen = Screen::instance();
+    screen->setApplication(this);
     screen->activateWindow(new StartupWindow);
-#endif
 
-    //
-    //
-    //
-    setTimeZone(9 * -3600, 0);
+    //    
+    setTimeZone(context->deviceDefault.timezone * -3600, 0);
 
     //
     // start-vario
@@ -275,11 +170,18 @@ void Application::begin()
     locParser.begin(CreateLocationDataSource());
     beeper.begin(CreateTonePlayer());
     keyPad.begin(CreateKeypadInput());
+    speedCalculator.begin(1000, 25);
+
+    if (context->deviceDefault.enableBT)
+        bt.begin(0x03, context->deviceDefault.btName);
 
     beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
 
     //
-    tick_update_time = millis();
+    tick_updateTime = millis();
+    tick_updateDisp = millis() - 1000;
+
+    tick_stopBase = tick_silentBase = millis();
 }
 
 void Application::end()
@@ -293,161 +195,187 @@ void Application::update()
     //
     //
 
-    update_time();
-
-    #if 1
-    if (app_conf->dirty)
+    if (mode == MODE_INIT)
     {
-        Window* active = Screen::instance()->peekWindow();
-        if (active)
-            active->update();
-
-        app_conf->dirty = 0;
+        return;
     }
-    #else
-    static uint32_t lastTick = millis();
+
+    if (mode == MODE_SETTING)
+    {
+        return;
+    }
+
+    // update screen in every 500ms if it's need to update
     uint32_t tick = millis();
-    if (tick - lastTick > 500)
+    if (dispNeedUpdate && tick - tick_updateDisp > 500)
     {
         Window* active = Screen::instance()->peekWindow();
         if (active)
             active->update();
 
-        lastTick = tick;
+        tick_updateDisp = tick;
+        dispNeedUpdate = false;
     }
-    #endif
 
-    // reset-watchdog
-    // keybd-update
-    // vario.avaiable?
-    //   update context-data: v-vel, v-vel-statistic, altitude, ....
-    //   update beeper
-    //   check-sleep?
-    //   update vario-sentence : LX..
     //
-    // nmea-parser-update
-    // nmea-parser.data-ready?
-    //   update vario-state (gps relative stubs)
-    //   check takeoff or landing
-    //     or update flight-state
-    // logger-update
-    // bt-update
-    // battery-update
-    // process-key
-
     locParser.update();
     int varioUpdated = vario.update();
     beeper.update();
+    keyPad.update();    // button processing
 
-    // button processing
-    keyPad.update();
+    if (battery.update())
+        context->deviceState.batteryPower = battery.getVoltage();
 
+
+    //
     if (locParser.availableLocation())
     {
         LOGd("[GPS] %f,%f %f", locParser.getLongitude(), locParser.getLatitude(), locParser.getAltitude());
 
-        app_conf->latitude = locParser.getLatitude();
-        app_conf->longitude = locParser.getLongitude();
-        app_conf->altitudeGPS = locParser.getAltitude();
-        app_conf->speedGround = locParser.getSpeed();
-        app_conf->heading = locParser.getHeading();
-        app_conf->dirty = 1;
+        // update vario-state
+        context->varioState.latitudeLast = context->varioState.latitude;
+        context->varioState.longitudeLast = context->varioState.longitude;
+        context->varioState.headingLast = context->varioState.heading;
+
+        context->varioState.latitude = locParser.getLatitude();
+        context->varioState.longitude = locParser.getLongitude();
+        context->varioState.altitudeGPS = locParser.getAltitude();
+        context->varioState.speedGround = locParser.getSpeed();
+        context->varioState.heading = locParser.getHeading();
+        context->varioState.timeCurrent = locParser.getDateTime();
+        context->varioState.altitudeGround = agl.getGroundLevel(context->varioState.latitude, context->varioState.longitude);
+        context->varioState.altitudeAGL = context->varioState.altitudeGPS - context->varioState.altitudeGround;
+        context->varioState.altitudeRef1 = context->varioState.altitudeGPS - context->varioSettings.altitudeRef1;
+        context->varioState.altitudeRef2 = context->varioState.altitudeGPS - context->varioSettings.altitudeRef2;
+        context->varioState.altitudeRef3 = context->varioState.altitudeGPS - context->varioSettings.altitudeRef3;
 
         locParser.resetLocation();
+
+        // GPS has been fixed
+        if (!gpsFixed)
+        {
+            LOGv("GPS Fixed!!");
+
+            // update device-time
+            setDeviceTime(context->varioState.timeCurrent);
+
+            // why don't you calibarate a bit latter. :  wait for GPS to stabilize.
+            vario.calibrateAltitude(context->varioState.altitudeGPS);
+            vario.calibrateSeaLevel(context->varioState.altitudeGPS);
+
+            // gps-fixed melody
+            //beeper.playMelody(toneFixed, sizeof(toneFixed) / sizeof(toneFixed[0]));
+        }
+
+        if (mode == MODE_GROUND)
+        {
+            if (context->varioState.speedGround > context->logger.takeoffSpeed)
+                startFlight();
+        }
+        else
+        {
+            updateFlightState();
+
+            if (context->varioState.speedGround < context->logger.landingSpeed) // FLIGHT_START_MIN_SPEED
+            {
+                if ((millis() - tick_stopBase) > context->logger.landingTimeout) // FLIGHT_LANDING_THRESHOLD
+                    stopFlight();
+            }
+            else
+            {
+                tick_stopBase = millis();
+            }
+        }
+
+        #if 0
+        // update deivce-mode
+        if (deviceMode == DEVICE_MODE_VARIO)
+        {
+            // ready-flight
+            // why don't you calibarate a bit latter. :  wait for GPS to stabilize.
+            vario.calibrateAltitude(context->varioState.altitudeGPS);
+            vario.calibrateSeaLevel(context->varioState.altitudeGPS);
+
+            //struct timeval now = { context->varioState.timeCurrent, 0 };
+            //settimeofday(&now, NULL);
+            // or
+            //setDeviceTime(context->varioState.timeCurrent);
+
+            // play GPS fixed melody
+            //beeper.setMelody(...);
+
+            deviceMode = DEVICE_MODE_VARIO_AND_GPS;
+            context->flightState.flightMode = FMODE_READY;
+        }
+        #endif
+
+        dispNeedUpdate = true;
     }
 
+    // update GPS fixed-state
+    gpsFixed = locParser.isFixed();
+
+    // vario updated
     if (varioUpdated > 0)
     {
-        //static uint32_t lastTick = millis();
-        //static uint32_t tick[30];
-        static uint32_t count = 0;
-        static float vSpeed = 0;
+        //
+        context->varioState.altitudeBaro = vario.getAltitudeFiltered();
+        context->varioState.altitudeCalibrated = vario.getAltitudeCalibrated();
+        context->varioState.pressure = vario.getPressure();
+        context->varioState.temperature = vario.getTemperature();
+        context->varioState.speedVertActive = vario.getVelocity();
 
-        app_conf->altitudeBaro = vario.getAltitudeFiltered();
-        app_conf->pressure = vario.getPressure();
-        app_conf->temperature = vario.getTemperature();
-        app_conf->speedVertActive = vario.getVelocity();
+        if (speedCalculator.add(context->varioState.speedVertActive) > 0)
+        {
+            context->varioState.speedVertLazy = speedCalculator.get();
+            dispNeedUpdate = true;
 
-        vSpeed += app_conf->speedVertActive;
-        //LOGi("%f, %f", app_conf->altitudeBaro * 100.0f , app_conf->speedVertActive * 100.0f);
+            context->updateVSpeedHistory(context->varioState.speedVertLazy);
+        }
 
         /*if (!ble_isConnected())*/
-            beeper.setVelocity(app_conf->speedVertActive);
-
-        //tick[count] = millis();
-        count += 1;
-        if (count * (1000 / SENSOR_UPDATE_FREQUENCY) >= VARIOMETER_SENTENCE_DELAY)
-        {
-            app_conf->speedVertLazy = vSpeed / count;
-            app_conf->dirty = 1;
-
-            vSpeed = 0;
-            count = 0;
-            //lastTick = millis();
-        }
+            beeper.setVelocity(context->varioState.speedVertActive);
 
         //
-        if (varioNmea.checkInterval())
+        if (bt.isConnected() && varioNmea.checkInterval())
         {
-            float height = locParser.isFixed() ? app_conf->altitudeGPS : -1;
-            float velocity = app_conf->speedVertLazy;
-            float temperature = app_conf->temperature;
-            float pressure = app_conf->pressure; // to hPa
+            float height = locParser.isFixed() ? context->varioState.altitudeGPS : -1;
+            float velocity = context->varioState.speedVertLazy;
+            float temperature = context->varioState.temperature;
+            float pressure = context->varioState.pressure; // to hPa
+            float voltage = battery.getVoltage();
 
-            varioNmea.begin(height, velocity, temperature, pressure, -1);
+            varioNmea.begin(height, velocity, temperature, pressure, voltage);
         }
+
+        if (mode == MODE_GROUND)
+        {
+            //if (fabs(context->varioState.speedVertLazy) > context->logger.takeoffVertSpeed)
+            //    startFlight();
+        }
+        else if (!gpsFixed) // case of MODE_FLIYING & UNFIXED-GPS
+        {
+            if (context->varioState.speedVertLazy < STABLE_SINKING_THRESHOLD || STABLE_SINKING_THRESHOLD < context->varioState.speedVertLazy)
+                tick_silentBase = millis();
+
+            if (context->threshold.autoShutdownVario && ((millis() - tick_silentBase) > context->threshold.autoShutdownVario))
+                stopFlight();
+        }        
     }
 
 
-    // vario-sentense available?
-    if ((bt_lock_state == 0 && varioNmea.available()) || (bt_lock_state == 1))
+    // vario-sentense available?    
+    bt.update(varioNmea, locParser);
+
+    // write igc-sentence
+    if (igc.isLogging() && locParser.availableIGC()) 
     {
-        bt_lock_state = 1;
+        float altitude = vario.getAltitude();
+        igc.updateBaroAltitude(altitude);
 
-        while (varioNmea.available())
-        {
-            int ch = varioNmea.read();
-            if (ch < 0)
-                break;
-
-            ble_writeBuffered(ch);
-            //Serial.write(ch);
-
-            if (ch == '\n')
-            {
-                bt_lock_state = 0;
-                break;
-            }
-        }
-
-        if (bt_lock_state == 0 /*|| bleDevice.uartBufferIsFull()*/)
-            ble_flush();
-    }    
-
-    // nmea-sentense avaialble?
-    if ((bt_lock_state == 0 && locParser.availableNmea()) || (bt_lock_state == 2))
-    {
-        bt_lock_state = 2;
-
-        while (locParser.availableNmea())
-        {
-            int ch = locParser.readNmea();
-            if (ch < 0)
-                break;
-
-            ble_writeBuffered(ch);
-            //Serial.write(ch);
-
-            if (ch == '\n')
-            {
-                bt_lock_state = 0;
-                break;
-            }
-        }
-
-        if (bt_lock_state == 0 /*|| bleDevice.uartBufferIsFull()*/)
-            ble_flush();
-    }  
+        while (locParser.availableIGC())
+            igc.write(locParser.readIGC());
+    }
 }
 
 void Application::onPressed(uint8_t key) 
@@ -494,17 +422,18 @@ void Application::onReleased(uint8_t key)
     #endif
 }  
 
+#if 0
 void Application::update_time()
 {
     uint32_t tick = millis();
-    if (tick_update_time - tick > 1000)
+    if (tick_updateTime - tick > 1000)
     {
         //
         bool fixed = locParser.isFixed();
-        if ((!gps_fixed && fixed) || (gps_fixed && fixed))
+        if ((!gpsFixed && fixed) || (gpsFixed && fixed))
         {
-            gps_fixed = fixed;
-            if (gps_fixed)
+            gpsFixed = fixed;
+            if (gpsFixed)
                 setDeviceTime(locParser.getDateTime());
         }
 
@@ -518,6 +447,266 @@ void Application::update_time()
         lv_label_set_text(app_clock, sz);
         #endif
 
-        tick_update_time = tick;
+        tick_updateTime = tick;
     }
+}
+#endif
+
+
+void Application::updateFlightState()
+{
+	// update flight time
+	context->flightState.flightTime = context->varioState.timeCurrent - context->flightState.takeOffTime;
+	// update bearing & distance from takeoff
+	context->flightState.bearingTakeoff = GET_BEARING(context->varioState.latitude, context->varioState.longitude, 
+			context->flightState.takeOffPos.lat, context->flightState.takeOffPos.lon);
+	context->flightState.distTakeoff = GET_DISTANCE(context->varioState.latitude, context->varioState.longitude, 
+			context->flightState.takeOffPos.lat, context->flightState.takeOffPos.lon);
+	// and update total flight distance
+	context->flightState.distFlight += GET_DISTANCE(context->varioState.latitude, context->varioState.longitude, 
+			context->varioState.latitudeLast, context->varioState.longitudeLast);
+	// add new track point & calculate relative distance
+	context->updateTrackHistory(context->varioState.latitude, context->varioState.longitude, context->varioState.speedVertLazy);
+
+	// update flight statistics
+	context->flightStats.altitudeMax = _MAX(context->flightStats.altitudeMax, context->varioState.altitudeGPS);
+	context->flightStats.altitudeMin = _MIN(context->flightStats.altitudeMin, context->varioState.altitudeGPS);
+
+	context->flightStats.varioMax = _MAX(context->flightStats.varioMax, context->varioState.speedVertLazy);
+	context->flightStats.varioMin = _MIN(context->flightStats.varioMin, context->varioState.speedVertLazy);
+	
+
+	// check circling
+	int16_t deltaHeading = context->varioState.heading - context->varioState.headingLast;
+
+	if (deltaHeading > 180)
+		deltaHeading = deltaHeading - 360;
+	if (deltaHeading < -180)
+		deltaHeading = deltaHeading + 360;
+
+	//context->flightState.deltaHeading_AVG += (int16_t)((deltaHeading - context->flightState.deltaHeading_AVG) * DAMPING_FACTOR_DELTA_HEADING);
+	context->flightState.deltaHeading_AVG = deltaHeading;
+	context->flightState.deltaHeading_SUM += context->flightState.deltaHeading_AVG;
+	context->flightState.deltaHeading_SUM = _CLAMP(context->flightState.deltaHeading_SUM, -450, 450); // one and a half turns
+
+	if (abs(context->flightState.deltaHeading_AVG) < THRESHOLD_CIRCLING_HEADING)	
+		context->flightState.glidingCount = _MIN(MAX_GLIDING_COUNT, context->flightState.glidingCount + 1);
+	else
+		context->flightState.glidingCount = _MAX(MIN_GLIDING_COUNT, context->flightState.glidingCount - 1);
+
+	switch (mode)
+	{
+	case MODE_FLYING :
+		if (abs(context->flightState.deltaHeading_SUM) > 360)
+		{
+			startCircling();
+		}
+		else if (context->flightState.glidingCount > GLIDING_START_COUNT)
+		{
+			startGliding();
+		}
+		break;
+
+	case MODE_CIRCLING :
+		// update time & gain
+		context->flightState.circlingTime = context->varioState.timeCurrent - context->flightState.circlingStartTime;
+		context->flightState.circlingGain = context->varioState.altitudeGPS - context->flightState.circlingStartPos.alt;
+
+		// checking exit
+		if (context->flightState.glidingCount > CIRCLING_EXIT_COUNT)
+		{
+			// CIRCLING --> FLYING(NORMAL)
+			stopCircling();
+		}
+		break;
+
+	case MODE_GLIDING :
+		// update gliding ratio(L/D)
+		{
+			float dist = GET_DISTANCE(context->flightState.glidingStartPos.lat, context->flightState.glidingStartPos.lon,
+				context->varioState.latitude, context->varioState.longitude);
+
+			if (dist > 100)
+			{
+				if (context->flightState.glidingStartPos.alt > context->varioState.altitudeGPS)
+				{
+					float diff = context->flightState.glidingStartPos.alt - context->varioState.altitudeGPS;
+					context->flightState.glideRatio = dist / diff;
+				}
+				else
+				{
+					context->flightState.glideRatio = 0; // INF
+				}
+			}
+		}
+
+		// checking exit
+		if (context->flightState.glidingCount < GLIDING_EXIT_COUNT)
+		{
+			// GLIDING --> FLYING(NORMAL)
+			stopGliding();
+		}
+		break;
+	}
+}
+
+
+void Application::startCircling()
+{
+	// start of circling
+	//context->flightState.flightMode = FMODE_CIRCLING;
+    mode = MODE_CIRCLING;
+
+	// save circling state
+	context->flightState.circlingStartTime = context->varioState.timeCurrent;
+	context->flightState.circlingStartPos.lon = context->varioState.longitude;
+	context->flightState.circlingStartPos.lat = context->varioState.latitude;
+	context->flightState.circlingStartPos.alt = context->varioState.altitudeGPS;
+	context->flightState.circlingIncline = -1;
+
+	context->flightState.circlingTime = 0;
+	context->flightState.circlingGain = 0;
+
+	context->flightState.glidingCount = 0;
+
+	//
+	//display.attachScreen(scrnMan.getCirclingScreen());
+	//scrnMan.showCirclingScreen(display);
+}
+
+void Application::startGliding()
+{
+	// start of circling
+	//context->flightState.flightMode = FMODE_GLIDING;
+    mode = MODE_GLIDING;
+
+	//
+	context->flightState.glidingStartPos.lon = context->varioState.longitude;
+	context->flightState.glidingStartPos.lat = context->varioState.latitude;
+	context->flightState.glidingStartPos.alt = context->varioState.altitudeGPS;
+
+	context->flightState.glideRatio = -1;
+}
+
+void Application::stopCircling()
+{
+	// now normal flying
+	//context->flightState.flightMode = FMODE_FLYING;
+    mode = MODE_FLYING;
+
+	// update flight-statistics : thermaling count, max-gain
+	if (context->flightState.circlingGain > 10 && context->flightState.circlingTime > 0)
+	{
+		context->flightStats.totalThermaling += 1;
+		context->flightStats.thermalingMaxGain = _MAX(context->flightStats.thermalingMaxGain, context->flightState.circlingGain);
+	}
+
+	context->flightState.deltaHeading_AVG = 0;
+	context->flightState.deltaHeading_SUM = 0;
+
+	//
+	//display.attachScreen(scrnMan.getActiveScreen());
+	//scrnMan.showActiveScreen(display);
+}
+
+void Application::stopGliding()
+{
+	// now normal flying
+	//context->flightState.flightMode = FMODE_FLYING;
+    mode = MODE_FLYING;
+
+	//
+	context->flightState.glideRatio = -1;
+}
+
+void Application::startFlight()
+{
+    // start-flight
+    // turn on sound if auto-turn-on is setted
+    if (context->volume.autoTurnOn)
+        context->volume.effect = context->volume.vario = 100;
+
+    // play take-off melody
+    //beeper.setMelody(...);
+
+    // start bt-logging
+    if (context->deviceDefault.enableNmeaLogging)
+        bt.startLogging(context->varioState.timeCurrent);
+
+    // start igc-logging & update device-state
+    if (context->logger.enable && igc.begin(context->varioState.timeCurrent))
+        context->deviceState.statusSDCard = 2;
+
+    // set altitude reference-1
+    context->varioSettings.altitudeRef1 = context->varioState.altitudeGPS;
+
+    // reset-flight-state
+    // reset-flight-stats
+
+    // init flight-state
+    context->flightState.takeOffTime = context->varioState.timeCurrent;
+    context->flightState.takeOffPos.lat = context->varioState.latitude;
+    context->flightState.takeOffPos.lon = context->varioState.longitude;
+    context->flightState.bearingTakeoff = -1;
+    //context->flightState.flightMode = FMODE_FLYING;
+    context->flightState.frontPoint = context->flightState.rearPoint = 0;
+
+    context->flightStats.altitudeMax = context->varioState.altitudeGPS;
+    context->flightStats.altitudeMin = context->varioState.altitudeGPS;
+
+    mode = MODE_FLYING;
+    tick_stopBase = millis();
+
+    // show take-off notify-message
+    // Screen->topWindow->showNotify("take-off");
+    LOGv("Application::startFlight()");
+}
+
+void Application::stopFlight()
+{
+    // stop-flight
+    mode = MODE_GROUND;
+    //context->flightState.flightMode = FMODE_READY;
+    context->flightState.bearingTakeoff = -1;
+
+    // play landing-melody
+    // ...
+
+    // stop nmea-logging
+    bt.stopLogging();
+
+    // stop igc-logging
+    if (igc.isLogging())
+    {
+        igc.end(context->varioState.timeCurrent);
+        context->deviceState.statusSDCard = 1;
+    }
+
+    // show lading-message
+    // screen->showNotify("landing");
+    LOGv("Application::stopFlight()");
+
+    if (context->volume.autoTurnOn)
+    {
+        context->volume.vario = context->volume.varioDefault;
+        context->volume.effect = context->volume.effectDefault;
+    }    
+}
+
+void Application::startVario()
+{
+    context->deviceState.statusSDCard = 0;
+    context->deviceState.batteryPower = battery.getVoltage();
+
+    //if (context->deviceDefault.enableBT)
+    //    bt.begin(3);
+    //
+    //vario.begin();
+
+    mode = MODE_GROUND;
+    tick_silentBase = millis();
+    tick_updateDisp = millis() - 1000;
+    dispNeedUpdate = true;
+
+    LOGv("Application::startVario()");
 }

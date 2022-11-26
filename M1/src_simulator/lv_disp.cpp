@@ -10,7 +10,7 @@
 
 #include "device_defines.h"
 #include "logger.h"
-#include "lv_app.h"
+#include "app.h"
 #include "lv_disp.h"
 
 
@@ -75,7 +75,7 @@ void lv_disp_init(void)
     /* Tick init.
      * You have to call 'lv_tick_inc()' in periodically to inform LittelvGL about how much time were elapsed
      * Create an SDL thread to do this*/
-    SDL_CreateThread(hal_tick_handler, "tick", NULL);
+    //SDL_CreateThread(hal_tick_handler, "tick", NULL);
 }
 
 

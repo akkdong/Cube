@@ -1,6 +1,7 @@
 // main.cpp
 //
 
+#if 0
 #ifdef ARDUINO
 #include <Arduino.h>
 #endif
@@ -136,3 +137,4 @@ void loop()
 {
     // never comes here
 }
+#endif
