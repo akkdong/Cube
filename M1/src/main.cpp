@@ -15,6 +15,7 @@
 #include "Battery.h"
 #include "Agl.h"
 #include "IGCLogger.h"
+#include "TaskWatchdog.h"
 
 #include "Application.h"
 
@@ -46,6 +47,10 @@ void setup()
     repo.loadPref();    
 
     //
+    TaskWatchdog::begin(1000);
+    TaskWatchdog::add(NULL);      
+
+    //
     Application app;
 
     app.begin();
@@ -57,6 +62,9 @@ void setup()
 
         //
         app.update();
+
+        //
+        TaskWatchdog::reset();
     }
 }
 

@@ -1,5 +1,7 @@
 // BLEVario.cpp
 
+#ifdef ARDUINO
+
 #include <Arduino.h>
 #include "BLEVario.h"
 
@@ -736,3 +738,5 @@ void BLEVario::flush()
         sendLen = 0;
     }
 }
+
+#endif // ARDUINO

@@ -1,6 +1,8 @@
 // BleKeyboard.cpp
 //
 
+#ifdef ARDUINO
+
 #include <Arduino.h>
 #include "BleKeyboard.h"
 
@@ -603,3 +605,5 @@ void BleKeyboard::delay_ms(uint64_t ms) {
     while(esp_timer_get_time() < e) {}
   }
 }
+
+#endif //ARDUINO

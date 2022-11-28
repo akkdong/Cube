@@ -9,6 +9,10 @@
 #include "VarioSentence.h"
 #include "LocationParser.h"
 
+#ifdef ARDUINO
+#include "BLEVario.h"
+extern BLEVario bleDevice;
+#endif
 
 /////////////////////////////////////////////////////////////////////////////////
 // class BluetoothManager
@@ -21,6 +25,12 @@ BluetoothManager::BluetoothManager()
 
 int BluetoothManager::begin(uint8_t mode, const char* deviceName)
 {
+    #ifdef ARDUINO
+    bleDevice.setName(deviceName);
+    //bleDevice.setMode(mode);
+    bleDevice.begin();
+    #endif
+
     return 0;
 }
 

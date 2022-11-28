@@ -20,7 +20,10 @@
 #include "IGCLogger.h"
 #include "SpeedCalculator.h"
 #include "BluetoothManager.h"
-
+#ifdef ARDUINO
+#include "VariometerEx.h"
+#include "BeeperEx.h"
+#endif
 
 #define VFILTER_HARINAIR_KF2     1
 #define VFILTER_HARINAIR_KF3     2
@@ -108,10 +111,15 @@ protected:
     //uint8_t                     varioMode; // init, landing, flying, circling
 
     //
+    #ifdef ARDUINO
+    VariometerEx                vario;
+    BeeperEx                    beeper;
+    #else
     Variometer                  vario;
+    Beeper                      beeper;
+    #endif
     LocationParser              locParser;
     VarioSentence               varioNmea;
-    Beeper                      beeper;
     Keypad                      keyPad;
     Battery                     battery;
     AGL                         agl;

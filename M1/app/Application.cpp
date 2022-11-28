@@ -11,6 +11,9 @@
 #include "utils.h"
 #include "ble_vario.h"
 #include "timezone.h"
+#ifdef ARDUINO
+//#include "TaskBase.h"
+#endif
 
 #include "Application.h"
 
@@ -215,12 +218,15 @@ void Application::update()
 
         tick_updateDisp = tick;
         dispNeedUpdate = false;
+        //LOGi("update: %u", millis() - tick);
     }
 
     //
     locParser.update();
     int varioUpdated = vario.update();
+    #ifndef ARDUINO
     beeper.update();
+    #endif
     keyPad.update();    // button processing
 
     if (battery.update())
@@ -321,11 +327,18 @@ void Application::update()
     if (varioUpdated > 0)
     {
         //
+        vario.resetUpdate();
+
+        //
         context->varioState.altitudeBaro = vario.getAltitudeFiltered();
         context->varioState.altitudeCalibrated = vario.getAltitudeCalibrated();
         context->varioState.pressure = vario.getPressure();
         context->varioState.temperature = vario.getTemperature();
         context->varioState.speedVertActive = vario.getVelocity();
+        //static uint32_t lastTick = millis();
+        //uint32_t curTick = millis();
+        //LOGi("%u", curTick - lastTick);
+        //lastTick = curTick;
 
         if (speedCalculator.add(context->varioState.speedVertActive) > 0)
         {

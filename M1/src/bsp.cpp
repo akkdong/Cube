@@ -78,7 +78,8 @@ void bsp_hal_init()
 	touch.begin(); 
 
 	// start BLE (HID:Keyboard + SPP)
-	bleDevice.begin();
+	// moved to BluetoothManager
+	// bleDevice.begin();
 }
 
 void bsp_power_on(bool on)
@@ -113,13 +114,18 @@ void bsp_gui_init()
 
 void bsp_update()
 {
+	#if 1
 	static uint32_t lastTick = millis();
 	uint32_t tick = millis();
-	if (tick - lastTick >= 5)
+	if (tick - lastTick >= 2)
 	{
 		lv_timer_handler();
 		lastTick = tick;
 	}
+	#else
+	lv_timer_handler();
+	delay(2);
+	#endif
 
     // forward serial to bluetooth and reverse : debug purpose only
     while (Serial.available())

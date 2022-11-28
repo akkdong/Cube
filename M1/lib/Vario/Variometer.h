@@ -17,11 +17,11 @@ public:
 	Variometer();
 
 public:
-	int						begin(IBarometer* baro, IVarioFilter* filter);
-	void					end();
+	virtual int				begin(IBarometer* baro, IVarioFilter* filter);
+	virtual void			end();
 
-	int						update();
-	void					resetUpdate();
+	virtual int				update();
+	virtual void			resetUpdate();
 
 	float					getPressure() { return pressure; }
 	float					getTemperature() { return temperature; }

@@ -139,8 +139,8 @@ void DeviceRepository::reset()
 	contextPtr->kalman.varAccelBias = KF_ACCELBIAS_VARIANCE;
 
 	//
-	contextPtr->deviceDefault.enableBT = 0;
-	contextPtr->deviceDefault.enableSound = 0;
+	contextPtr->deviceDefault.enableBT = 1;
+	contextPtr->deviceDefault.enableSound = 1;
 	contextPtr->deviceDefault.enableSimulation = 0;
 	contextPtr->deviceDefault.enableNmeaLogging = 0;
 
