@@ -18,11 +18,9 @@
 #include "BluetoothManager.h"
 
 #include "Application.h"
-#include "Display.h"
 
 
-Display     disp;
-Application app(disp);
+Application app;
 
 
 //
@@ -55,7 +53,6 @@ void setup()
     repo.loadPref();
 
     //
-    //disp.begin();
     app.begin();
 
     #if 0
@@ -75,7 +72,6 @@ void loop()
 {
     // timer/task handler
     bsp_update();
-    //disp.update();
 
     //
     app.update();

@@ -261,7 +261,7 @@ void FlightWindow::onCreate()
     annunciator.setPosition(0, 0);
     annunciator.setSize(LCD_WIDTH, MAX_ANNUNCIATOR_HEIGHT);
     annunciator.setFont(fontCustom);
-    annunciator.setStatus(LV_SYMBOL_GPS " \uF001 \uF002 \uF003 \uF004 \t 100% " LV_SYMBOL_BATTERY_FULL);
+    annunciator.setStatus(" \uF002");
 
     bkgndCanvas.create(this);
     bkgndCanvas.setPosition(0, MAX_ANNUNCIATOR_HEIGHT);
@@ -453,11 +453,28 @@ void FlightWindow::layoutWidget(int layout)
 //
 void FlightWindow::onUpdate(Annunciator* ann)
 {
-    //
-    // time_t t = time(NULL) /*+ 9 * 60 * 60*/;
-    char sz[32];
-    getTimeString(sz, time(NULL), true);
+    DeviceContext* context = DeviceRepository::instance().getContext();
 
+    //
+    char sz[32];
+    // \uF001 logo
+    // \uF002 BT (?)
+    // \uF003 GPS (fixed)
+    // \uF004 SOUND (on)
+    //
+    // + BT (ready, paired), GPS (unxied), SOUND (mute:off, low, mid, loud)
+    // + SD (N/A:empty, valid, logging)
+    // + FLIGHT-MODE (?)
+    sprintf(sz, " \uF001%s%s%s \t %.1fv %s", 
+        context->deviceState.statusBT ? " \uF002" : "",
+        context->deviceState.statusGPS? " \uF003" : "",
+        "",
+        context->deviceState.batteryPower,
+        LV_SYMBOL_BATTERY_FULL);
+    ann->setStatus(sz);
+
+    // time_t t = time(NULL) /*+ 9 * 60 * 60*/;
+    getTimeString(sz, time(NULL), true);
     ann->setClock(sz);
 }
 

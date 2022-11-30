@@ -46,7 +46,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // class Application
 
-class Display;
+class Screen;
 class Window;
 class Widget;
 class StartupWindow;
@@ -58,7 +58,7 @@ class Application : public KeypadCallback
     friend class StartupWindow;
 
 public:
-    Application(Display& _disp);
+    Application();
 
     enum DeviceMode
     {
@@ -103,10 +103,10 @@ protected:
     
 protected:
     //
-    DeviceContext*              context;
+    DeviceContext*              contextPtr;
     DeviceMode                  mode;
 
-    Display&                    disp;
+    Screen*                     screenPtr;
 
     //uint8_t                     deviceMode; // undef, wakeup, vario, vario_and_gp, pref
     //uint8_t                     varioMode; // init, landing, flying, circling
