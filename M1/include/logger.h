@@ -4,6 +4,8 @@
 #ifndef __CUBE_LOGGER_H__
 #define __CUBE_LOGGER_H__
 
+#include <stdint.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif

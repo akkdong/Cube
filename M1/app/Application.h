@@ -20,10 +20,8 @@
 #include "IGCLogger.h"
 #include "SpeedCalculator.h"
 #include "BluetoothManager.h"
-#ifdef ARDUINO
 #include "VariometerEx.h"
 #include "BeeperEx.h"
-#endif
 
 #define VFILTER_HARINAIR_KF2     1
 #define VFILTER_HARINAIR_KF3     2
@@ -48,6 +46,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////
 // class Application
 
+class Display;
 class Window;
 class Widget;
 class StartupWindow;
@@ -59,7 +58,7 @@ class Application : public KeypadCallback
     friend class StartupWindow;
 
 public:
-    Application();
+    Application(Display& _disp);
 
     enum DeviceMode
     {
@@ -107,17 +106,14 @@ protected:
     DeviceContext*              context;
     DeviceMode                  mode;
 
+    Display&                    disp;
+
     //uint8_t                     deviceMode; // undef, wakeup, vario, vario_and_gp, pref
     //uint8_t                     varioMode; // init, landing, flying, circling
 
-    //
-    #ifdef ARDUINO
+    //    
     VariometerEx                vario;
     BeeperEx                    beeper;
-    #else
-    Variometer                  vario;
-    Beeper                      beeper;
-    #endif
     LocationParser              locParser;
     VarioSentence               varioNmea;
     Keypad                      keyPad;

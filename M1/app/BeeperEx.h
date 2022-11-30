@@ -1,16 +1,17 @@
 // BeeperEx.h
 //
 
-#include <Arduino.h>
-
+#include "Task.h"
+#include "CriticalSection.h"
 #include "Beeper.h"
-#include "TaskBase.h"
+
+
 
 
 ///////////////////////////////////////////////////////////////////
 // class BeeperEx
 
-class BeeperEx : public TaskBase, public Beeper
+class BeeperEx : public TaskProcHandler, public Beeper
 {
 public:
     BeeperEx();
@@ -30,15 +31,7 @@ public:
 protected:
     void            TaskProc() override;
 
-    void lock() { 
-        if (lockHandle != NULL) 
-            xSemaphoreTake(lockHandle, portMAX_DELAY); 
-    }
-    void unlock() { 
-        if (lockHandle) 
-        xSemaphoreGive(lockHandle); 
-    }
-
 protected:
-    SemaphoreHandle_t lockHandle;
+    CriticalSection cs;
+    TaskClass       task;
 };

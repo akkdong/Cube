@@ -1,77 +1,65 @@
 // BeeperEx
 //
 
-#ifdef ARDUINO
-
 #include "BeeperEx.h"
 
+#include "logger.h"
+#include "utils.h"
 
 
 ///////////////////////////////////////////////////////////////////
 // BeeperEx implementation
 
 BeeperEx::BeeperEx() 
-    : TaskBase("Beeper", 4 * 1024, 5)
-    , lockHandle(NULL) 
+    /*: TaskBase("Beeper", 4 * 1024, 5)*/
 {
 }
 
 BeeperEx::~BeeperEx()
 {
-    if (lockHandle != NULL)
-        vSemaphoreDelete(lockHandle);
 }
 
 void BeeperEx::begin(ITonePlayer* tp)
 {
     Beeper::begin(tp);
 
-    create();
-
-    if (lockHandle == NULL)
-        lockHandle = xSemaphoreCreateMutex();
+    task.setName("Beeper");
+    task.setStackSize(2 * 1024);
+    task.setPriority(5);
+    task.create(this);
 }
 
 void BeeperEx::end()
 {
     Beeper::end();
-
-    if (lockHandle != NULL)
-    {
-        vSemaphoreDelete(lockHandle);
-        lockHandle = NULL;
-    }
 }
 
 
 void BeeperEx::update()
 {
-    lock();
-    Beeper::update();
-    unlock();
 }
 
 
 void BeeperEx::setVelocity(float vel)
 {
-    lock();
+    cs.enter();
     Beeper::setVelocity(vel);
-    unlock();
+    cs.leave();
 }
 
 void BeeperEx::setMute()
 {
-    lock();
+    cs.enter();
     Beeper::setMute();
-    unlock();
+    cs.leave();
 }
 
 
 void BeeperEx::playMelody(Tone* tones, int toneCount)
 {
-    lock();
+    cs.enter();
     Beeper::playMelody(tones, toneCount);
-    unlock();
+    cs.leave();
 }
 
 
@@ -79,10 +67,14 @@ void BeeperEx::TaskProc()
 {
     while (1)
     {
-        update();
+        cs.enter();
+        Beeper::update();
+        cs.leave();
 
-        vTaskDelay(5);
+        #ifdef ARDUINO
+        vTaskDelay(5 / portTICK_PERIOD_MS);
+        #else
+        SDL_Delay(5);
+        #endif
     }
 }
-
-#endif // ARUDINO

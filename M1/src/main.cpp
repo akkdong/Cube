@@ -18,6 +18,17 @@
 #include "TaskWatchdog.h"
 
 #include "Application.h"
+#include "Display.h"
+
+
+//
+//
+//
+
+Display disp;
+Application app(disp);
+
+
 
 //
 //
@@ -47,14 +58,13 @@ void setup()
     repo.loadPref();    
 
     //
-    TaskWatchdog::begin(1000);
-    TaskWatchdog::add(NULL);      
+    //TaskWatchdog::begin(1000);
+    //TaskWatchdog::add(NULL);      
 
     //
-    Application app;
-
     app.begin();
 
+    #if 0
     while (1)
     {
         // timer/task handler
@@ -66,11 +76,16 @@ void setup()
         //
         TaskWatchdog::reset();
     }
+    #endif
 }
 
 
 void loop()
 {
-    // never comes here
+    // timer/task handler
+    bsp_update();
+
+    //
+    app.update();
 }
 

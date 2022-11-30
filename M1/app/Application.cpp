@@ -3,7 +3,6 @@
 
 #ifdef ARDUINO
 #include <Arduino.h>
-#else
 #endif
 #include <sys/time.h>
 #include "device_defines.h"
@@ -11,11 +10,9 @@
 #include "utils.h"
 #include "ble_vario.h"
 #include "timezone.h"
-#ifdef ARDUINO
-//#include "TaskBase.h"
-#endif
 
 #include "Application.h"
+#include "Display.h"
 
 #include "startupWindow.h"
 #include "flightWindow.h"
@@ -56,16 +53,17 @@ static Tone melodyStart[] =
 ////////////////////////////////////////////////////////////////////////////////////////
 // class Application implementation
 
-Application::Application() 
+Application::Application(Display& _disp) 
     : context(nullptr)
     , mode(MODE_INIT)
+    , disp(_disp)
     , varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
     , keyPad(this)
     #if 0
     , bt_lock_state(0)
     #endif
     , gpsFixed(false)
-    , dispNeedUpdate(false)
+//  , dispNeedUpdate(false)
 {
     // ...
 }
@@ -136,9 +134,11 @@ void Application::begin()
     context = DeviceRepository::instance().getContext();
 
     //
+    //disp.enter();
     Screen* screen = Screen::instance();
     screen->setApplication(this);
     screen->activateWindow(new StartupWindow);
+    //disp.leave();
 
     //    
     setTimeZone(context->deviceDefault.timezone * -3600, 0);
@@ -209,6 +209,7 @@ void Application::update()
     }
 
     // update screen in every 500ms if it's need to update
+    #if 1
     uint32_t tick = millis();
     if (dispNeedUpdate && tick - tick_updateDisp > 500)
     {
@@ -220,13 +221,12 @@ void Application::update()
         dispNeedUpdate = false;
         //LOGi("update: %u", millis() - tick);
     }
+    #endif
 
     //
     locParser.update();
     int varioUpdated = vario.update();
-    #ifndef ARDUINO
     beeper.update();
-    #endif
     keyPad.update();    // button processing
 
     if (battery.update())
@@ -318,6 +318,7 @@ void Application::update()
         #endif
 
         dispNeedUpdate = true;
+        //disp.setDirty(true);
     }
 
     // update GPS fixed-state
@@ -344,6 +345,7 @@ void Application::update()
         {
             context->varioState.speedVertLazy = speedCalculator.get();
             dispNeedUpdate = true;
+            //disp.setDirty(true);
 
             DeviceRepository::instance().updateVSpeedHistory(context->varioState.speedVertLazy);
         }
@@ -400,9 +402,11 @@ void Application::onPressed(uint8_t key)
     if (key != KEY_ENTER)
         ble_press(key);
     #else
+    //disp.enter();
     Window* active = Screen::instance()->peekWindow();
     if (active)
         active->onKeyDown(key);
+    //disp.leave();
     #endif
 }
 
@@ -412,15 +416,19 @@ void Application::onLongPressed(uint8_t key)
     if (key == KEY_ENTER)
     {
         LOGi("Turn-off Variometer!!");
+        //disp.enter();
         Screen::instance()->showPowerOff();
+        //disp.leave();
 
         bsp_power_on(false);
     }
     else
     {
+        //disp.enter();
         Window* active = Screen::instance()->peekWindow();
         if (active)
             active->onLongKeyDown(key);
+        //disp.leave();
     }
 }
 
@@ -431,9 +439,11 @@ void Application::onReleased(uint8_t key)
     if (key != KEY_ENTER)
         ble_release(key);
     #else
+    //disp.enter();
     Window* active = Screen::instance()->peekWindow();
     if (active)
         active->onKeyUp(key);
+    //disp.leave();
     #endif
 }  
 
@@ -723,6 +733,7 @@ void Application::startVario()
     tick_silentBase = millis();
     tick_updateDisp = millis() - 1000;
     dispNeedUpdate = true;
+    //disp.setDirty(false);
 
     LOGv("Application::startVario()");
 }
@@ -739,6 +750,9 @@ void Application::calibrateAltitude()
 {
     LOGv("Application::calibrateAltitude()");
 
+    #if !USE_SEALEVEL_CALIBRATION
     vario.calibrateAltitude(context->varioState.altitudeGPS);
+    #else
     vario.calibrateSeaLevel(context->varioState.altitudeGPS);
+    #endif
 }

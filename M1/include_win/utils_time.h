@@ -21,6 +21,9 @@ inline uint32_t millis() {
     return SDL_GetTicks();
 }
 
+inline void delay(size_t ms) {
+    SDL_Delay(ms);
+}
 
 #ifdef __cplusplus
 }

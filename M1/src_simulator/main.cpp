@@ -18,6 +18,12 @@
 #include "BluetoothManager.h"
 
 #include "Application.h"
+#include "Display.h"
+
+
+Display     disp;
+Application app(disp);
+
 
 //
 //
@@ -49,10 +55,10 @@ void setup()
     repo.loadPref();
 
     //
-    Application app;
-
+    //disp.begin();
     app.begin();
 
+    #if 0
     while (1)
     {
         // timer/task handler
@@ -61,12 +67,18 @@ void setup()
         //
         app.update();
     }
+    #endif
 }
 
 
 void loop()
 {
-    // never comes here
+    // timer/task handler
+    bsp_update();
+    //disp.update();
+
+    //
+    app.update();
 }
 
 
@@ -85,7 +97,19 @@ int main(void)
 {
     //
     setup();
-    loop();
+
+    while (1)
+    {
+        loop();
+    }
 
     return 0;
+}
+
+#include <windows.h>
+
+int WINAPI WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
+{
+    LOGi("WinMain()");
+    return main();
 }

@@ -50,5 +50,7 @@ int _log_printf(int level, const char* format, ...)
     vsprintf(trace_buf, format, args);
     va_end(args);
 
-    return fprintf(stdout, "[%c] %s\n", trace_prefix[level], trace_buf);
+    int ret = fprintf(stdout, "[%c] %s\n", trace_prefix[level], trace_buf);
+    fflush(stdout);
+    return ret;
 }

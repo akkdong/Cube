@@ -2,16 +2,17 @@
 //
 
 #include "Variometer.h"
-#include "TaskBase.h"
+#include "Task.h"
+#include "CriticalSection.h"
 
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //
 
-class VariometerEx : public TaskBase, public Variometer
+class VariometerEx : public TaskProcHandler, public Variometer, public CriticalSection
 {
 public:
-    VariometerEx() : TaskBase("Vario", 4 * 1024, 10) {}
+    VariometerEx() /*: TaskBase("Vario", 4 * 1024, 10)*/ {}
 
 public:
 	int				begin(IBarometer* baro, IVarioFilter* filter) override;
@@ -22,6 +23,7 @@ public:
 protected:
     void            TaskProc() override;
 
+    TaskClass       task;
     volatile int    updateStatus;
 };
 
