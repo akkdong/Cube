@@ -73,17 +73,29 @@ public:
     static Screen*  instance();
     Window*         peekWindow();
 
+    //
+    void            notifyMesage(const char* msg);
+    void            notifyError(const char* err);
+
 protected:
     void            pushWindow(Window* window);
     Window*         popWindow();
+
+    lv_obj_t*       createAlertObject(lv_color_t colorBkgnd);
+    void            showAlert(const char* msg, bool typeError);
 
 protected:
     static void     _onActivate(void* userData);
     static void     _onCleanup(void* userData);
 
+    static void     _onDismissAlert(lv_timer_t* timer);
+
 protected:
     Window*         _stack[MAX_WINDOW_STACK];
     int             _top;
+
+    lv_obj_t*       _alertObj;
+    lv_timer_t*     _alertTimer;
 };
 
 

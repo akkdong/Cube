@@ -465,9 +465,16 @@ void FlightWindow::onUpdate(Annunciator* ann)
     // + BT (ready, paired), GPS (unxied), SOUND (mute:off, low, mid, loud)
     // + SD (N/A:empty, valid, logging)
     // + FLIGHT-MODE (?)
+    //
+    // \uF001 -> \xEF\x80\x81 -> APP_SYMBOL_LOGO
+    #define APP_SYMBOL_LOG      "\xEF\x80\x81"
+    #define APP_SYMBOL_BT       "\xEF\x80\x82"
+    #define APP_SYMBOL_GPS      "\xEF\x80\x83"
+    #define APP_SYMBOL_SOUND    "\xEF\x80\x84"
+
     sprintf(sz, " \uF001%s%s%s \t %.1fv %s", 
-        context->deviceState.statusBT ? " \uF002" : "",
-        context->deviceState.statusGPS? " \uF003" : "",
+        context->deviceState.statusBT ? " " APP_SYMBOL_BT : "",
+        context->deviceState.statusGPS? " " APP_SYMBOL_GPS : "",
         "",
         context->deviceState.batteryPower,
         LV_SYMBOL_BATTERY_FULL);

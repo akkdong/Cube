@@ -266,9 +266,11 @@ void Application::update()
             //vario.calibrateAltitude(contextPtr->varioState.altitudeGPS);
             //vario.calibrateSeaLevel(contextPtr->varioState.altitudeGPS);
             // calibrate after 60 seconds
-            lv_timer_create(onCalibrateAltitude, 60 * 1000, this);
+            lv_timer_t* timer = lv_timer_create(onCalibrateAltitude, 60 * 1000, this);
+            lv_timer_set_repeat_count(timer, 1);
 
             // gps-fixed melody
+            Screen::instance()->notifyMesage("GPS Fixed!!");
             //beeper.playMelody(toneFixed, sizeof(toneFixed) / sizeof(toneFixed[0]));
         }
 
@@ -676,7 +678,7 @@ void Application::startFlight()
     tick_stopBase = millis();
 
     // show take-off notify-message
-    // Screen->topWindow->showNotify("take-off");
+    Screen::instance()->notifyMesage("Take off!!");
     LOGv("Application::startFlight()");
 }
 
@@ -701,7 +703,7 @@ void Application::stopFlight()
     }
 
     // show lading-message
-    // screen->showNotify("landing");
+    Screen::instance()->notifyMesage("Landing...");
     LOGv("Application::stopFlight()");
 
     if (contextPtr->volume.autoTurnOn)
@@ -741,6 +743,7 @@ void Application::onCalibrateAltitude(struct _lv_timer_t * timer)
 void Application::calibrateAltitude()
 {
     LOGv("Application::calibrateAltitude()");
+    Screen::instance()->notifyMesage("Calibrate Altitude...");
 
     #if !USE_SEALEVEL_CALIBRATION
     vario.calibrateAltitude(contextPtr->varioState.altitudeGPS);
