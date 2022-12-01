@@ -17,18 +17,20 @@ public:
 	Variometer();
 
 public:
-	int						begin(IBarometer* baro, IVarioFilter* filter);
-	void					end();
+	virtual int				begin(IBarometer* baro, IVarioFilter* filter);
+	virtual void			end();
 
-	int						update();
-	void					resetUpdate();
+	virtual int				update();
+	virtual void			resetUpdate();
 
 	float					getPressure() { return pressure; }
 	float					getTemperature() { return temperature; }
 	float					getAltitudeFiltered() { return altitudeFiltered; }
+	float					getAltitudeCalibrated() { return altitudeFiltered + altitudeDrift; }
 	float					getAltitude() { return altitude; }
 	float					getVelocity() { return vario; }
 
+	void					calibrateAltitude(float altitudeRef) { altitudeDrift = altitudeRef - altitudeFiltered; }
 	void					calibrateSeaLevel(float altitudeRef);
 	
 protected:
@@ -44,12 +46,13 @@ protected:
     // vario
 	int						updateCount;
     
-	float					seaLevel;
 	float					pressure;
 	float					temperature;
+	float					seaLevel;
+	float					altitudeDrift;
 	float					altitude;
-
     float                   altitudeFiltered;
+	
     float                   vario;
 };
 

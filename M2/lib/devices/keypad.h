@@ -18,9 +18,9 @@
 
 struct KeypadCallback
 {
-    virtual void OnPressed(uint8_t key) = 0;
-    virtual void OnLongPressed(uint8_t key) = 0;
-    virtual void OnReleased(uint8_t key) = 0;
+    virtual void onPressed(uint8_t key) = 0;
+    virtual void onLongPressed(uint8_t key) = 0;
+    virtual void onReleased(uint8_t key) = 0;
 };
 
 

@@ -57,4 +57,24 @@
 #define FLIGHT_LANDING_THRESHOLD 				(10000)		// 10s
 #define FLIGHT_LOGGING_INTERVAL					(1000)		// 1s
 
+
+// Auto shutdown threshold
+//
+
+#define STABLE_SINKING_THRESHOLD				(-0.2)
+#define STABLE_CLIMBING_THRESHOLD				(0.2)
+#define AUTO_SHUTDOWN_THRESHOLD					(10*60*1000)	// 10min (600s)
+
+// Low battery threshold
+//
+
+#define LOW_BATTERY_THRESHOLD					(3.2)	// VBAT drop down about 0.4v. so rear threshold voltage is -0.4
+#define SHUTDOWN_HOLD_TIME						(2000)
+
+#define KEY_ENTER           (0xB0)
+#define KEY_ESCAPE          (0xB1)
+#define KEY_LEFT            (0xD8)
+#define KEY_RIGHT           (0xD7)
+
+
 #endif // __CONFIG_H__

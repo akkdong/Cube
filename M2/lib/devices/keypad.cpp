@@ -5,6 +5,7 @@
 #include "board.h"
 #include "logger.h"
 #include "utils.h"
+#include "config.h"
 
 
 /////////////////////////////////////////////////////////////////////////////////////
@@ -13,10 +14,10 @@
 Keypad::Keypad(KeypadCallback* callback)
     : keyInput(NULL)
     , keyMap {
-        { GPIO_KEY,                     0,  KEY_ESC,         RELEASE, 0 }, // active-low
-        { GPIO_EXT_MASK | GPIO_EXT_IO0,	0, 	KEY_RETURN,      RELEASE, 0 }, // active-low, extended-key
-        { GPIO_EXT_MASK | GPIO_EXT_IO1, 0, 	KEY_LEFT_ARROW,  RELEASE, 0 }, // active-low, extended-key
-        { GPIO_EXT_MASK | GPIO_EXT_IO2, 0, 	KEY_RIGHT_ARROW, RELEASE, 0 }  // active-low, extended-key
+        { GPIO_KEY,                     0,  KEY_ESCAPE, RELEASE, 0 }, // active-low
+        { GPIO_EXT_MASK | GPIO_EXT_IO0,	0, 	KEY_ENTER,  RELEASE, 0 }, // active-low, extended-key
+        { GPIO_EXT_MASK | GPIO_EXT_IO1, 0, 	KEY_LEFT,   RELEASE, 0 }, // active-low, extended-key
+        { GPIO_EXT_MASK | GPIO_EXT_IO2, 0, 	KEY_RIGHT,  RELEASE, 0 }  // active-low, extended-key
     }
     , callback(callback)
 {
@@ -60,7 +61,7 @@ void Keypad::update()
                     key->tick = tick;
 
                     if (callback)
-                        callback->OnPressed(key->key);
+                        callback->onPressed(key->key);
                 }
             }
             else
@@ -72,8 +73,11 @@ void Keypad::update()
         case LONG_PRESS:
             if (state == RELEASE)
             {
-                key->state = POST_PRESS;
-                key->tick = tick;
+                key->state = RELEASE;
+                key->tick = 0;
+
+                if (callback)
+                    callback->onReleased(key->key);
             }
             else if (key->state == PRESS && tick - key->tick > TIME_LONG_PRESS)
             {
@@ -81,9 +85,10 @@ void Keypad::update()
                 key->tick = tick;
 
                 if (callback)
-                    callback->OnLongPressed(key->key);
+                    callback->onLongPressed(key->key);
             }
             break;
+        /*
         case POST_PRESS:
             if (tick - key->tick > TIME_DEBOUNCE)
             {
@@ -91,9 +96,10 @@ void Keypad::update()
                 key->tick = 0;
 
                 if (callback)
-                    callback->OnReleased(key->key);
+                    callback->onReleased(key->key);
             }
             break;
+        */
         }
     }    
 }

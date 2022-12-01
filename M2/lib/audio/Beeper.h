@@ -62,15 +62,15 @@ public:
     };
 
 public:
-    void            begin(ITonePlayer* tp);
-    void            end();
+    virtual void    begin(ITonePlayer* tp);
+    virtual void    end();
 
-    void            update();
+    virtual void    update();
 
-    void            setVelocity(float vel);
-    void            setMute();
+    virtual void    setVelocity(float vel);
+    virtual void    setMute();
 
-    void            playMelody(Tone* tones, int toneCount);
+    virtual void    playMelody(Tone* tones, int toneCount);
 
 protected:
     Tone            getTone(float vel);

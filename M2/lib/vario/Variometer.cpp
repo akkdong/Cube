@@ -14,6 +14,7 @@ Variometer::Variometer()
     : baroSensor(nullptr)
     , varioFilter(nullptr)
     , seaLevel(101325)
+    , altitudeDrift(0)
 {
 }
 
@@ -25,6 +26,7 @@ int Variometer::begin(IBarometer* baro, IVarioFilter* filter)
     updateCount = 0;
     pressure = seaLevel;
     temperature = 0;
+    altitudeDrift = 0;
     altitude = 0;
     altitudeFiltered = 0;
     vario = 0;

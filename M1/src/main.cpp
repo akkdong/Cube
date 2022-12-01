@@ -18,15 +18,13 @@
 #include "TaskWatchdog.h"
 
 #include "Application.h"
-#include "Display.h"
 
 
 //
 //
 //
 
-Display disp;
-Application app(disp);
+Application app;
 
 
 
