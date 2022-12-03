@@ -459,29 +459,16 @@ void FlightWindow::onUpdate(Annunciator* ann)
 {
     DeviceContext* context = DeviceRepository::instance().getContext();
 
-    //
+    // [LOGO] [BT] [GPS] [VOLUME] {SD} \t Voltage(or Percent) [BAT]
     char sz[32];
-    // \uF001 logo
-    // \uF002 BT (?)
-    // \uF003 GPS (fixed)
-    // \uF004 SOUND (on)
-    //
-    // + BT (ready, paired), GPS (unxied), SOUND (mute:off, low, mid, loud)
-    // + SD (N/A:empty, valid, logging)
-    // + FLIGHT-MODE (?)
-    //
-    // \uF001 -> \xEF\x80\x81 -> APP_SYMBOL_LOGO
-    #define APP_SYMBOL_LOG      "\xEF\x80\x81"
-    #define APP_SYMBOL_BT       "\xEF\x80\x82"
-    #define APP_SYMBOL_GPS      "\xEF\x80\x83"
-    #define APP_SYMBOL_SOUND    "\xEF\x80\x84"
-
-    sprintf(sz, " \uF001%s%s%s \t %.1fv %s", 
-        context->deviceState.statusBT ? " " APP_SYMBOL_BT : "",
-        context->deviceState.statusGPS? " " APP_SYMBOL_GPS : "",
-        "",
+    sprintf(sz, " %s %s %s %s%s \t %.1fv %s", 
+        APP_SYMBOL_LOGO_ANGRY_B,
+        context->deviceState.statusBT ? APP_SYMBOL_BLUETOOTH_PAIRED : APP_SYMBOL_BLUETOOTH_PAIRED,
+        context->deviceState.statusGPS ? APP_SYMBOL_GPS_FIXED : APP_SYMBOL_GPS_UNFIXED,
+        APP_SYMBOL_VOLUME_HIGH,
+        context->deviceState.statusSDCard == 0 ? "" : (context->deviceState.statusSDCard > 1  ? " " APP_SYMBOL_SDCARD_LOGGING : " " APP_SYMBOL_SDCARD_READY),
         context->deviceState.batteryPower,
-        LV_SYMBOL_BATTERY_FULL);
+        APP_SYMBOL_BATTERY_CHARGING);
     ann->setStatus(sz);
 
     // time_t t = time(NULL) /*+ 9 * 60 * 60*/;
@@ -614,24 +601,66 @@ void FlightWindow::onUpdate(ThermalAssistant* assistant)
 
 bool FlightWindow::getCustomFont(const lv_font_t * font, void * img_src, uint16_t len, uint32_t unicode, uint32_t unicode_next)
 {
-    if (unicode == 0xF001)
+    const lv_img_dsc_t* img_icon = nullptr;
+
+    switch (unicode)
     {
-        memcpy(img_src, &logo_angry_a, sizeof(lv_img_dsc_t));
-        return true;
+    case APP_ICON_BATTERY_CHARGING:     // 0xF001
+        img_icon = &battery_charging;
+        break;
+    case APP_ICON_BATTERY_POWER:        // 0xF002
+        img_icon = &battery_power;
+        break;
+    case APP_ICON_BLUETOOTH_PAIRED:     // 0xF003
+        img_icon = &bluetooth_paired;
+        break;
+    case APP_ICON_BLUETOOTH_UNPAIRED:   // 0xF004
+        img_icon = &bluetooth_unpaired;
+        break;
+    case APP_ICON_GPS_FIXED:            // 0xF005
+        img_icon = &gps_fixed;
+        break;
+    case APP_ICON_GPS_UNFIXED:          // 0xF006
+        img_icon = &gps_unfixed;
+        break;
+    case APP_ICON_LOGGING:              // 0xF007
+        img_icon = &logging;
+        break;
+    case APP_ICON_LOGO:                 // 0xF008
+        img_icon = &logo;
+        break;
+    case APP_ICON_LOGO_ANGRY_A:         // 0xF009
+        img_icon = &logo_angry_a;
+        break;
+    case APP_ICON_LOGO_ANGRY_B:         // 0xF00A
+        img_icon = &logo_angry_b;
+        break;
+    case APP_ICON_LOGO_O:               // 0xF00B
+        img_icon = &logo_o;
+        break;
+    case APP_ICON_LOGO_ROUND:           // 0xF00C
+        img_icon = &logo_round;
+        break;
+    case APP_ICON_SDCARD_READY:         // 0xF00D
+        img_icon = &sdcard_ready;
+        break;
+    case APP_ICON_SDCARD_LOGGING:       // 0xF00E
+        img_icon = &sdcard_logging;
+        break;
+    case APP_ICON_VOLUME_MUTE:          // 0xF00F
+        img_icon = &volume_mute;
+        break;
+    case APP_ICON_VOLUME_LOW:           // 0xF010
+        img_icon = &volume_low;
+        break;
+    case APP_ICON_VOLUME_HIGH:          // 0xF011
+        img_icon = &volume_high;
+        break;
     }
-    else if (unicode == 0xF002)
+
+    if (img_icon != nullptr)
     {
-        memcpy(img_src, &bluetooth_unpaired, sizeof(lv_img_dsc_t));
-        return true;
-    }
-    else if (unicode == 0xF003)
-    {
-        memcpy(img_src, &gps_unfixed, sizeof(lv_img_dsc_t));
-        return true;
-    }
-    else if (unicode == 0xF004)
-    {
-        memcpy(img_src, &volume_high, sizeof(lv_img_dsc_t));
+        memcpy(img_src, img_icon, sizeof(lv_img_dsc_t));
         return true;
     }
 

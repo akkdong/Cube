@@ -21,7 +21,7 @@ public:
     bool begin() {
         _spi.begin(GPIO_SPI_SCLK, GPIO_SPI_MISO, GPIO_SPI_MOSI, GPIO_SPI_CS_SD);
 
-        _pdrv = sdcard_init(GPIO_SPI_CS_SD, &_spi, 4000000);
+        _pdrv = sdcard_init(GPIO_SPI_CS_SD, &_spi, 8000000);
         if(_pdrv == 0xFF) {
             return false;
         }

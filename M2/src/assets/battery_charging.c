@@ -20,11 +20,11 @@
 #define LV_ATTRIBUTE_MEM_ALIGN
 #endif
 
-#ifndef LV_ATTRIBUTE_IMG_BATTERY_CHARING
-#define LV_ATTRIBUTE_IMG_BATTERY_CHARING
+#ifndef LV_ATTRIBUTE_IMG_BATTERY_CHARGING
+#define LV_ATTRIBUTE_IMG_BATTERY_CHARGING
 #endif
 
-const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_BATTERY_CHARING uint8_t battery_charing_map[] = {
+const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_BATTERY_CHARGING uint8_t battery_charging_map[] = {
   0x00, 0x00, 0x00, 0x00, 	/*Color of index 0*/
   0x00, 0x00, 0x00, 0x11, 	/*Color of index 1*/
   0x00, 0x00, 0x00, 0x1d, 	/*Color of index 2*/
@@ -76,12 +76,12 @@ const LV_ATTRIBUTE_MEM_ALIGN LV_ATTRIBUTE_LARGE_CONST LV_ATTRIBUTE_IMG_BATTERY_C
   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 
 };
 
-const lv_img_dsc_t battery_charing = {
+const lv_img_dsc_t battery_charging = {
   .header.cf = LV_IMG_CF_INDEXED_4BIT,
   .header.always_zero = 0,
   .header.reserved = 0,
   .header.w = 32,
   .header.h = 32,
   .data_size = 576,
-  .data = battery_charing_map,
+  .data = battery_charging_map,
 };

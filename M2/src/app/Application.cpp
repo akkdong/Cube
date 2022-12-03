@@ -170,6 +170,7 @@ void Application::begin()
     beeper.begin(CreateTonePlayer());
     keyPad.begin(CreateKeypadInput());
     speedCalculator.begin(1000, 25);
+    battery.begin();
 
     if (contextPtr->deviceDefault.enableBT)
         bt.begin(0x03, contextPtr->deviceDefault.btName);
@@ -716,7 +717,7 @@ void Application::stopFlight()
 
 void Application::startVario()
 {
-    contextPtr->deviceState.statusSDCard = 0;
+    contextPtr->deviceState.statusSDCard = SD_CARD.valid() ? 1 : 0;
     contextPtr->deviceState.statusGPS = 0;
     contextPtr->deviceState.batteryPower = battery.getVoltage();
 
