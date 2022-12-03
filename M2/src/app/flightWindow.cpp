@@ -13,7 +13,10 @@
 #include "settingWindow.h"
 #include "widget.h"
 
-#define MAX_ANNUNCIATOR_HEIGHT      (32)
+#include "../assets/assets.h"
+
+
+#define MAX_ANNUNCIATOR_HEIGHT      (48)
 
 // 지원하는 widget과 widget의 properties
 //
@@ -43,42 +46,42 @@ WidgetLayout _layout_1[] =
 {
     {
         FlightWindow::WIDGET_BOX_1,
-        0, 0, 180, 76, 
+        0, 0, 300, 144 - 20, 
         NumberBox::ALTITUDE_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_2,
-        0, 96 + 10, 180, 76, 
+        0, 144 + 10, 300, 144 - 20, 
         NumberBox::TRACK_HEADING, 
     },
     {
         FlightWindow::WIDGET_BOX_3,
-        0, 192 + 20, 180, 76, 
+        0, 288 + 20, 300, 144 - 20, 
         NumberBox::SPEED_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_4,
-        300, 0, 180, 76, 
+        500, 0, 300, 144 - 20, 
         NumberBox::ALTITUDE_BARO, 
     },
     {
         FlightWindow::WIDGET_BOX_5,
-        300, 96 + 10, 180, 76, 
+        500, 144 + 10, 300, 144 - 20, 
         NumberBox::SENSOR_PRESSURE, 
     },
     {
         FlightWindow::WIDGET_BOX_6,
-        300, 192 + 20, 180, 76, 
+        500, 288 + 20, 300, 144 - 20, 
         NumberBox::SPEED_VERTICAL_LAZY, 
     },
     {
         FlightWindow::WIDGET_COMPASS, 
-        190, 0, 100, 100, 
+        300 + 20, 0, 160, 160, 
         0
     },
     {
         FlightWindow::WIDGET_VARIOMETER,
-        200, 100, 80, 188, 
+        300 + 20 + 6, 200 - 40, 160 - 12, 232 + 40, 
         0
     },
 };
@@ -87,32 +90,32 @@ WidgetLayout _layout_2[] =
 {
     {
         FlightWindow::WIDGET_THERMAL_ASSISTANT, 
-        0, 0, 320, 288, 
+        0, 0, 512, 432, 
         0
     },
     {
         FlightWindow::WIDGET_COMPASS, 
-        0, 0, 80, 80, 
+        0, 0, 120, 120, 
         0
     },    
     {
         FlightWindow::WIDGET_BOX_1,
-        320, 0, 160, 72, 
+        512, 0, 288, 108, 
         NumberBox::ALTITUDE_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_2,
-        320, 72, 160, 72, 
+        512, 108, 288, 108, 
         NumberBox::SPEED_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_3,
-        320, 144, 160, 72, 
+        512, 216, 288, 108, 
         NumberBox::SPEED_VERTICAL_LAZY, 
     },
     {
         FlightWindow::WIDGET_BOX_4,
-        320, 215, 160, 72, 
+        512, 324, 288, 108, 
         NumberBox::TRACK_HEADING, 
     },
 };
@@ -121,64 +124,64 @@ WidgetLayout _layout_3[] =
 {
     {
         FlightWindow::WIDGET_BOX_1,
-        0, 0, 160, 72, 
+        0, 0, 260, 108, 
         NumberBox::ALTITUDE_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_2,
-        0, 72, 160, 72, 
+        0, 108, 260, 108, 
         NumberBox::ALTITUDE_BARO, 
     },
     {
         FlightWindow::WIDGET_BOX_3,
-        0, 144, 160, 72, 
+        0, 216, 260, 108, 
         NumberBox::ALTITUDE_AGL, 
     },
     {
         FlightWindow::WIDGET_BOX_4,
-        0, 215, 160, 72, 
+        0, 324, 260, 108, 
         NumberBox::DISTANCE_FLIGHT, 
     },
 
     {
         FlightWindow::WIDGET_BOX_5,
-        160, 0, 160, 72, 
+        260 + 10, 0, 260, 108, 
         NumberBox::SPEED_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_6,
-        160, 72, 160, 72, 
+        260 + 10, 108, 260, 108, 
         NumberBox::SPEED_VERTICAL, 
     },
     {
         FlightWindow::WIDGET_BOX_7,
-        160, 144, 160, 72, 
+        260 + 10, 216, 260, 108, 
         NumberBox::SPEED_VERTICAL_LAZY, 
     },
     {
         FlightWindow::WIDGET_BOX_8,
-        160, 215, 160, 72, 
+        260 + 10, 324, 260, 108, 
         NumberBox::DISTANCE_TAKEOFF, 
     },
 
     {
         FlightWindow::WIDGET_BOX_9,
-        320, 0, 160, 72, 
+        520 + 20, 0, 260, 108, 
         NumberBox::TRACK_HEADING, 
     },
     {
         FlightWindow::WIDGET_BOX_10,
-        320, 72, 160, 72, 
+        520 + 20, 108, 260, 108, 
         NumberBox::TIME_FLIGHT, 
     },
     {
         FlightWindow::WIDGET_BOX_11,
-        320, 144, 160, 72, 
+        520 + 20, 216, 260, 108, 
         NumberBox::TIME_CURRENT, 
     },
     {
         FlightWindow::WIDGET_BOX_12,
-        320, 215, 160, 72, 
+        520 + 20, 324, 260, 108 ,
         NumberBox::GLIDE_RATIO, 
     },        
 };
@@ -251,8 +254,8 @@ void FlightWindow::onCreate()
     #endif
 
     //
-    fontCustom = lv_imgfont_create(18, getCustomFont);
-    fontCustom->fallback = &lv_font_montserrat_16;
+    fontCustom = lv_imgfont_create(32, getCustomFont);
+    fontCustom->fallback = &lv_font_montserrat_28;
     fontCustom->base_line = 2;
 
     //
@@ -584,7 +587,7 @@ void FlightWindow::onUpdate(CompassWidget* compass)
 
     //app_conf_t* conf = app_get_conf();
     DeviceContext* context = DeviceRepository::instance().getContext();
-    compass->draw(context->varioState.heading, /*context->varioState.bearing*/ -1, 0);
+    compass->draw(context->varioState.heading, /*context->varioState.bearing*/ -1, 1);
 }
 
 void FlightWindow::onUpdate(VariometerWidget* variometer)
@@ -603,38 +606,32 @@ void FlightWindow::onUpdate(ThermalAssistant* assistant)
         return;
 
     DeviceContext* context = DeviceRepository::instance().getContext();
-    assistant->drawTrack(context->flightState, /*context->varioState.heading*/ 0);
+    assistant->drawTrack(context->flightState, /*context->varioState.heading*/ 1);
     assistant->drawCompass();
     assistant->drawWindDirection();
     assistant->drawFlight();
 }
 
-
-extern const lv_img_dsc_t paper_plane;
-extern const lv_img_dsc_t bluetooth;
-extern const lv_img_dsc_t map_marker;
-extern const lv_img_dsc_t volume;
-
 bool FlightWindow::getCustomFont(const lv_font_t * font, void * img_src, uint16_t len, uint32_t unicode, uint32_t unicode_next)
 {
     if (unicode == 0xF001)
     {
-        memcpy(img_src, &paper_plane, sizeof(lv_img_dsc_t));
+        memcpy(img_src, &logo_angry_a, sizeof(lv_img_dsc_t));
         return true;
     }
     else if (unicode == 0xF002)
     {
-        memcpy(img_src, &bluetooth, sizeof(lv_img_dsc_t));
+        memcpy(img_src, &bluetooth_unpaired, sizeof(lv_img_dsc_t));
         return true;
     }
     else if (unicode == 0xF003)
     {
-        memcpy(img_src, &map_marker, sizeof(lv_img_dsc_t));
+        memcpy(img_src, &gps_unfixed, sizeof(lv_img_dsc_t));
         return true;
     }
     else if (unicode == 0xF004)
     {
-        memcpy(img_src, &volume, sizeof(lv_img_dsc_t));
+        memcpy(img_src, &volume_high, sizeof(lv_img_dsc_t));
         return true;
     }
 

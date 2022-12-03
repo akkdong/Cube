@@ -10,12 +10,7 @@
 #include "flightWindow.h"
 
 #include "Application.h"
-
-
-///////////////////////////////////////////////////////////////////////////////////
-//
-
-extern const lv_img_dsc_t startup;
+#include "../assets/assets.h"
 
 
 
@@ -42,8 +37,8 @@ void StartupWindow::onCreate()
     lv_obj_t* logo_img = lv_img_create(_this);
     if (logo_img)
     {
-        lv_img_set_src(logo_img, &startup);
-        lv_obj_align(logo_img, LV_ALIGN_CENTER, 0, -32);
+        lv_img_set_src(logo_img, &startup_a);
+        lv_obj_align(logo_img, LV_ALIGN_BOTTOM_LEFT, 0, 0);
     
         //lv_img_set_pivot(logo_img, 0, 0);
         //lv_img_set_angle(logo_img, 450);

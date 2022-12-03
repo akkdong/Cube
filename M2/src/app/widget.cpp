@@ -92,7 +92,7 @@ lv_obj_t* Annunciator::createObject(lv_obj_t* parent)
     status = lv_label_create(ann);
     if (status)
     {
-        lv_obj_set_style_text_font(status, &lv_font_montserrat_16, 0);
+        lv_obj_set_style_text_font(status, &lv_font_montserrat_24, 0);
         lv_obj_set_style_text_color(status, lv_color_hex(0xFFFFFF), 0);
         lv_obj_align(status, LV_ALIGN_LEFT_MID, 0, 0);
         lv_label_set_text(status, "");
@@ -101,7 +101,7 @@ lv_obj_t* Annunciator::createObject(lv_obj_t* parent)
     clock = lv_label_create(ann);
     if (clock)
     {
-        lv_obj_set_style_text_font(clock, &lv_font_montserrat_16, 0);
+        lv_obj_set_style_text_font(clock, &lv_font_montserrat_24, 0);
         lv_obj_set_style_text_color(clock, lv_color_hex(0xFFFFFF), 0);
         lv_obj_align(clock, LV_ALIGN_RIGHT_MID, 0, 0);
         lv_label_set_text(clock, "00:00:00");
@@ -140,9 +140,9 @@ void Annunciator::setFont(const lv_font_t* font)
 ////////////////////////////////////////////////////////////////////////////////////
 // class NumberBox
 
-const lv_font_t* NumberBox::font_title = &lv_font_montserrat_14;
-const lv_font_t* NumberBox::font_subtitle = &lv_font_montserrat_12;
-const lv_font_t* NumberBox::font_body = &lv_font_montserrat_48;
+const lv_font_t* NumberBox::font_title = &lv_font_montserrat_24;
+const lv_font_t* NumberBox::font_subtitle = &lv_font_montserrat_18;
+const lv_font_t* NumberBox::font_body = &font_en_bold_64;
 
 
 NumberBox::NumberBox()

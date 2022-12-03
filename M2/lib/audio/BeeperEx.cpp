@@ -11,7 +11,7 @@
 // BeeperEx implementation
 
 BeeperEx::BeeperEx() 
-    /*: TaskBase("Beeper", 4 * 1024, 5)*/
+    : TaskBase("Beeper", 2 * 1024, 5)
 {
 }
 
@@ -23,10 +23,7 @@ void BeeperEx::begin(ITonePlayer* tp)
 {
     Beeper::begin(tp);
 
-    task.setName("Beeper");
-    task.setStackSize(2 * 1024);
-    task.setPriority(5);
-    task.create(this);
+    this->create();
 }
 
 void BeeperEx::end()

@@ -3,7 +3,6 @@
 
 #include "board.h"
 #include "bsp.h"
-#include "ble_vario.h"
 
 #include "BluetoothManager.h"
 #include "VarioSentence.h"

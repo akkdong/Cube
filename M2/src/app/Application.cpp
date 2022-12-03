@@ -8,7 +8,6 @@
 #include "board.h"
 #include "bsp.h"
 #include "utils.h"
-#include "ble_vario.h"
 #include "timezone.h"
 
 #include "Application.h"

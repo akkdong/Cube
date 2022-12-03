@@ -16,10 +16,7 @@ int VariometerEx::begin(IBarometer* baro, IVarioFilter* filter)
 {
     int ret = Variometer::begin(baro, filter);
 
-    task.setName("Vario");
-    task.setStackSize(4 * 1024);
-    task.setPriority(10);
-    task.create(this);
+    this->create();
 
     updateStatus = 0;
 

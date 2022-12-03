@@ -1,7 +1,7 @@
 // BeeperEx.h
 //
 
-#include "TaskClass.h"
+#include "TaskBase.h"
 #include "CriticalSection.h"
 #include "Beeper.h"
 
@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////
 // class BeeperEx
 
-class BeeperEx : public TaskProcHandler, public Beeper
+class BeeperEx : public TaskBase, public Beeper
 {
 public:
     BeeperEx();
@@ -33,5 +33,4 @@ protected:
 
 protected:
     CriticalSection cs;
-    TaskClass       task;
 };

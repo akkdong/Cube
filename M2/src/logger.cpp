@@ -1,10 +1,10 @@
 // logger.cpp
 //
 
+#include <Arduino.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
-#include <stdint.h>
 
 #include "logger.h"
 
@@ -16,15 +16,22 @@
 static const char* trace_prefix = "EWIVD";
 static char trace_buf[256];
 
+static Stream& Debug = USBSerial;
+
+
+
+//
+//
+//
 
 int trace_putc(uint8_t c)
 {
-    return fputc(c, stdout);
+    return Debug.write(c);
 }
 
 int trace_puts(const char* str)
 {
-    return fputs(str, stdout);
+    return Debug.write(str);
 }
 
 int trace_printf(const char* format, ...)
@@ -34,7 +41,7 @@ int trace_printf(const char* format, ...)
     vsprintf(trace_buf, format, args);
     va_end(args);
 
-    return fputs(trace_buf, stdout);
+    return Debug.write(trace_buf);
 }
 
 
@@ -50,7 +57,5 @@ int _log_printf(int level, const char* format, ...)
     vsprintf(trace_buf, format, args);
     va_end(args);
 
-    int ret = fprintf(stdout, "[%c] %s\n", trace_prefix[level], trace_buf);
-    fflush(stdout);
-    return ret;
+    return Debug.printf("[%c] %s\n", trace_prefix[level], trace_buf);
 }

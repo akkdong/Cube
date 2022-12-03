@@ -146,7 +146,7 @@ void DeviceRepository::reset()
 
     contextPtr->deviceDefault.timezone = VARIOMETER_TIME_ZONE; 			// GMT+9	
 
-	strcpy(contextPtr->deviceDefault.btName, "Cube-001");
+	strcpy(contextPtr->deviceDefault.btName, "Cube-002");
 	strcpy(contextPtr->deviceDefault.wifiSSID, "");
 	strcpy(contextPtr->deviceDefault.wifiPassword, "");
 

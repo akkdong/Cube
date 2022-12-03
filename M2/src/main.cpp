@@ -8,19 +8,13 @@
 #include "utils.h"
 #include "i2s_driver.h"
 #include "adc_driver.h"
-#include "ble_vario.h"
+#include "bsp.h"
 
 #include "tca9554.h"
 #include "bme280.h"
 #include "htu21d.h"
 #include "es8311.h"
 #include "BLEVario.h"
-
-
-#include "lv_port_disp.h"
-#include "lv_port_indev.h"
-#include "lv_port_fs.h"
-
 
 #include "Variometer.h"
 #include "VarioLogger.h"
@@ -99,26 +93,26 @@ static Bme280Settings varioSettings()
 //
 //
 
-Bme280TwoWire	baro;
-HTU21D        ht;
-ES8311        codec;
+//Bme280TwoWire	baro;
+//HTU21D        ht;
+//ES8311        codec;
 
-BLEVario 		  bleDevice;
+//BLEVario 		  bleDevice;
 
 
 //
-Variometer                  vario;
-LocationParser              locParser;
-VarioLogger                 igc;
-VarioSentence               varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE);
-Beeper                      beeper;
-BatteryVoltage              battery;
-AGL                         agl;
+//Variometer                  vario;
+//LocationParser              locParser;
+//VarioLogger                 igc;
+//VarioSentence               varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE);
+//Beeper                      beeper;
+//BatteryVoltage              battery;
+//AGL                         agl;
 
 #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
 VarioFilter_HarInAirKF2     varioFilter;
 #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF3
-VarioFilter_HarInAirKF3     varioFilter;
+//VarioFilter_HarInAirKF3     varioFilter;
 #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
 VarioFilter_HarInAirKF4d    varioFilter;
 #elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
@@ -126,10 +120,10 @@ VarioFilter_RobinKF         varioFilter;
 #endif
 
 //
-int                         bt_lock_state = 0; // 0: unlocked, 1: locked_by_vario, 2: locked_by_gps
-uint8_t                     tick_update_time;
+//int                         bt_lock_state = 0; // 0: unlocked, 1: locked_by_vario, 2: locked_by_gps
+//uint8_t                     tick_update_time;
 
-bool                        gps_fixed = false;
+//bool                        gps_fixed = false;
 
 
 //
@@ -161,168 +155,62 @@ void lv_tick_task(void *arg)
 
 void setup()
 {
-  //
-  USBSerial.begin(115200);
-  Serial2.begin(9600, SERIAL_8N1, 33, -1);
-  Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
-  USBSerial.println("M2 H/W Test");
+    //
+    bsp_hal_init();
+    bsp_power_on(true);
 
-  //
-  battery.begin();
+    bsp_gui_init();
+    bsp_lcd_backlight(true);
 
-  // io-expander default setttings
-  exio.setOutput(0b10110000);
-  exio.setConfig(0b00001111);
-  //
-  codec.codec_config(AUDIO_HAL_24K_SAMPLES);
-  codec.codec_set_voice_volume(78);
-  #if DEBUG
-  uint16_t id;
-  uint8_t version;
-  codec.read_chipid(id, version);
-  USBSerial.printf("Codec ID: %04X, version: %02X\r\n", id, version);    
-  #endif
 
-	// check sd-card & ready for use
-	SD_CARD.begin();
-
-	if (SD_CARD.valid())
-	{
-    #if 0
-		FirmwareUpdater fu;
-
-		if (fu.checkUpdate())
-		{
-			//
-			fu.performUpdate(display);
-			//
-			ESP.restart();
-		}		
-		// else go down
-    #endif
-	}
-	else
-	{
-		USBSerial.printf("SD_CARD is invalid!!\n");
-	}
-
-	// load last device-context
-	SPIFFS.begin();  
-
-	// setup-barometer
-	baro.begin(Bme280TwoWireAddress::Primary, &Wire);
-	baro.setSettings(varioSettings());	 
-  // setup humidity & tempearture
-  ht.begin();
-  //
-  //codec.begin((es_i2s_fmt_t)AUDIO_HAL_16K_SAMPLES);
-  //bsp_i2s_init(I2S_NUM_0, 16000);
-  //
-  bleDevice.begin();
-
-  //
+    //
 	//TaskWatchdog::begin(1000);
 	//TaskWatchdog::add(NULL);  
 
-  // bsp_gui_init()
-  lv_init();
-  lv_port_disp_init();
-  lv_port_indev_init();
-  lv_port_tick_init();
-
-  //xTaskCreate(lv_tick_task, "lv_tick_task", 4096, NULL, 1, NULL);
-
-  //
-  DeviceRepository& repo = DeviceRepository::instance();
-  repo.reset();
-  repo.loadPref();      
-
-  app.begin();
-
-  #if 0 // MOVED TO LOOP
-  while(1)
-  {
     //
-	  TaskWatchdog::reset();    
+    DeviceRepository& repo = DeviceRepository::instance();
+    repo.reset();
+    repo.loadPref();      
 
-    //bsp_update();
-    lv_task_handler();
-    delay(2);
+    //
+    app.begin();
 
-    // forward serial to bluetooth and reverse : debug purpose only
-    while (USBSerial.available())
+    #if 0 // MOVED TO LOOP
+    while(1)
     {
-        int ch = USBSerial.read();
-        bleDevice.write(ch);
+        //
+        TaskWatchdog::reset();    
+
+        //bsp_update();
+        lv_task_handler();
+        delay(2);
+
+        // forward serial to bluetooth and reverse : debug purpose only
+        while (USBSerial.available())
+        {
+            int ch = USBSerial.read();
+            bleDevice.write(ch);
+        }
+
+        while (bleDevice.available())
+        {
+            int ch = bleDevice.read();
+            USBSerial.write(ch);
+        }	    
+
+        app_update();
     }
-
-    while (bleDevice.available())
-    {
-        int ch = bleDevice.read();
-        USBSerial.write(ch);
-    }	    
-
-    app_update();
-  }
-  #endif
+    #endif
 }
 
 void loop()
 {
-  //
-  //TaskWatchdog::reset();    
+    //
+    //TaskWatchdog::reset();    
 
-  // bsp_update();
-  lv_task_handler();
-  delay(2);
+    // timer(task) handler
+    bsp_update();
 
-  // forward serial to bluetooth and reverse : debug purpose only
-  /*
-  while (USBSerial.available())
-  {
-      int ch = USBSerial.read();
-      bleDevice.write(ch);
-  }
-
-  while (bleDevice.available())
-  {
-      int ch = bleDevice.read();
-      USBSerial.write(ch);
-  }	
-}
-  }	
-  */    
-
-  app.update();
-}
-
-
-
-//
-//
-//
-
-bool ble_isConnected()
-{
-	return bleDevice.isConnected();
-}
-
-int  ble_writeBuffered(uint8_t ch)
-{
-	return bleDevice.writeBuffered(ch);
-}
-
-void ble_flush()
-{
-	bleDevice.flush();
-}
-
-size_t ble_press(uint8_t key)
-{
-	return bleDevice.press(key);
-}
-
-size_t ble_release(uint8_t key)
-{
-	return bleDevice.release(key);
+    //
+    app.update();
 }
