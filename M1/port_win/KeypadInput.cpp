@@ -117,6 +117,58 @@ public:
         LOGv("KeypadInput::KeyProc() end");
     }
 
+    void EventFilter(SDL_Event* event) {
+        switch (event->type)
+        {
+        case SDL_KEYDOWN:
+            //LOGv("KeyDown: %d", event->key.keysym.scancode);
+            switch (event->key.keysym.scancode)
+            {
+            case SDL_SCANCODE_LEFT:
+                keyState |= BIT_LEFT;
+                break;
+            case SDL_SCANCODE_RIGHT:
+                keyState |= BIT_RIGHT;
+                break;
+            case SDL_SCANCODE_UP:
+                keyState |= BIT_UP;
+                break;
+            case SDL_SCANCODE_DOWN:
+                keyState |= BIT_DOWN;
+                break;
+            case SDL_SCANCODE_RETURN:
+                keyState |= BIT_ENTER;
+                break;
+            }
+            break;
+        case SDL_KEYUP:
+            //LOGv("KeyUp: %d", event->key.keysym.scancode);
+            switch (event->key.keysym.scancode)
+            {
+            case SDL_SCANCODE_LEFT:
+                keyState &= ~BIT_LEFT;
+                break;
+            case SDL_SCANCODE_RIGHT:
+                keyState &= ~BIT_RIGHT;
+                break;
+            case SDL_SCANCODE_UP:
+                keyState &= ~BIT_UP;
+                break;
+            case SDL_SCANCODE_DOWN:
+                keyState &= ~BIT_DOWN;
+                break;
+            case SDL_SCANCODE_RETURN:
+                keyState &= ~BIT_ENTER;
+                break;
+            }
+            break;
+
+        case SDL_QUIT:
+            break;
+        }
+
+    }
+
     static int ThreadProc(void* data) {
         ((KeypadInput *)data)->KeyProc();
         return 0;
@@ -127,6 +179,11 @@ public:
         return 0;
     }
 
+    static int EventFilter(void* userData, SDL_Event* event) {
+        ((KeypadInput *)userData)->EventFilter(event);
+        return 1;
+    }
+
 protected:
     uint32_t        keyState;
 };
@@ -135,12 +192,15 @@ protected:
 /////////////////////////////////////////////////////////////////////////////////////
 //
 
+
 IKeypadInput* CreateKeypadInput()
 {
     static KeypadInput _input;
 
-    SDL_CreateThread(KeypadInput::ThreadProc, "KeyProc", (void *)&_input);
+    //SDL_CreateThread(KeypadInput::ThreadProc, "KeyProc", (void *)&_input);
     //SDL_AddTimer(100, KeypadInput::TimerProc, (void *)&_input);
+
+    SDL_AddEventWatch(KeypadInput::EventFilter, &_input);
 
     return &_input;
 }

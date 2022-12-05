@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "device_defines.h"
 #include "app.h"
+#include "bsp.h"
 #include "logger.h"
 
 #include "DeviceRepository.h"
@@ -309,7 +310,12 @@ void FlightWindow::onCreate()
     #endif
     layoutWidget(activeLayout);
 
+//  bsp_regiter_keypad_receiver(_this);
+
     lv_obj_add_event_cb(_this, _onClickBackground, LV_EVENT_CLICKED, this);
+//  lv_obj_add_event_cb(_this, _onClickBackground, LV_EVENT_PRESSED, this);
+//  lv_obj_add_event_cb(_this, _onClickBackground, LV_EVENT_LONG_PRESSED, this);
+//  lv_obj_add_event_cb(_this, _onClickBackground, LV_EVENT_RELEASED, this);
 }
 
 void FlightWindow::onActive()

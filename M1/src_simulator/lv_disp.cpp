@@ -11,6 +11,7 @@
 #include "device_defines.h"
 #include "logger.h"
 #include "app.h"
+#include "bsp.h"
 #include "lv_disp.h"
 
 
@@ -60,7 +61,7 @@ void lv_disp_init(void)
     disp_drv.ver_res = SDL_VER_RES;
     //disp_drv.disp_fill = monitor_fill;      /*Used when `LV_VDB_SIZE == 0` in lv_conf.h (unbuffered drawing)*/
     //disp_drv.disp_map = monitor_map;        /*Used when `LV_VDB_SIZE == 0` in lv_conf.h (unbuffered drawing)*/
-    lv_disp_drv_register(&disp_drv);
+    lv_disp_t* disp = lv_disp_drv_register(&disp_drv);
 
     /* Add the mouse as input device
      * Use the 'mouse' driver which reads the PC's mouse*/
@@ -68,9 +69,16 @@ void lv_disp_init(void)
     lv_indev_drv_init(&indev_drv);            /*Basic initialization*/
     indev_drv.type = LV_INDEV_TYPE_POINTER;
     indev_drv.read_cb = sdl_mouse_read;       /*This function will be called periodically (by the library) to get the mouse position and state*/
-    lv_indev_drv_register(&indev_drv);
+    lv_indev_t* mouse = lv_indev_drv_register(&indev_drv);
+
+    static lv_indev_drv_t indev_kbd_drv;
+    lv_indev_drv_init(&indev_kbd_drv);
+    indev_kbd_drv.type = LV_INDEV_TYPE_KEYPAD;
+    indev_kbd_drv.read_cb = sdl_keyboard_read;
+    lv_indev_t* keypad = lv_indev_drv_register(&indev_kbd_drv);
 
     sdl_init();
+    bsp_set_drivers(disp, mouse, keypad);
 
     /* Tick init.
      * You have to call 'lv_tick_inc()' in periodically to inform LittelvGL about how much time were elapsed
