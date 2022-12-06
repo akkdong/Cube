@@ -593,7 +593,7 @@ void FlightWindow::onUpdate(ThermalAssistant* assistant)
         return;
 
     DeviceContext* context = DeviceRepository::instance().getContext();
-    assistant->drawTrack(context->flightState, /*context->varioState.heading*/ 1);
+    assistant->drawTrack(context->flightState, context->varioState.heading);
     assistant->drawCompass();
     assistant->drawWindDirection();
     assistant->drawFlight();

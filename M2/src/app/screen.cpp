@@ -221,7 +221,7 @@ lv_obj_t* Screen::createAlertObject(lv_color_t colorBkgnd)
     lv_obj_set_style_pad_hor(alert, 24, 0);
     lv_obj_set_style_pad_ver(alert, 6, 0);
     lv_obj_set_style_text_color(alert, lv_color_hex(0x000000), 0);
-    lv_obj_set_style_text_font(alert, &lv_font_montserrat_14, 0);
+    lv_obj_set_style_text_font(alert, &lv_font_montserrat_24, 0);
     lv_obj_align(alert, LV_ALIGN_BOTTOM_MID, 0, -10);
 
     return alert;
@@ -229,7 +229,7 @@ lv_obj_t* Screen::createAlertObject(lv_color_t colorBkgnd)
 
 void Screen::showAlert(const char* msg, bool typeError)
 {
-    lv_color_t bkgndColor = lv_color_hex(typeError ? 0xFFD0D0 : 0xD0D0FF);
+    lv_color_t bkgndColor = lv_color_hex(typeError ? 0xFFD0D0 : 0xFFFFD0);
 
     if (_alertObj == nullptr)
     {
