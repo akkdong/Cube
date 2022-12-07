@@ -463,12 +463,12 @@ void FlightWindow::onUpdate(Annunciator* ann)
     char sz[32];
     sprintf(sz, " %s %s %s %s%s \t %.1fv %s", 
         APP_SYMBOL_LOGO_ANGRY_B,
-        context->deviceState.statusBT ? APP_SYMBOL_BLUETOOTH_PAIRED : APP_SYMBOL_BLUETOOTH_PAIRED,
+        context->deviceState.statusBT == 0 ? APP_SYMBOL_BLUETOOTH_DISABLED : (context->deviceState.statusBT == 1 ? APP_SYMBOL_BLUETOOTH_UNPAIRED : APP_SYMBOL_BLUETOOTH_PAIRED),
         context->deviceState.statusGPS ? APP_SYMBOL_GPS_FIXED : APP_SYMBOL_GPS_UNFIXED,
         APP_SYMBOL_VOLUME_HIGH,
         context->deviceState.statusSDCard == 0 ? "" : (context->deviceState.statusSDCard > 1  ? " " APP_SYMBOL_SDCARD_LOGGING : " " APP_SYMBOL_SDCARD_READY),
         context->deviceState.batteryPower,
-        APP_SYMBOL_BATTERY_CHARGING);
+        APP_SYMBOL_BATTERY_4);
     ann->setStatus(sz);
 
     // time_t t = time(NULL) /*+ 9 * 60 * 60*/;
@@ -608,52 +608,64 @@ bool FlightWindow::getCustomFont(const lv_font_t * font, void * img_src, uint16_
     case APP_ICON_BATTERY_CHARGING:     // 0xF001
         img_icon = &battery_charging;
         break;
-    case APP_ICON_BATTERY_POWER:        // 0xF002
-        img_icon = &battery_power;
+    case APP_ICON_BATTERY_0:            // 0xF002
+        img_icon = &battery_0;
         break;
-    case APP_ICON_BLUETOOTH_PAIRED:     // 0xF003
-        img_icon = &bluetooth_paired;
+    case APP_ICON_BATTERY_1:            // 0xF003
+        img_icon = &battery_1;
         break;
-    case APP_ICON_BLUETOOTH_UNPAIRED:   // 0xF004
+    case APP_ICON_BATTERY_2:            // 0xF004
+        img_icon = &battery_2;
+        break;
+    case APP_ICON_BATTERY_3:            // 0xF005
+        img_icon = &battery_3;
+        break;
+    case APP_ICON_BATTERY_4:            // 0xF006
+        img_icon = &battery_4;
+        break;
+    case APP_ICON_BLUETOOTH_DISABLED:   // 0xF011
+        img_icon = &bluetooth_disabled;
+        break;
+    case APP_ICON_BLUETOOTH_UNPAIRED:   // 0xF012
         img_icon = &bluetooth_unpaired;
         break;
-    case APP_ICON_GPS_FIXED:            // 0xF005
+    case APP_ICON_BLUETOOTH_PAIRED:     // 0xF013
+        img_icon = &bluetooth_paired;
+        break;
+    case APP_ICON_GPS_FIXED:            // 0xF021
         img_icon = &gps_fixed;
         break;
-    case APP_ICON_GPS_UNFIXED:          // 0xF006
+    case APP_ICON_GPS_UNFIXED:          // 0xF022
         img_icon = &gps_unfixed;
         break;
-    case APP_ICON_LOGGING:              // 0xF007
-        img_icon = &logging;
-        break;
-    case APP_ICON_LOGO:                 // 0xF008
+    case APP_ICON_LOGO:                 // 0xF031
         img_icon = &logo;
         break;
-    case APP_ICON_LOGO_ANGRY_A:         // 0xF009
+    case APP_ICON_LOGO_ANGRY_A:         // 0xF032
         img_icon = &logo_angry_a;
         break;
-    case APP_ICON_LOGO_ANGRY_B:         // 0xF00A
+    case APP_ICON_LOGO_ANGRY_B:         // 0xF033
         img_icon = &logo_angry_b;
         break;
-    case APP_ICON_LOGO_O:               // 0xF00B
+    case APP_ICON_LOGO_O:               // 0xF034
         img_icon = &logo_o;
         break;
-    case APP_ICON_LOGO_ROUND:           // 0xF00C
+    case APP_ICON_LOGO_ROUND:           // 0xF035
         img_icon = &logo_round;
         break;
-    case APP_ICON_SDCARD_READY:         // 0xF00D
+    case APP_ICON_SDCARD_READY:         // 0xF041
         img_icon = &sdcard_ready;
         break;
-    case APP_ICON_SDCARD_LOGGING:       // 0xF00E
+    case APP_ICON_SDCARD_LOGGING:       // 0xF042
         img_icon = &sdcard_logging;
         break;
-    case APP_ICON_VOLUME_MUTE:          // 0xF00F
+    case APP_ICON_VOLUME_MUTE:          // 0xF051
         img_icon = &volume_mute;
         break;
-    case APP_ICON_VOLUME_LOW:           // 0xF010
+    case APP_ICON_VOLUME_LOW:           // 0xF052
         img_icon = &volume_low;
         break;
-    case APP_ICON_VOLUME_HIGH:          // 0xF011
+    case APP_ICON_VOLUME_HIGH:          // 0xF053
         img_icon = &volume_high;
         break;
     }

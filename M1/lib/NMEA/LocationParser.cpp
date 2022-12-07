@@ -1,9 +1,12 @@
 // LocationParser.cpp
 //
 
-#include "LocationParser.h"
-#include "logger.h"
+#include <stdint.h>
 #include <string.h>
+#include "logger.h"
+
+#include "LocationParser.h"
+#include "FixedLenDigit.h"
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -634,8 +637,8 @@ void LocationParser::parseField(int fieldIndex, int startPos)
 			#endif
 
 			// update IGC sentence if it's unlocked
-			//if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
-			//	mDataQueue.copy(&mIGCSentence[IGC_OFFSET_TIME], startPos, IGC_SIZE_TIME);
+			if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
+				mDataQueue.copy(&mIGCSentence[IGC_OFFSET_TIME], startPos, IGC_SIZE_TIME);
 			break;
 		case 1 : // Latitude (DDMM.mmm)
 			// save latitude
@@ -644,14 +647,14 @@ void LocationParser::parseField(int fieldIndex, int startPos)
 				mLatitude = nmeaToDecimal(nmeaLatitude);
 				
 				// update IGC sentence if it's unlocked
-				//if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
-				//{
-				//	FixedLenDigit digit;
-				//
-				//	digit.begin(floatToCoordi(nmeaLatitude), IGC_SIZE_LATITUDE);
-				//	for (int i = 0; i < IGC_SIZE_LATITUDE /*digit.available()*/; i++)
-				//		mIGCSentence[IGC_OFFSET_LATITUDE+i] = digit.read();
-				//}
+				if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
+				{
+					FixedLenDigit digit;
+				
+					digit.begin(floatToCoordi(nmeaLatitude), IGC_SIZE_LATITUDE);
+					for (int i = 0; i < IGC_SIZE_LATITUDE /*digit.available()*/; i++)
+						mIGCSentence[IGC_OFFSET_LATITUDE+i] = digit.read();
+				}
 			}
 			break;
 		case 2 : // Latitude (N or S)
@@ -660,8 +663,8 @@ void LocationParser::parseField(int fieldIndex, int startPos)
 				mLatitude = -mLatitude; // south latitude is negative
 			
 			// update IGC sentence if it's unlocked
-			//if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
-			//	mIGCSentence[IGC_OFFSET_LATITUDE_] = mDataQueue.get(startPos);
+			if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
+				mIGCSentence[IGC_OFFSET_LATITUDE_] = mDataQueue.get(startPos);
 			break;
 		case 3 : // Longitude (DDDMM.mmmm)
 			// save longitude
@@ -670,14 +673,14 @@ void LocationParser::parseField(int fieldIndex, int startPos)
 				mLongitude = nmeaToDecimal(nmeaLongitude);
 				
 				// update IGC sentence if it's unlocked
-				//if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
-				//{
-				//	FixedLenDigit digit;
-				//
-				//	digit.begin(floatToCoordi(nmeaLongitude), IGC_SIZE_LONGITUDE);
-				//	for (int i = 0; i < IGC_SIZE_LONGITUDE /*digit.available()*/; i++)
-				//		mIGCSentence[IGC_OFFSET_LONGITUDE+i] = digit.read();
-				//}
+				if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
+				{
+					FixedLenDigit digit;
+				
+					digit.begin(floatToCoordi(nmeaLongitude), IGC_SIZE_LONGITUDE);
+					for (int i = 0; i < IGC_SIZE_LONGITUDE /*digit.available()*/; i++)
+						mIGCSentence[IGC_OFFSET_LONGITUDE+i] = digit.read();
+				}
 			}			
 			break;
 		case 4 : // Longitude (E or W)
@@ -686,8 +689,8 @@ void LocationParser::parseField(int fieldIndex, int startPos)
 				mLongitude = -mLongitude; // west longitude is negative
 			
 			// update IGC sentence if it's unlocked
-			//if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
-			//	mIGCSentence[IGC_OFFSET_LONGITUDE_] = mDataQueue.get(startPos);
+			if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
+				mIGCSentence[IGC_OFFSET_LONGITUDE_] = mDataQueue.get(startPos);
 			break;
 		case 5 : // GPS Fix Quality (0 = Invalid, 1 = GPS fix, 2 = DGPS fix)
 			if (mDataQueue.get(startPos) != '0')
@@ -707,20 +710,20 @@ void LocationParser::parseField(int fieldIndex, int startPos)
 			#endif
 			
 			// update IGC sentence if it's unlocked
-			//if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
-			//{
-			//	FixedLenDigit digit;
-			//
-			//	//
-			//	//digit.begin(mBaroAlt, IGC_SIZE_PRESS_ALT);
-			//	//for (int i = 0; i < IGC_SIZE_PRESS_ALT /*digit.available()*/; i++)
-			//	//	mIGCSentence[IGC_OFFSET_PRESS_ALT+i] = digit.read();
-			//	
-			//	//
-			//	digit.begin(mAltitude, IGC_SIZE_GPS_ALT);
-			//	for (int i = 0; i < IGC_SIZE_GPS_ALT /*digit.available()*/; i++)
-			//		mIGCSentence[IGC_OFFSET_GPS_ALT+i] = digit.read();
-			//}			
+			if (! IS_SET(mParseState, IGC_SENTENCE_LOCKED))
+			{
+				FixedLenDigit digit;
+			
+				//
+				//digit.begin(mBaroAlt, IGC_SIZE_PRESS_ALT);
+				//for (int i = 0; i < IGC_SIZE_PRESS_ALT /*digit.available()*/; i++)
+				//	mIGCSentence[IGC_OFFSET_PRESS_ALT+i] = digit.read();
+				
+				//
+				digit.begin(mAltitude, IGC_SIZE_GPS_ALT);
+				for (int i = 0; i < IGC_SIZE_GPS_ALT /*digit.available()*/; i++)
+					mIGCSentence[IGC_OFFSET_GPS_ALT+i] = digit.read();
+			}			
 			break;
 		case 9 : // Altitude unit (M: meter)
 			break;

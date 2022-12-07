@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <time.h>
 
+#include "FixedLenDigit.h"
+
 
 /////////////////////////////////////////////////////////////////////////////
 // class IGCLogger
@@ -14,26 +16,41 @@
 class IGCLogger
 {
 public:
-    IGCLogger() {}
+    IGCLogger();
 
 public:
-    bool begin(time_t date) {
-        return false;
-    }
-    void end(time_t date) {        
-    }
+	bool				begin(time_t date); // date = seconds since 1900
+	void				end(time_t date);
+	
+	int					write(uint8_t ch);
 
-    bool isLogging() {
-        return false;
-    }
+	void				updateBaroAltitude(float varioAlt);
+	
+	int					isInitialized();
+	int					isLogging();
 
-    void updateBaroAltitude(float altitude) {        
-    }
+private:
+	void				reset();
+	
+	const char *		makeFileName(char * buf, time_t date);
+	void				writeHeader(time_t date);
 
-    int write(uint8_t ch) {
-        return 1;
-    }
+	int					validateName(int ch);
 
+private:
+//  File				root;
+//  File				file;
+	
+	uint8_t				logState;
+	int					columnCount;
+	
+	float				varioAltitude;
+	FixedLenDigit		digit;
+
+    //
+    char                pilot[32];
+    char                glider_manufacture[32];
+    char                glider_model[32];
 };
 
 #endif // __IGC_LOGGER_H__

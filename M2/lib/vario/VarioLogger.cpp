@@ -67,7 +67,7 @@ char pathBuf[64];
 // HFDTM100GPSDATUM:WGS-84
 const char * igcHeader[] =
 {
-	"CUBE Variometer & GPS Loggger v2", 
+	"AXXX CUBE Variometer & GPS Loggger v2", 
 	"\r\nHFDTE",					// ex) DDMMYY
 	NULL,
 	"\r\nHFPLTPILOT:",				// ex) akkdong
