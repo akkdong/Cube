@@ -7,9 +7,12 @@
 #include <stdint.h>
 #include <time.h>
 
+#include "TaskBase.h"
+#include "CriticalSection.h"
+
 #include "abstract/LocationDataSource.h"
 
-#define MAX_NMEA_PARSER_BUFFER					(128)
+#define MAX_NMEA_PARSER_BUFFER					(512)
 
 #define MAX_IGC_SENTENCE						(37)	// B-sentence max size
 														// ex: B1602405407121N00249342WA0028000421\r\n
@@ -80,13 +83,13 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////////////
 //
 
-class LocationParser
+class LocationParser : public TaskBase, public CriticalSection
 {
 public:
     LocationParser();
 
 public:
-    void                begin(ILocationDataSource* iLocation);
+    void                begin(ILocationDataSource* iLocation, bool useTask = true);
     void                end();
     void                reset();
 
@@ -114,6 +117,9 @@ public:
     //
     void                setTimeZone(float tz) { mTimeZone = tz; }
 
+protected:
+	void				TaskProc() override;
+
 private:
 	int 				timeStr2TmStruct(struct tm * _tm, int startPos);
 	int	 				dateStr2TmStruct(struct tm * _tm, int startPos);
@@ -138,7 +144,7 @@ private:
 	volatile uint8_t	mParity;
 	
 	//
-	bool				mDataReady;
+	volatile bool		mDataReady;
 
 	//uint32_t			mDate;
 	//uint32_t			mTime;
@@ -155,7 +161,7 @@ private:
 	int16_t				mSpeed;
 	int16_t				mHeading;
 
-	bool				mFixed;
+	volatile bool		mFixed;
 
 	// IGC sentence
 	char				mIGCSentence[MAX_IGC_SENTENCE+1];

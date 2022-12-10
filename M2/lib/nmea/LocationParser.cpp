@@ -129,6 +129,7 @@ void DataQueue::dumpReserve()
 //
 
 LocationParser::LocationParser()
+	: TaskBase("GPS", 2 * 1024, 1)
 {
 	reset();
 
@@ -142,10 +143,13 @@ LocationParser::LocationParser()
 	mIGCSentence[IGC_OFFSET_TERMINATE] = '\0';    
 }
 
-void LocationParser::begin(ILocationDataSource* iLocation)
+void LocationParser::begin(ILocationDataSource* iLocation, bool useTask)
 {
     mDataSourcePtr = iLocation;
     mDataSourcePtr->begin();
+
+	if (useTask)
+		create();
 }
 
 void LocationParser::end()
@@ -844,4 +848,22 @@ int	LocationParser::readIGC()
 	}
 	
 	return -1;
+}
+
+
+
+//
+//
+//
+
+void LocationParser::TaskProc()
+{
+	while (1)
+	{
+		enter();
+		update();
+		leave();
+
+		vTaskDelay(pdMS_TO_TICKS(10));
+	}
 }

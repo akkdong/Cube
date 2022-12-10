@@ -69,7 +69,7 @@ void BeeperEx::TaskProc()
         cs.leave();
 
         #ifdef ARDUINO
-        vTaskDelay(5 / portTICK_PERIOD_MS);
+        vTaskDelay(pdMS_TO_TICKS(5));
         #else
         SDL_Delay(5);
         #endif

@@ -54,6 +54,7 @@ static Tone melodyStart[] =
 Application::Application() 
     : contextPtr(nullptr)
     , mode(MODE_INIT)
+    , vario(beeper)
     , varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
     , keyPad(this)
     #if 0
@@ -165,12 +166,13 @@ void Application::begin()
     varioFilter.Configure(30.0f, 4.0f, altitude);
     #endif    
 
-    vario.begin(CreateBarometer(), &varioFilter);
-    locParser.begin(CreateLocationDataSource());
     beeper.begin(CreateTonePlayer());
     keyPad.begin(CreateKeypadInput());
-    speedCalculator.begin(1000, 25);
     battery.begin();
+    vario.begin(CreateBarometer(), &varioFilter);
+    locParser.begin(CreateLocationDataSource(), true);
+    //accumulateSpeed.begin(1000, 25);
+    //accumulatePressure.begin(1000, 25);
 
     if (contextPtr->deviceDefault.enableBT)
         bt.begin(0x03, contextPtr->deviceDefault.btName);
@@ -208,20 +210,22 @@ void Application::update()
     // update screen in every 500ms if it's need to update
     #if 1
     uint32_t tick = millis();
-    if (dispNeedUpdate && tick - tick_updateDisp > 500)
+    if (/*dispNeedUpdate &&*/ tick - tick_updateDisp > 500)
     {
+        //LOGi("update-interval: %u", tick - tick_updateDisp);
         Window* active = Screen::instance()->peekWindow();
         if (active)
             active->update();
+        //LOGi("update: %u", millis() - tick);
 
         tick_updateDisp = tick;
         dispNeedUpdate = false;
-        //LOGi("update: %u", millis() - tick);
     }
     #endif
 
     //
-    locParser.update();
+    //if (not use task)
+    //  locParser.update();
     int varioUpdated = vario.update();
     beeper.update();
     keyPad.update();    // button processing
@@ -233,6 +237,7 @@ void Application::update()
     //
     if (locParser.availableLocation())
     {
+        locParser.enter();
         LOGd("[GPS] %f,%f %f", locParser.getLongitude(), locParser.getLatitude(), locParser.getAltitude());
 
         // update vario-state
@@ -253,6 +258,8 @@ void Application::update()
         contextPtr->varioState.altitudeRef3 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef3;
 
         locParser.resetLocation();
+        locParser.leave();
+
 
         // GPS has been fixed
         if (!gpsFixed)
@@ -327,33 +334,53 @@ void Application::update()
         contextPtr->deviceState.statusGPS = fixed ? 1 :0;
     }
 
+    // update BT state
+    if (contextPtr->deviceState.statusBT > 0)
+    {
+        bool connected = bt.isConnected();
+        if ((connected && contextPtr->deviceState.statusBT < 2) || (!connected && contextPtr->deviceState.statusBT > 1))
+            contextPtr->deviceState.statusBT = connected ? 2 : 1;
+    }
+
     // vario updated
     if (varioUpdated > 0)
     {
+        //static uint32_t lastTick = millis();
+        //LOGi("vario update tick: %u", tick - lastTick);
+        //lastTick = tick;
+
         //
         vario.resetUpdate();
 
         //
+        vario.enter();
         contextPtr->varioState.altitudeBaro = vario.getAltitudeFiltered();
         contextPtr->varioState.altitudeCalibrated = vario.getAltitudeCalibrated();
         contextPtr->varioState.pressure = vario.getPressure();
         contextPtr->varioState.temperature = vario.getTemperature();
         contextPtr->varioState.speedVertActive = vario.getVelocity();
-        //static uint32_t lastTick = millis();
-        //uint32_t curTick = millis();
-        //LOGi("%u", curTick - lastTick);
-        //lastTick = curTick;
+        contextPtr->varioState.pressureLazy = vario.getLazyPressure();
+        contextPtr->varioState.speedVertLazy = vario.getLazyVario();
+        vario.leave();
 
-        if (speedCalculator.add(contextPtr->varioState.speedVertActive) > 0)
+        /*
+        if (accumulatePressure.add(contextPtr->varioState.pressure) > 0)
         {
-            contextPtr->varioState.speedVertLazy = speedCalculator.get();
+            contextPtr->varioState.pressureLazy = accumulatePressure.get();
+            LOGi("pressure: %f", contextPtr->varioState.pressureLazy);
+        }
+
+        if (accumulateSpeed.add(contextPtr->varioState.speedVertActive) > 0)
+        {
+            contextPtr->varioState.speedVertLazy = accumulateSpeed.get();
             dispNeedUpdate = true;
 
             DeviceRepository::instance().updateVSpeedHistory(contextPtr->varioState.speedVertLazy);
         }
+        */
 
         /*if (!ble_isConnected())*/
-            beeper.setVelocity(contextPtr->varioState.speedVertActive);
+        //  beeper.setVelocity(contextPtr->varioState.speedVertActive);
 
         //
         if (bt.isConnected() && varioNmea.checkInterval())
@@ -361,7 +388,7 @@ void Application::update()
             float height = locParser.isFixed() ? contextPtr->varioState.altitudeGPS : -1;
             float velocity = contextPtr->varioState.speedVertLazy;
             float temperature = contextPtr->varioState.temperature;
-            float pressure = contextPtr->varioState.pressure; // to hPa
+            float pressure = contextPtr->varioState.pressureLazy; // to hPa
             float voltage = battery.getVoltage();
 
             varioNmea.begin(height, velocity, temperature, pressure, voltage);
@@ -383,18 +410,22 @@ void Application::update()
     }
 
 
-    // vario-sentense available?    
-    bt.update(varioNmea, locParser);
-
-    // write igc-sentence
-    if (igc.isLogging() && locParser.availableIGC()) 
+    locParser.enter();
     {
-        float altitude = vario.getAltitude();
-        igc.updateBaroAltitude(altitude);
+        // vario-sentense available?
+        bt.update(varioNmea, locParser);
 
-        while (locParser.availableIGC())
-            igc.write(locParser.readIGC());
+        // write igc-sentence
+        if (igc.isLogging() && locParser.availableIGC()) 
+        {
+            float altitude = vario.getAltitudeCalibrated();
+            igc.updateBaroAltitude(altitude);
+
+            while (locParser.availableIGC())
+                igc.write(locParser.readIGC());
+        }
     }
+    locParser.leave();
 }
 
 void Application::onPressed(uint8_t key) 

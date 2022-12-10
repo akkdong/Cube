@@ -57,5 +57,5 @@ int _log_printf(int level, const char* format, ...)
     vsprintf(trace_buf, format, args);
     va_end(args);
 
-    return Debug.printf("[%c] %s\n", trace_prefix[level], trace_buf);
+    return Debug.printf("[%c] %s\r\n", trace_prefix[level], trace_buf);
 }

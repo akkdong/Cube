@@ -74,6 +74,7 @@ struct VarioState // VarioDeviceState
 	
 	//
 	float			pressure;
+	float			pressureLazy;
 	float			temperature;		// by barometer
 	float			temperatureAlt;		// by thermometer
 

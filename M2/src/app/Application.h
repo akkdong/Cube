@@ -18,7 +18,7 @@
 #include "BatteryVoltage.h"
 #include "agl.h"
 #include "VarioLogger.h"
-#include "SpeedCalculator.h"
+//#include "Accumulator.h"
 #include "BluetoothManager.h"
 #include "VariometerEx.h"
 #include "BeeperEx.h"
@@ -120,7 +120,8 @@ protected:
     BatteryVoltage              battery;
     AGL                         agl;
     VarioLogger                 igc;
-    SpeedCalculator             speedCalculator;
+//  Accumulator                 accumulateSpeed; // speedCalculator;
+//  Accumulator                 accumulatePressure;
     BluetoothManager            bt;
 
     #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2

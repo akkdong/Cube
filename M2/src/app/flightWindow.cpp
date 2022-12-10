@@ -490,7 +490,7 @@ void FlightWindow::onUpdate(NumberBox* box)
         sprintf(value, "%.0f", context->varioState.altitudeGPS);
         break;
     case NumberBox::ALTITUDE_BARO:
-        sprintf(value, "%.0f", context->varioState.altitudeBaro);
+        sprintf(value, "%.0f", context->varioState.altitudeCalibrated);
         break;
     case NumberBox::ALTITUDE_AGL:
         sprintf(value, "%.0f", context->varioState.altitudeAGL);
@@ -549,7 +549,7 @@ void FlightWindow::onUpdate(NumberBox* box)
     case NumberBox::TRACK_FLIGHT:
         break;
     case NumberBox::SENSOR_PRESSURE:
-        sprintf(value, "%.0f", context->varioState.pressure);
+        sprintf(value, "%.0f", context->varioState.pressureLazy);
         break;
     case NumberBox::SENSOR_TEMPERATURE:
         sprintf(value, "%.1f", context->varioState.temperature);

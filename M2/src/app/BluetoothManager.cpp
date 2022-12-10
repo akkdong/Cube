@@ -39,7 +39,7 @@ void BluetoothManager::end()
 
 void BluetoothManager::update(VarioSentence& varioNmea, LocationParser& locParser)
 {
-// vario-sentense available?
+    // vario-sentense available?
     if ((lock_state == 0 && varioNmea.available()) || (lock_state == 1))
     {
         lock_state = 1;

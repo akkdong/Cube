@@ -142,7 +142,7 @@ void lv_tick_task(void *arg)
 {
     while(1) 
     {
-        vTaskDelay((10) / portTICK_PERIOD_MS);
+        vTaskDelay(pdMS_TO_TICKS(5));
         lv_task_handler();        
     }
 }
@@ -164,8 +164,8 @@ void setup()
 
 
     //
-	//TaskWatchdog::begin(1000);
-	//TaskWatchdog::add(NULL);  
+    //TaskWatchdog::begin(1000);
+    //TaskWatchdog::add(NULL);  
 
     //
     DeviceRepository& repo = DeviceRepository::instance();

@@ -4,15 +4,17 @@
 #include "Variometer.h"
 #include "TaskBase.h"
 #include "CriticalSection.h"
-
+#include "Accumulator.h"
 
 ////////////////////////////////////////////////////////////////////////////////////////
 //
 
-class VariometerEx : public TaskBase, public Variometer, public CriticalSection
+class Beeper;
+
+class VariometerEx : public Variometer, public TaskBase, public CriticalSection
 {
 public:
-    VariometerEx() : TaskBase("Vario", 4 * 1024, 10) {}
+    VariometerEx(Beeper& beeper);
 
 public:
 	int				begin(IBarometer* baro, IVarioFilter* filter) override;
@@ -20,11 +22,21 @@ public:
 	int				update() override;
 	void			resetUpdate() override;
 
+    float           getLazyPressure() { return pressureLazy; }
+    float           getLazyVario() { return varioLazy; }
+
 protected:
     void            TaskProc() override;
 
 protected:
+    Beeper&         beeper;
     volatile int    updateStatus;
+
+    float           pressureLazy;
+    float           varioLazy;
+
+    Accumulator     accumulateVario;
+    Accumulator     accumulatePressure;
 };
 
 

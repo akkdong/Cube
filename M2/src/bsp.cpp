@@ -57,7 +57,7 @@ void bsp_hal_init()
     USBSerial.begin(115200);
     Serial2.begin(9600, SERIAL_8N1, 33, -1);
     Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
-    USBSerial.println("M2 H/W Test");
+    USBSerial.println("M2 Variometer");
 
     // io-expander default setttings
     exio.setOutput(0b10110000);
@@ -80,12 +80,7 @@ void bsp_hal_init()
     // setup humidity & tempearture
     ht.begin();
 
-    // battery
-    // SD_CARD
-    // SPIFFS
-    // BLE
-
-	// load last device-context
+	// mount SPIFFS : ...
 	SPIFFS.begin();  
 
 	// check sd-card & ready for use
@@ -108,7 +103,7 @@ void bsp_hal_init()
 	}
 	else
 	{
-		USBSerial.printf("SD_CARD is invalid!!\n");
+		USBSerial.printf("SD_CARD is invalid!!\r\n");
 	}
 }
 

@@ -1,6 +1,7 @@
 // lv_port_disp.cpp
 //
 
+#include <Arduino.h>
 #include "lv_port_disp.h"
 
 #include "esp_err.h"
@@ -93,9 +94,11 @@ void lv_port_disp_init(void)
     /* initialize LVGL draw buffers */
     static lv_disp_draw_buf_t draw_buf; 
     lv_color_t *buf1 = (lv_color_t *)heap_caps_malloc(LCD_WIDTH * 40 * sizeof(lv_color_t), MALLOC_CAP_DMA);   /* MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT */
+    //lv_color_t *buf1 = (lv_color_t *)ps_malloc(LCD_WIDTH * 40 * sizeof(lv_color_t));   /* MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT */
     assert(buf1);
 #if 1
     lv_color_t *buf2 = (lv_color_t *)heap_caps_malloc(LCD_WIDTH * 40 * sizeof(lv_color_t), MALLOC_CAP_DMA);
+    //lv_color_t *buf2 = (lv_color_t *)ps_malloc(LCD_WIDTH * 40 * sizeof(lv_color_t));
     assert(buf2);
     lv_disp_draw_buf_init(&draw_buf, buf1, buf2, LCD_WIDTH * 40);
 #else                       
