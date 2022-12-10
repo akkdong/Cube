@@ -15,12 +15,15 @@ Accumulator::Accumulator()
 {
 }
 
-
+// updatePeriod: ms 
+// updateRate: Hz
+//
+// update every : updatePeriod / (1000 / updateRate)
 void Accumulator::begin(uint32_t updatePeriod, uint32_t updateRate)
 {
     sum = average = 0.0f;
     accumulateCount = 0;
-
+    
     limitCount = (uint32_t)(updatePeriod * updateRate / 1000.0f);
 }
 
