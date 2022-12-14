@@ -346,7 +346,7 @@ public:
     void                    drawTrack(FlightState& state, float heading);
     void                    drawCompass();
     void                    drawWindDirection();
-    void                    drawFlight();
+    void                    drawFlight(float heading, float bearing, int method);
 
 protected:
 };

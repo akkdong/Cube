@@ -6,19 +6,28 @@
 #include "abstract/LocationDataSource.h"
 #include "logger.h"
 
+#include "TaskBase.h"
+#include "CriticalSection.h"
+
 #ifndef USE_NMEALOG
 #define USE_NMEALOG       (0)
 #endif
 
 #if USE_NMEALOG
-#include "nmea_log.h"
+#include "nmea_log2.h"
+
+#define MAX_BUFFER      (128)
 #endif
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //
 
+#if USE_NMEALOG
+class LocalFileDataSource : public ILocationDataSource, public TaskBase, public CriticalSection
+#else
 class LocalFileDataSource : public ILocationDataSource
+#endif
 {
 public:
     LocalFileDataSource();
@@ -33,11 +42,25 @@ public:
 protected:
     int             peek();
 
+    #if USE_NMEALOG
+    void            pump();
+
+    void            TaskProc() override;
+    #endif
+
 protected:
     #if USE_NMEALOG
-    const char*     nextPtr;
-    unsigned int    lastTick;
-    int             lineCount;
+    uint32_t        startTick;
+
+    uint32_t        totalSegment;
+    uint32_t        activeSegment;
+    uint32_t        segmentLength;
+    uint32_t        segmentOffset;
+    const char*     segmentPtr;
+
+    char            buffer[MAX_BUFFER];
+    volatile size_t front;
+    volatile size_t rear;
     #endif
 };
 
@@ -48,15 +71,29 @@ protected:
 //
 
 LocalFileDataSource::LocalFileDataSource()
+#if USE_NMEALOG
+    : TaskBase("L", 2 * 1024, 2)
+#endif
 {
+    #if USE_NMEALOG
+    totalSegment = sizeof(nmea_log) / sizeof(nmea_log[0]);
+    #endif 
 }
+
+// send one segment every second.
+// segment index is defined as time difference from when begin was called.
+
 
 void LocalFileDataSource::begin()
 {
     #if USE_NMEALOG
-    nextPtr = nmea_log;
-    lastTick = millis();
-    lineCount = 0;
+    activeSegment = (uint32_t)-1;
+    segmentLength = 0;
+    segmentOffset = 0;
+    segmentPtr = nullptr;
+    front = rear = 0;
+
+    create();
     #endif
 }
 
@@ -69,18 +106,11 @@ bool LocalFileDataSource::available()
     #if !USE_NMEALOG
     return Serial2.available();
     #else
-    int ch = peek();
-    if (ch < 0)
+    //pump();
+    
+    if (front == rear)
         return false;
 
-    if (lineCount > 1)
-    {
-        if (millis() - lastTick < 200)
-            return false;
-
-        lineCount = 0;
-    }
-    
     return true;
     #endif
 }
@@ -93,13 +123,11 @@ int LocalFileDataSource::read()
     if (!available())
         return -1;
 
-    int ch = peek();
-    if (ch == '\n')
-    {
-        lineCount += 1;
-        lastTick = millis();
-    }
-    nextPtr += 1;
+    enter();
+    int ch = buffer[rear];
+    rear = (rear + 1) % MAX_BUFFER;
+    leave();
+    //USBSerial.write(ch);
 
     return ch;
     #endif
@@ -110,20 +138,60 @@ int LocalFileDataSource::peek()
     #if !USE_NMEALOG
     return -1;
     #else
-    if (!nextPtr)
-        return -1;
-
-    if (!*nextPtr)
-        nextPtr = nmea_log;
-
-    if (!*nextPtr)
-        return -1;
-
-    return *nextPtr;
+    int ch = -1;
+    enter();
+    if (front != rear)
+        ch = buffer[rear];
+    leave();
+    return ch;
     #endif
 }
 
+#if USE_NMEALOG
 
+void LocalFileDataSource::pump()
+{
+    uint32_t tick = millis();
+    uint32_t segment = ((tick - startTick) / 1000) % totalSegment;
+
+    if (segment != activeSegment)
+    {
+        activeSegment = segment;
+        segmentPtr = nmea_log[segment];
+        segmentLength = strlen(segmentPtr);
+        segmentOffset = 0;
+    }
+
+    uint32_t segmentTick = (tick - startTick) % 1000;
+    // 9600ch : 1000ms = x : segmentTick
+    uint32_t charCount = 9600 * segmentTick / 1000;
+
+    for (; segmentOffset < charCount && segmentOffset < segmentLength; segmentOffset++)
+    {
+        size_t index = (front + 1) % MAX_BUFFER;
+        if (rear == index)
+            rear = (rear + 1) % MAX_BUFFER;
+
+        buffer[front] = segmentPtr[segmentOffset];
+        front = index;
+    }
+}
+
+void LocalFileDataSource::TaskProc()
+{
+    startTick = millis();
+
+    while(1)
+    {
+        enter();
+        pump();
+        leave();
+
+        vTaskDelay(1);
+    }
+}
+
+#endif // USE_NMEALOG
 
 //////////////////////////////////////////////////////////////////////////////
 //

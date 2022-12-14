@@ -42,17 +42,33 @@ enum _DeviceMode
 
 static Tone melodyStart[] =
 {
-    { NOTE_C5, 400, 500 },
-    { NOTE_E5, 400, 500 },
-    { NOTE_G5, 400, 500 },
+    { NOTE_G4, 400, 1000 },
 };
 
+static Tone melodyFixed[] =
+{
+    { NOTE_E4, 250, 500 },
+    { NOTE_E4, 250, 500 },
+};
+
+static Tone melodyTakeoff[] =
+{
+    { NOTE_C4, 150,  300 },
+    { NOTE_C4, 150,  300 },
+    { NOTE_C4, 800, 1500 },
+};
+
+static Tone melodyLanding[] =
+{
+    { NOTE_C4, 1000, 1500 },
+};
 
 ////////////////////////////////////////////////////////////////////////////////////////
 // class Application implementation
 
 Application::Application() 
     : contextPtr(nullptr)
+    , TaskBase("app", 2 * 1024, 1)
     , mode(MODE_INIT)
     , vario(beeper)
     , varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
@@ -180,6 +196,9 @@ void Application::begin()
     beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
 
     //
+    //create();
+
+    //
     tick_updateTime = millis();
     tick_updateDisp = millis() - 1000;
 
@@ -188,6 +207,24 @@ void Application::begin()
 
 void Application::end()
 {
+}
+
+void Application::updateOthers()
+{
+    uint32_t tick = millis();
+    if (/*dispNeedUpdate &&*/ tick - tick_updateDisp > 500)
+    {
+        LOGv("update-interval: %u", tick - tick_updateDisp);
+        Window* active = Screen::instance()->peekWindow();
+        if (active)
+            active->update();
+        //LOGi("update: %u", millis() - tick);
+
+        tick_updateDisp = tick;
+        dispNeedUpdate = false;
+    }
+
+    updateOthers();
 }
 
 void Application::update()
@@ -212,11 +249,11 @@ void Application::update()
     uint32_t tick = millis();
     if (/*dispNeedUpdate &&*/ tick - tick_updateDisp > 500)
     {
-        //LOGi("update-interval: %u", tick - tick_updateDisp);
+        //LOGv("update-interval: %u", tick - tick_updateDisp);
         Window* active = Screen::instance()->peekWindow();
         if (active)
             active->update();
-        //LOGi("update: %u", millis() - tick);
+        //LOGi(" --> redraw: %u", millis() - tick);
 
         tick_updateDisp = tick;
         dispNeedUpdate = false;
@@ -237,6 +274,10 @@ void Application::update()
     //
     if (locParser.availableLocation())
     {
+        //static uint32_t lastTick = millis();
+        //LOGv("nmea-interval: %u", millis() - lastTick);
+        //lastTick = millis();
+
         locParser.enter();
         LOGd("[GPS] %f,%f %f", locParser.getLongitude(), locParser.getLatitude(), locParser.getAltitude());
 
@@ -278,7 +319,7 @@ void Application::update()
 
             // gps-fixed melody
             Screen::instance()->notifyMesage("GPS Fixed!!");
-            //beeper.playMelody(toneFixed, sizeof(toneFixed) / sizeof(toneFixed[0]));
+            beeper.playMelody(melodyFixed, sizeof(melodyFixed) / sizeof(melodyFixed[0]));
         }
 
         if (mode == MODE_GROUND)
@@ -346,8 +387,8 @@ void Application::update()
     if (varioUpdated > 0)
     {
         //static uint32_t lastTick = millis();
-        //LOGi("vario update tick: %u", tick - lastTick);
-        //lastTick = tick;
+        //LOGv("vario-interval: %u", millis() - lastTick);
+        //lastTick = millis();
 
         //
         vario.resetUpdate();
@@ -679,7 +720,7 @@ void Application::startFlight()
         contextPtr->volume.effect = contextPtr->volume.vario = 100;
 
     // play take-off melody
-    //beeper.setMelody(...);
+    beeper.playMelody(melodyTakeoff, sizeof(melodyTakeoff) / sizeof(melodyTakeoff[0]));
 
     // start bt-logging
     if (contextPtr->deviceDefault.enableNmeaLogging)
@@ -711,7 +752,7 @@ void Application::startFlight()
     tick_stopBase = millis();
 
     // show take-off notify-message
-    Screen::instance()->notifyMesage("Take off!!");
+    Screen::instance()->notifyMesage("Take-off!!");
     LOGv("Application::startFlight()");
 }
 
@@ -723,7 +764,7 @@ void Application::stopFlight()
     contextPtr->flightState.bearingTakeoff = -1;
 
     // play landing-melody
-    // ...
+    beeper.playMelody(melodyLanding, sizeof(melodyLanding) / sizeof(melodyLanding[0]));
 
     // stop nmea-logging
     bt.stopLogging();
@@ -783,4 +824,15 @@ void Application::calibrateAltitude()
     #else
     vario.calibrateSeaLevel(contextPtr->varioState.altitudeGPS);
     #endif
+}
+
+
+void Application::TaskProc()
+{
+    while(1)
+    {
+        updateOthers();
+
+        vTaskDelay(10);
+    }
 }

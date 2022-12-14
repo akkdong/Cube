@@ -841,11 +841,11 @@ void ThermalAssistant::drawTrack(FlightState& state, float heading)
     lv_draw_rect_dsc_init(&rect_dsc);
     lv_draw_arc_dsc_init(&arc_dsc);
 
-    rect_dsc.outline_color = lv_color_hex(0xFF0000);
+    rect_dsc.outline_color = lv_color_hex(0x000000);
     rect_dsc.outline_width = 1;
-    rect_dsc.outline_opa = LV_OPA_COVER;
-    rect_dsc.bg_color = lv_color_hex(0x00FF00);
-    rect_dsc.bg_opa = LV_OPA_20;
+    rect_dsc.outline_opa = LV_OPA_40;
+    rect_dsc.bg_color = lv_color_hex(0xFFFFFF);
+    rect_dsc.bg_opa = LV_OPA_TRANSP;
 
     arc_dsc.color = lv_color_hex(0x000000);
     arc_dsc.width = 1;
@@ -920,7 +920,45 @@ void ThermalAssistant::drawWindDirection()
 {
 }
 
-void ThermalAssistant::drawFlight()
+void ThermalAssistant::drawFlight(float heading, float bearing, int method)
 {
-    
+    lv_coord_t base_x = this->_w / 2 + _x;
+    lv_coord_t base_y = this->_h / 2 + _y;    
+    lv_coord_t angle, up = 0;
+    lv_coord_t radius = 18;
+
+    if (method == 2 && bearing < 0) // bearing < 0 : n/a
+        method = 1;
+
+    if (method == 1)
+        up = heading;
+    else if (method == 2) 
+        up = bearing;
+    // else up = 0   
+
+    angle = heading - up; // rotate counterclockwise
+
+    // 
+    lv_draw_rect_dsc_t rect_dsc;
+    lv_point_t points[4];
+    lv_color_t color = lv_color_hex(0x303030);
+
+    points[0].x = base_x + (lv_coord_t)(radius * sin(angle * DEG_TO_RAD));
+    points[0].y = base_y - (lv_coord_t)(radius * cos(angle * DEG_TO_RAD));
+    points[1].x = base_x + (lv_coord_t)(radius / 3 * sin((angle + 180) * DEG_TO_RAD));
+    points[1].y = base_y - (lv_coord_t)(radius / 3 * cos((angle + 180) * DEG_TO_RAD));
+    points[2].x = base_x + (lv_coord_t)(radius * sin((angle - 140) * DEG_TO_RAD));
+    points[2].y = base_y - (lv_coord_t)(radius * cos((angle - 140) * DEG_TO_RAD));
+
+    lv_draw_rect_dsc_init(&rect_dsc);
+    rect_dsc.bg_color = color;
+    rect_dsc.bg_opa = LV_OPA_COVER;
+    _ref->drawPolygon(points, 3, &rect_dsc);
+
+    points[2].x = base_x + (lv_coord_t)(radius * sin((angle + 140) * DEG_TO_RAD));
+    points[2].y = base_y - (lv_coord_t)(radius * cos((angle + 140) * DEG_TO_RAD));
+
+    rect_dsc.bg_color = lv_color_lighten(color, LV_OPA_30);
+    rect_dsc.bg_opa = LV_OPA_COVER;
+    _ref->drawPolygon(points, 3, &rect_dsc);  
 }

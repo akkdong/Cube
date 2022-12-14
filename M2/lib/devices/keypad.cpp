@@ -48,8 +48,16 @@ void Keypad::update()
         case RELEASE:
             if (state != RELEASE)
             {
+                #if 0
                 key->state = PRE_PRESS;
                 key->tick = tick;
+                #else // NO_USE_DEBOUND
+                key->state = PRESS;
+                key->tick = tick;
+
+                if (callback)
+                    callback->onPressed(key->key);
+                #endif
             }
             break;
         case PRE_PRESS:

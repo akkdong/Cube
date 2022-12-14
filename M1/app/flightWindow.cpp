@@ -589,7 +589,7 @@ void FlightWindow::onUpdate(CompassWidget* compass)
 
     //app_conf_t* conf = app_get_conf();
     DeviceContext* context = DeviceRepository::instance().getContext();
-    compass->draw(context->varioState.heading, /*context->varioState.bearing*/ -1, 0);
+    compass->draw(context->varioState.heading, /*context->varioState.bearing*/ 240, 1);
 }
 
 void FlightWindow::onUpdate(VariometerWidget* variometer)
@@ -608,10 +608,10 @@ void FlightWindow::onUpdate(ThermalAssistant* assistant)
         return;
 
     DeviceContext* context = DeviceRepository::instance().getContext();
-    assistant->drawTrack(context->flightState, /*context->varioState.heading*/ 0);
+    assistant->drawTrack(context->flightState, context->varioState.heading);
     assistant->drawCompass();
     assistant->drawWindDirection();
-    assistant->drawFlight();
+    assistant->drawFlight(context->varioState.heading, -1, 1);
 }
 
 

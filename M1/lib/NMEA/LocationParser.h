@@ -8,6 +8,8 @@
 #include <time.h>
 
 #include "abstract/LocationDataSource.h"
+#include "Task.h"
+#include "CriticalSection.h"
 
 #define MAX_NMEA_PARSER_BUFFER          (128)
 
@@ -80,13 +82,13 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////////////
 //
 
-class LocationParser
+class LocationParser : public TaskProcHandler, public CriticalSection
 {
 public:
     LocationParser();
 
 public:
-    void                begin(ILocationDataSource* iLocation);
+    void                begin(ILocationDataSource* iLocation, bool useTask);
     void                end();
     void                reset();
 
@@ -114,6 +116,9 @@ public:
     //
     void                setTimeZone(float tz) { mTimeZone = tz; }
 
+protected:
+    void            	TaskProc() override;
+
 private:
 	int 				timeStr2TmStruct(struct tm * _tm, int startPos);
 	int	 				dateStr2TmStruct(struct tm * _tm, int startPos);
@@ -138,7 +143,7 @@ private:
 	volatile uint8_t	mParity;
 	
 	//
-	bool				mDataReady;
+	volatile bool		mDataReady;
 
 	//uint32_t			mDate;
 	//uint32_t			mTime;
@@ -155,12 +160,14 @@ private:
 	int16_t				mSpeed;
 	int16_t				mHeading;
 
-	bool				mFixed;
+	volatile bool		mFixed;
 
 	// IGC sentence
 	char				mIGCSentence[MAX_IGC_SENTENCE+1];
 	volatile int		mIGCNext;	// next = 0 ~ MAX_XXX -1 -> available
 	volatile int		mIGCSize;	// size = 0 -> empty, size = MAX_xx -> valid
+
+	TaskClass			task;
 };
 
 

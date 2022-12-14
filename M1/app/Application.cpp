@@ -167,7 +167,7 @@ void Application::begin()
     #endif    
 
     vario.begin(CreateBarometer(), &varioFilter);
-    locParser.begin(CreateLocationDataSource());
+    locParser.begin(CreateLocationDataSource(), true);
     beeper.begin(CreateTonePlayer());
     keyPad.begin(CreateKeypadInput());
     speedCalculator.begin(1000, 25);
@@ -178,6 +178,12 @@ void Application::begin()
     beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
 
     //
+    //dispTask.setName("Disp");
+    //dispTask.setStackSize(2 * 1024);
+    //dispTask.setPriority(1);
+    //dispTask.create(this);    
+
+    //
     tick_updateTime = millis();
     tick_updateDisp = millis() - 1000;
 
@@ -186,6 +192,21 @@ void Application::begin()
 
 void Application::end()
 {
+}
+
+void Application::updateOthers()
+{
+    uint32_t tick = millis();
+    if (dispNeedUpdate && tick - tick_updateDisp > 500)
+    {
+        Window* active = Screen::instance()->peekWindow();
+        if (active)
+            active->update();
+
+        tick_updateDisp = tick;
+        dispNeedUpdate = false;
+        //LOGi("update: %u", millis() - tick);
+    }
 }
 
 void Application::update()
@@ -221,7 +242,8 @@ void Application::update()
     #endif
 
     //
-    locParser.update();
+    //if (not use task)
+    //  locParser.update();
     int varioUpdated = vario.update();
     beeper.update();
     keyPad.update();    // button processing
@@ -233,6 +255,7 @@ void Application::update()
     //
     if (locParser.availableLocation())
     {
+        locParser.enter();
         LOGd("[GPS] %f,%f %f", locParser.getLongitude(), locParser.getLatitude(), locParser.getAltitude());
 
         // update vario-state
@@ -253,6 +276,7 @@ void Application::update()
         contextPtr->varioState.altitudeRef3 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef3;
 
         locParser.resetLocation();
+        locParser.leave();
 
         // GPS has been fixed
         if (!gpsFixed)
@@ -383,18 +407,22 @@ void Application::update()
     }
 
 
-    // vario-sentense available?    
-    bt.update(varioNmea, locParser);
-
-    // write igc-sentence
-    if (igc.isLogging() && locParser.availableIGC()) 
+    locParser.enter();
     {
-        float altitude = vario.getAltitude();
-        igc.updateBaroAltitude(altitude);
+        // vario-sentense available?    
+        bt.update(varioNmea, locParser);
 
-        while (locParser.availableIGC())
-            igc.write(locParser.readIGC());
+        // write igc-sentence
+        if (igc.isLogging() && locParser.availableIGC()) 
+        {
+            float altitude = vario.getAltitude();
+            igc.updateBaroAltitude(altitude);
+
+            while (locParser.availableIGC())
+                igc.write(locParser.readIGC());
+        }
     }
+    locParser.leave();
 }
 
 void Application::onPressed(uint8_t key) 
@@ -750,4 +778,19 @@ void Application::calibrateAltitude()
     #else
     vario.calibrateSeaLevel(contextPtr->varioState.altitudeGPS);
     #endif
+}
+
+
+void Application::TaskProc()
+{
+    while(1)
+    {
+        updateOthers();
+
+        #ifdef ARDUINO
+        vTaskDelay(1);
+        #else
+        SDL_Delay(1);
+        #endif
+    }
 }

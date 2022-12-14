@@ -567,6 +567,8 @@ void FlightWindow::onUpdate(ProfileWidget *)
 {
 }
 
+#define UP_TYPE 0
+
 void FlightWindow::onUpdate(CompassWidget* compass)
 {
     if (!compass->getVisible())
@@ -574,7 +576,7 @@ void FlightWindow::onUpdate(CompassWidget* compass)
 
     //app_conf_t* conf = app_get_conf();
     DeviceContext* context = DeviceRepository::instance().getContext();
-    compass->draw(context->varioState.heading, /*context->varioState.bearing*/ -1, 1);
+    compass->draw(context->varioState.heading, /*context->varioState.bearing*/ 240, UP_TYPE);
 }
 
 void FlightWindow::onUpdate(VariometerWidget* variometer)
@@ -593,10 +595,9 @@ void FlightWindow::onUpdate(ThermalAssistant* assistant)
         return;
 
     DeviceContext* context = DeviceRepository::instance().getContext();
-    assistant->drawTrack(context->flightState, context->varioState.heading);
-    assistant->drawCompass();
+    assistant->drawTrack(context->flightState, /*context->varioState.heading*/ 0);
     assistant->drawWindDirection();
-    assistant->drawFlight();
+    assistant->drawFlight(context->varioState.heading, -1, UP_TYPE);
 }
 
 bool FlightWindow::getCustomFont(const lv_font_t * font, void * img_src, uint16_t len, uint32_t unicode, uint32_t unicode_next)

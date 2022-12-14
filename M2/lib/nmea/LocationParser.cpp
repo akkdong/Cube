@@ -864,6 +864,6 @@ void LocationParser::TaskProc()
 		update();
 		leave();
 
-		vTaskDelay(pdMS_TO_TICKS(10));
+		vTaskDelay(pdMS_TO_TICKS(1));
 	}
 }

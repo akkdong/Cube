@@ -51,7 +51,7 @@ class Window;
 class Widget;
 class StartupWindow;
 
-class Application : public KeypadCallback
+class Application : public KeypadCallback, public TaskBase, public CriticalSection
 {
     friend class Window;
     friend class Widget;
@@ -75,12 +75,16 @@ public:
     void                        end();
 
     void                        update();
+    void                        updateOthers();
 
 protected:
     // KeypadCallback
     void                        onPressed(uint8_t key) override;
     void                        onLongPressed(uint8_t key) override;
     void                        onReleased(uint8_t key) override;
+
+    // TaskBase
+    void                        TaskProc() override;
 
     static void                 onCalibrateAltitude(struct _lv_timer_t * timer);
 

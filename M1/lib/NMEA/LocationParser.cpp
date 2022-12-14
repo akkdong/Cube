@@ -142,10 +142,18 @@ LocationParser::LocationParser()
 	mIGCSentence[IGC_OFFSET_TERMINATE] = '\0';    
 }
 
-void LocationParser::begin(ILocationDataSource* iLocation)
+void LocationParser::begin(ILocationDataSource* iLocation, bool useTask)
 {
     mDataSourcePtr = iLocation;
     mDataSourcePtr->begin();
+
+	if (useTask)
+	{
+		task.setName("GPS");
+		task.setStackSize(2 * 1024);
+		task.setPriority(1);
+		task.create(this);  		
+	}
 }
 
 void LocationParser::end()
@@ -186,9 +194,10 @@ void LocationParser::update()
     {
         //
 		int c = mDataSourcePtr->read();
-		#if DEBUG_PARSING
+		#if DEBUG_PARSING || true
 		trace_putc(c);
 		#endif
+
 			
 
 		//if (mSimulMode)
@@ -458,6 +467,7 @@ void LocationParser::update()
 					// check GPS data ready condition
 					if (IS_SET(mParseState, GGA_VALID) && IS_SET(mParseState, RMC_VALID))
 					{
+						//LOGv("LOC: %d:%d:%d", mTmStruct.tm_hour, mTmStruct.tm_min, mTmStruct.tm_sec);
 						mDateTime = mktime(&mTmStruct); // mDateTime is UTC: mktime convert GMTx to UTC
 						mFixed = true;
 						mDataReady = true;
@@ -844,4 +854,20 @@ int	LocationParser::readIGC()
 	}
 	
 	return -1;
+}
+
+void LocationParser::TaskProc()
+{
+	while (1)
+	{
+		enter();
+		update();
+		leave();
+
+		#ifdef ARDUINO
+		vTaskDelay(pdMS_TO_TICKS(10));
+		#else
+		SDL_Delay(1);
+		#endif
+	}
 }
