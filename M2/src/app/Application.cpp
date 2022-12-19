@@ -68,7 +68,7 @@ static Tone melodyLanding[] =
 
 Application::Application() 
     : contextPtr(nullptr)
-    , TaskBase("app", 2 * 1024, 1)
+    , TaskBase("app", 8 * 1024, 1)
     , mode(MODE_INIT)
     , vario(beeper)
     , varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
@@ -81,6 +81,9 @@ Application::Application()
 {
     // ...
 }
+
+
+CriticalSection Application::lock;
 
 void Application::begin()
 {
@@ -196,7 +199,7 @@ void Application::begin()
     beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
 
     //
-    //create();
+    create();
 
     //
     tick_updateTime = millis();
@@ -209,25 +212,27 @@ void Application::end()
 {
 }
 
-void Application::updateOthers()
+void Application::update()
 {
     uint32_t tick = millis();
     if (/*dispNeedUpdate &&*/ tick - tick_updateDisp > 500)
     {
         LOGv("update-interval: %u", tick - tick_updateDisp);
+        Application::lock.enter();
         Window* active = Screen::instance()->peekWindow();
         if (active)
             active->update();
         //LOGi("update: %u", millis() - tick);
+        Application::lock.leave();
 
         tick_updateDisp = tick;
         dispNeedUpdate = false;
     }
 
-    updateOthers();
+    //updateOthers();
 }
 
-void Application::update()
+void Application::updateOthers()
 {
     //
     // application routines
@@ -245,7 +250,7 @@ void Application::update()
     }
 
     // update screen in every 500ms if it's need to update
-    #if 1
+    #if 0
     uint32_t tick = millis();
     if (/*dispNeedUpdate &&*/ tick - tick_updateDisp > 500)
     {
@@ -318,7 +323,9 @@ void Application::update()
             lv_timer_set_repeat_count(timer, 1);
 
             // gps-fixed melody
+            Application::lock.enter();
             Screen::instance()->notifyMesage("GPS Fixed!!");
+            Application::lock.leave();
             beeper.playMelody(melodyFixed, sizeof(melodyFixed) / sizeof(melodyFixed[0]));
         }
 
@@ -476,9 +483,11 @@ void Application::onPressed(uint8_t key)
     if (key != KEY_ENTER)
         ble_press(key);
     #else
+    Application::lock.enter();
     Window* active = screenPtr->peekWindow();
     if (active)
         active->onKeyDown(key);
+    Application::lock.leave();
     #endif
 }
 
@@ -496,9 +505,11 @@ void Application::onLongPressed(uint8_t key)
     else
     */
     {
+        Application::lock.enter();
         Window* active = screenPtr->peekWindow();
         if (active)
             active->onLongKeyDown(key);
+        Application::lock.leave();
     }
 }
 
@@ -509,9 +520,11 @@ void Application::onReleased(uint8_t key)
     if (key != KEY_ENTER)
         ble_release(key);
     #else
+    Application::lock.enter();
     Window* active = screenPtr->peekWindow();
     if (active)
         active->onKeyUp(key);
+    Application::lock.leave();
     #endif
 }  
 
@@ -752,7 +765,9 @@ void Application::startFlight()
     tick_stopBase = millis();
 
     // show take-off notify-message
+    Application::lock.enter();
     Screen::instance()->notifyMesage("Take-off!!");
+    Application::lock.leave();
     LOGv("Application::startFlight()");
 }
 
@@ -777,7 +792,9 @@ void Application::stopFlight()
     }
 
     // show lading-message
+    Application::lock.enter();
     Screen::instance()->notifyMesage("Landing...");
+    Application::lock.leave();
     LOGv("Application::stopFlight()");
 
     if (contextPtr->volume.autoTurnOn)
@@ -817,7 +834,9 @@ void Application::onCalibrateAltitude(struct _lv_timer_t * timer)
 void Application::calibrateAltitude()
 {
     LOGv("Application::calibrateAltitude()");
+    Application::lock.enter();
     Screen::instance()->notifyMesage("Calibrate Altitude...");
+    Application::lock.leave();
 
     #if !USE_SEALEVEL_CALIBRATION
     vario.calibrateAltitude(contextPtr->varioState.altitudeGPS);

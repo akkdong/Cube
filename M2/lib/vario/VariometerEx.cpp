@@ -13,7 +13,7 @@
 //
 
 VariometerEx::VariometerEx(Beeper& _beeper)
-    : TaskBase("Vario", 4 * 1024, 10)
+    : TaskBase("Vario", 4 * 1024, configMAX_PRIORITIES - 1)
     , beeper(_beeper)
  {
 
@@ -49,25 +49,28 @@ void VariometerEx::TaskProc()
     accumulateVario.begin(1000, 25);
     accumulatePressure.begin(1000, 25);
 
+    TickType_t prevWakeTime = xTaskGetTickCount();
     //uint32_t tick = millis();
+
     while (1)
     {
         enter();
-        int ret = Variometer::update();
-        if (ret > 0)
         {
             //LOGv("%u : %f", millis() - tick, this->vario);
             //tick = millis();
 
+            Variometer::measure();
+            Variometer::updateInternal();
+
             if (accumulateVario.add(this->vario) > 0)
             {
                 varioLazy = accumulateVario.get();
-                //LOGv("vario-lazy: %f", varioLazy);
+                LOGv("[%d] vario-lazy: %f", millis(), varioLazy);
             }
             if (accumulatePressure.add(this->pressure) > 0)
             {
                 pressureLazy = accumulatePressure.get();
-                //LOGv("pressure-lazy: %f", pressureLazy);
+                LOGv("[%d] pressure-lazy: %f", millis(), pressureLazy);
             }
 
             updateStatus = 1;
@@ -77,10 +80,6 @@ void VariometerEx::TaskProc()
         }
         leave();
 
-        #ifdef ARDUINO
-        vTaskDelay(pdMS_TO_TICKS(1));
-        #else
-        SDL_Delay(1);
-        #endif
+        vTaskDelayUntil(&prevWakeTime, pdMS_TO_TICKS(1000 / 25));
     }
 }

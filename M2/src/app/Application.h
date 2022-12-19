@@ -14,7 +14,7 @@
 #include "VarioSentence.h"
 #include "LocationParser.h"
 #include "Beeper.h"
-#include "Keypad.h"
+#include "keypad.h"
 #include "BatteryVoltage.h"
 #include "agl.h"
 #include "VarioLogger.h"
@@ -51,7 +51,7 @@ class Window;
 class Widget;
 class StartupWindow;
 
-class Application : public KeypadCallback, public TaskBase, public CriticalSection
+class Application : public KeypadCallback, public TaskBase
 {
     friend class Window;
     friend class Widget;
@@ -105,6 +105,10 @@ protected:
 
     void                        calibrateAltitude();
     
+
+public:
+    static CriticalSection      lock;
+
 protected:
     //
     DeviceContext*              contextPtr;

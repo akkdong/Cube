@@ -35,6 +35,8 @@ public:
 	
 protected:
 	int						measure();
+	void					updateInternal();
+
 	float					calculateSeaLevel(float pressure, float temperature, float altitude);
 
 protected:
