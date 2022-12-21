@@ -2,6 +2,7 @@
 //
 
 #include <Arduino.h>
+#include <functional>
 
 #include "abstract/LocationDataSource.h"
 #include "logger.h"
@@ -17,16 +18,17 @@ public:
     LocalFileDataSource();
 
 public:
-    void            begin();
-    void            end();
+    void            begin(std::function<void (void)> receiveCb = nullptr) override;
+    void            end() override;
 
-    bool            available();
-    int             read();
+    int             available() override;
+    int             read() override;
 
 protected:
     int             peek();
 
 protected:
+    std::function<void (void)> _onReceive;
 };
 
 
@@ -39,15 +41,17 @@ LocalFileDataSource::LocalFileDataSource()
 {
 }
 
-void LocalFileDataSource::begin()
+void LocalFileDataSource::begin(std::function<void (void)> receiveCb)
 {
+    if (receiveCb)
+        Serial2.onReceive(receiveCb);
 }
 
 void LocalFileDataSource::end()
 {
 }
 
-bool LocalFileDataSource::available()
+int LocalFileDataSource::available()
 {
     return Serial2.available();
 }
@@ -56,7 +60,6 @@ int LocalFileDataSource::read()
 {
     return Serial2.read();
 }
-
 
 
 

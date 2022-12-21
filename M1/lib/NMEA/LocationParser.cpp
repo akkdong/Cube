@@ -142,18 +142,10 @@ LocationParser::LocationParser()
 	mIGCSentence[IGC_OFFSET_TERMINATE] = '\0';    
 }
 
-void LocationParser::begin(ILocationDataSource* iLocation, bool useTask)
+void LocationParser::begin(ILocationDataSource* iLocation, std::function<void (void)> receiveCb)
 {
     mDataSourcePtr = iLocation;
-    mDataSourcePtr->begin();
-
-	if (useTask)
-	{
-		task.setName("GPS");
-		task.setStackSize(2 * 1024);
-		task.setPriority(1);
-		task.create(this);  		
-	}
+    mDataSourcePtr->begin(receiveCb);
 }
 
 void LocationParser::end()
@@ -854,20 +846,4 @@ int	LocationParser::readIGC()
 	}
 	
 	return -1;
-}
-
-void LocationParser::TaskProc()
-{
-	while (1)
-	{
-		enter();
-		update();
-		leave();
-
-		#ifdef ARDUINO
-		vTaskDelay(pdMS_TO_TICKS(10));
-		#else
-		SDL_Delay(1);
-		#endif
-	}
 }

@@ -22,24 +22,31 @@ public:
     bool getData(float* p, float* t);
 
 protected:
+#if __REMOVED__
     uint32_t    lastTick;
+#endif
 };
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 // class Barometer implementation
 
-Barometer::Barometer() : lastTick(millis())
+Barometer::Barometer() 
+    #if __REMOVED__
+    : lastTick(millis())
+    #endif
 {
 }
 
 bool Barometer::getData(float* p, float* t)
 {
     //
+    #if __REMOVED__
     uint32_t tick = millis();
     if (tick - lastTick < 1000 / 25)
         return false;
     lastTick = tick;
+    #endif
 
     // enter-critical-section
     *t = baro.getTemperature();

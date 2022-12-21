@@ -6,6 +6,7 @@
 
 #include <stdint.h>
 #include <time.h>
+#include <functional>
 
 #include "abstract/LocationDataSource.h"
 #include "Task.h"
@@ -82,17 +83,17 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////////////
 //
 
-class LocationParser : public TaskProcHandler, public CriticalSection
+class LocationParser
 {
 public:
     LocationParser();
 
 public:
-    void                begin(ILocationDataSource* iLocation, bool useTask);
-    void                end();
-    void                reset();
+    virtual void        begin(ILocationDataSource* iLocation, std::function<void (void)> receiveCb = nullptr);
+    virtual void        end();
+    virtual void        reset();
 
-    void                update();
+    virtual void        update();
 
     bool                isFixed() { return mFixed; }
 
@@ -117,9 +118,9 @@ public:
     void                setTimeZone(float tz) { mTimeZone = tz; }
 
 protected:
-    void            	TaskProc() override;
+//  void            	TaskProc() override;
 
-private:
+protected:
 	int 				timeStr2TmStruct(struct tm * _tm, int startPos);
 	int	 				dateStr2TmStruct(struct tm * _tm, int startPos);
 	
@@ -130,7 +131,7 @@ private:
 	
 	long				floatToCoordi(float value);
 	
-private:
+protected:
 	//
     ILocationDataSource* mDataSourcePtr;
 	DataQueue			mDataQueue;
@@ -166,9 +167,34 @@ private:
 	char				mIGCSentence[MAX_IGC_SENTENCE+1];
 	volatile int		mIGCNext;	// next = 0 ~ MAX_XXX -1 -> available
 	volatile int		mIGCSize;	// size = 0 -> empty, size = MAX_xx -> valid
-
-	TaskClass			task;
 };
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////
+//
+/*
+class LocationParserEx : public LocationParser
+{
+public:
+	LocationParserEx() {}
+
+public:
+    void begin(ILocationDataSource* iLocation) override {
+		mDataSourcePtr = iLocation;
+    	mDataSourcePtr->begin(std::bind(&LocationParserEx::OnReceive, this));
+	}
+
+	void OnReceive() {
+		update();
+
+		if (mDataReady) {
+			// set gps-data-ready event
+			resetLocation();
+		}
+	}
+};
+*/
 
 
 #endif // __LOCATION_PARSER_H__

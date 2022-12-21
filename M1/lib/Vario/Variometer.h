@@ -35,6 +35,8 @@ public:
 	
 protected:
 	int						measure();
+	void					updateInternal();
+
 	float					calculateSeaLevel(float pressure, float temperature, float altitude);
 
 protected:
@@ -45,7 +47,9 @@ protected:
 
     // vario
 	int						updateCount;
+	uint32_t				lastUpdateTick;
     
+	//
 	float					pressure;
 	float					temperature;
 	float					seaLevel;
@@ -53,7 +57,7 @@ protected:
 	float					altitude;
     float                   altitudeFiltered;
 
-    float                   vario;
+    float                   vario;	
 };
 
 
