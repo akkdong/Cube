@@ -64,7 +64,7 @@ void bsp_hal_init()
     exio.setConfig(0b00001111);
     //
     codec.codec_config(AUDIO_HAL_24K_SAMPLES);
-    codec.codec_set_voice_volume(78);
+    codec.codec_set_voice_volume(62);
     #if DEBUG
     uint16_t id;
     uint8_t version;

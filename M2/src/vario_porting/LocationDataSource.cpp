@@ -33,11 +33,11 @@ public:
     LocalFileDataSource();
 
 public:
-    void            begin();
-    void            end();
+    void            begin(std::function<void (void)> receiveCb = nullptr) override;
+    void            end() override;
 
-    bool            available();
-    int             read();
+    int             available() override;
+    int             read() override;
 
 protected:
     int             peek();
@@ -62,6 +62,9 @@ protected:
     volatile size_t front;
     volatile size_t rear;
     #endif
+
+    //
+    std::function<void (void)> _onReceive;
 };
 
 
@@ -71,8 +74,9 @@ protected:
 //
 
 LocalFileDataSource::LocalFileDataSource()
+    : _onReceive(nullptr)
 #if USE_NMEALOG
-    : TaskBase("L", 2 * 1024, 2)
+    , TaskBase("L", 2 * 1024, 2)
 #endif
 {
     #if USE_NMEALOG
@@ -84,8 +88,10 @@ LocalFileDataSource::LocalFileDataSource()
 // segment index is defined as time difference from when begin was called.
 
 
-void LocalFileDataSource::begin()
+void LocalFileDataSource::begin(std::function<void (void)> receiveCb)
 {
+    _onReceive = receiveCb;
+
     #if USE_NMEALOG
     activeSegment = (uint32_t)-1;
     segmentLength = 0;
@@ -94,6 +100,9 @@ void LocalFileDataSource::begin()
     front = rear = 0;
 
     create();
+    #else
+    if (_onReceive)
+        Serial2.onReceive(_onReceive);
     #endif
 }
 
@@ -101,7 +110,7 @@ void LocalFileDataSource::end()
 {
 }
 
-bool LocalFileDataSource::available()
+int LocalFileDataSource::available()
 {
     #if !USE_NMEALOG
     return Serial2.available();
@@ -109,9 +118,9 @@ bool LocalFileDataSource::available()
     //pump();
     
     if (front == rear)
-        return false;
+        return 0;
 
-    return true;
+    return 1;
     #endif
 }
 
@@ -175,6 +184,9 @@ void LocalFileDataSource::pump()
         buffer[front] = segmentPtr[segmentOffset];
         front = index;
     }
+
+    if (front != rear && _onReceive != nullptr)
+        _onReceive();
 }
 
 void LocalFileDataSource::TaskProc()

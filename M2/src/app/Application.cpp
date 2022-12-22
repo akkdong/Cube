@@ -68,9 +68,9 @@ static Tone melodyLanding[] =
 
 Application::Application() 
     : contextPtr(nullptr)
-    , TaskBase("app", 8 * 1024, 1)
+    //, TaskBase("app", 8 * 1024, 1)
     , mode(MODE_INIT)
-    , vario(beeper)
+    , vario()
     , varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
     , keyPad(this)
     #if 0
@@ -78,6 +78,10 @@ Application::Application()
     #endif
     , gpsFixed(false)
 //  , dispNeedUpdate(false)
+    , taskFlightComputer(nullptr)
+    , taskVariometer(nullptr)
+    , fcEventGroup(nullptr)
+    , mainQueue(nullptr)
 {
     // ...
 }
@@ -189,7 +193,7 @@ void Application::begin()
     keyPad.begin(CreateKeypadInput());
     battery.begin();
     vario.begin(CreateBarometer(), &varioFilter);
-    locParser.begin(CreateLocationDataSource(), true);
+    locParser.begin(CreateLocationDataSource(), std::bind(&Application::onReadyLocationData, this));
     //accumulateSpeed.begin(1000, 25);
     //accumulatePressure.begin(1000, 25);
 
@@ -199,7 +203,12 @@ void Application::begin()
     beeper.playMelody(melodyStart, sizeof(melodyStart) / sizeof(melodyStart[0]));
 
     //
-    create();
+    //create();
+    fcEventGroup = xEventGroupCreate();
+    mainQueue = xQueueCreate(sizeof(Message), 12);
+
+    xTaskCreate(FlightComputerTask, "FC", 4 * 1024, this, 2, &taskFlightComputer);
+    xTaskCreate(VariometerTask, "VA", 4 * 1024, this, tskIDLE_PRIORITY - 1, &taskVariometer);
 
     //
     tick_updateTime = millis();
@@ -212,8 +221,107 @@ void Application::end()
 {
 }
 
+
 void Application::update()
 {
+    Message msg;
+    BaseType_t ret = xQueueReceive(mainQueue, &msg, pdMS_TO_TICKS(5));
+    if (ret != pdTRUE)
+        return;
+
+    switch (msg.code)
+    {
+    case MSG_UPDATE_NMEA:
+    case MSG_UPDATE_VARIO:
+    case MSG_UPDATE_ANNUNCIATOR:
+        {
+            this->contextLock.enter(); // Application::lock.enter();
+            Window* active = Screen::instance()->peekWindow();
+            if (active)
+                active->update();
+            //LOGi("update: %u", millis() - tick);
+            this->contextLock.leave(); // Application::lock.leave();
+        }
+        break;
+
+    case MSG_GPS_FIXED:
+        {
+            LOGv("GPS Fixed!!");
+
+            // why don't you calibarate a bit latter. :  wait for GPS to stabilize.
+            //vario.calibrateAltitude(contextPtr->varioState.altitudeGPS);
+            //vario.calibrateSeaLevel(contextPtr->varioState.altitudeGPS);
+            // calibrate after 60 seconds
+            lv_timer_t* timer = lv_timer_create(onCalibrateAltitude, 60 * 1000, this);
+            lv_timer_set_repeat_count(timer, 1);
+
+            // show gps-fixed notify-message
+            Application::lock.enter();
+            Screen::instance()->notifyMesage("GPS Fixed!!");
+            Application::lock.leave();
+            // play gps-fixed melody
+            beeper.playMelody(melodyFixed, sizeof(melodyFixed) / sizeof(melodyFixed[0]));        
+        }
+        break;
+
+    case MSG_TAKEOFF:
+        {
+            LOGv("Application::startFlight()");
+
+            // show take-off notify-message
+            Application::lock.enter();
+            Screen::instance()->notifyMesage("Take-off!!");
+            Application::lock.leave();
+
+            // play take-off melody
+            beeper.playMelody(melodyTakeoff, sizeof(melodyTakeoff) / sizeof(melodyTakeoff[0]));
+        }
+        break;
+
+    case MSG_LANDING:
+        {
+            LOGv("Application::stopFlight()");
+
+            // show lading-message
+            Application::lock.enter();
+            Screen::instance()->notifyMesage("Landing...");
+            Application::lock.leave();
+
+            // play landing-melody
+            beeper.playMelody(melodyLanding, sizeof(melodyLanding) / sizeof(melodyLanding[0]));            
+        }
+        break;
+
+    case MSG_KEY_PRESSED:
+        {
+            Application::lock.enter();
+            Window* active = screenPtr->peekWindow();
+            if (active)
+                active->onKeyDown(msg.data);
+            Application::lock.leave();
+        }
+        break;
+    case MSG_KEY_LONG_PRESSED:
+        {
+            Application::lock.enter();
+            Window* active = screenPtr->peekWindow();
+            if (active)
+                active->onLongKeyDown(msg.data);
+            Application::lock.leave();
+        }
+        break;
+    case MSG_KEY_RELEASED:
+        {
+            Application::lock.enter();
+            Window* active = screenPtr->peekWindow();
+            if (active)
+                active->onKeyUp(msg.data);
+            Application::lock.leave();
+        }
+        break;
+    }
+
+    #if 0
     uint32_t tick = millis();
     if (/*dispNeedUpdate &&*/ tick - tick_updateDisp > 500)
     {
@@ -228,6 +336,7 @@ void Application::update()
         tick_updateDisp = tick;
         dispNeedUpdate = false;
     }
+    #endif
 
     //updateOthers();
 }
@@ -283,7 +392,7 @@ void Application::updateOthers()
         //LOGv("nmea-interval: %u", millis() - lastTick);
         //lastTick = millis();
 
-        locParser.enter();
+        //locParser.enter();
         LOGd("[GPS] %f,%f %f", locParser.getLongitude(), locParser.getLatitude(), locParser.getAltitude());
 
         // update vario-state
@@ -304,7 +413,7 @@ void Application::updateOthers()
         contextPtr->varioState.altitudeRef3 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef3;
 
         locParser.resetLocation();
-        locParser.leave();
+        //locParser.leave();
 
 
         // GPS has been fixed
@@ -401,15 +510,15 @@ void Application::updateOthers()
         vario.resetUpdate();
 
         //
-        vario.enter();
+        //vario.enter();
         contextPtr->varioState.altitudeBaro = vario.getAltitudeFiltered();
         contextPtr->varioState.altitudeCalibrated = vario.getAltitudeCalibrated();
         contextPtr->varioState.pressure = vario.getPressure();
         contextPtr->varioState.temperature = vario.getTemperature();
         contextPtr->varioState.speedVertActive = vario.getVelocity();
-        contextPtr->varioState.pressureLazy = vario.getLazyPressure();
-        contextPtr->varioState.speedVertLazy = vario.getLazyVario();
-        vario.leave();
+        //contextPtr->varioState.pressureLazy = vario.getLazyPressure();
+        //contextPtr->varioState.speedVertLazy = vario.getLazyVario();
+        //vario.leave();
 
         /*
         if (accumulatePressure.add(contextPtr->varioState.pressure) > 0)
@@ -458,7 +567,7 @@ void Application::updateOthers()
     }
 
 
-    locParser.enter();
+    //locParser.enter();
     {
         // vario-sentense available?
         bt.update(varioNmea, locParser);
@@ -473,7 +582,7 @@ void Application::updateOthers()
                 igc.write(locParser.readIGC());
         }
     }
-    locParser.leave();
+    //locParser.leave();
 }
 
 void Application::onPressed(uint8_t key) 
@@ -483,11 +592,7 @@ void Application::onPressed(uint8_t key)
     if (key != KEY_ENTER)
         ble_press(key);
     #else
-    Application::lock.enter();
-    Window* active = screenPtr->peekWindow();
-    if (active)
-        active->onKeyDown(key);
-    Application::lock.leave();
+    this->postMessage(MSG_KEY_PRESSED, key);
     #endif
 }
 
@@ -505,11 +610,7 @@ void Application::onLongPressed(uint8_t key)
     else
     */
     {
-        Application::lock.enter();
-        Window* active = screenPtr->peekWindow();
-        if (active)
-            active->onLongKeyDown(key);
-        Application::lock.leave();
+        this->postMessage(MSG_KEY_LONG_PRESSED, key);
     }
 }
 
@@ -520,11 +621,7 @@ void Application::onReleased(uint8_t key)
     if (key != KEY_ENTER)
         ble_release(key);
     #else
-    Application::lock.enter();
-    Window* active = screenPtr->peekWindow();
-    if (active)
-        active->onKeyUp(key);
-    Application::lock.leave();
+    this->postMessage(MSG_KEY_RELEASED, key);
     #endif
 }  
 
@@ -728,47 +825,48 @@ void Application::stopGliding()
 void Application::startFlight()
 {
     // start-flight
-    // turn on sound if auto-turn-on is setted
-    if (contextPtr->volume.autoTurnOn)
-        contextPtr->volume.effect = contextPtr->volume.vario = 100;
+    contextLock.enter();
+    {
+        // turn on sound if auto-turn-on is setted
+        if (contextPtr->volume.autoTurnOn)
+            contextPtr->volume.effect = contextPtr->volume.vario = 100;
 
-    // play take-off melody
-    beeper.playMelody(melodyTakeoff, sizeof(melodyTakeoff) / sizeof(melodyTakeoff[0]));
+        // start bt-logging
+        if (contextPtr->deviceDefault.enableNmeaLogging)
+            bt.startLogging(contextPtr->varioState.timeCurrent);
 
-    // start bt-logging
-    if (contextPtr->deviceDefault.enableNmeaLogging)
-        bt.startLogging(contextPtr->varioState.timeCurrent);
+        // start igc-logging & update device-state
+        if (contextPtr->logger.enable && igc.begin(contextPtr->varioState.timeCurrent))
+            contextPtr->deviceState.statusSDCard = 2;
 
-    // start igc-logging & update device-state
-    if (contextPtr->logger.enable && igc.begin(contextPtr->varioState.timeCurrent))
-        contextPtr->deviceState.statusSDCard = 2;
+        // set altitude reference-1
+        contextPtr->varioSettings.altitudeRef1 = contextPtr->varioState.altitudeGPS;
 
-    // set altitude reference-1
-    contextPtr->varioSettings.altitudeRef1 = contextPtr->varioState.altitudeGPS;
+        // reset flight-state/stats
+        DeviceRepository::instance().resetFlightState();
+        DeviceRepository::instance().resetFlightStats();
 
-    // reset flight-state/stats
-    DeviceRepository::instance().resetFlightState();
-    DeviceRepository::instance().resetFlightStats();
-
-    // init flight-state
-    contextPtr->flightState.takeOffTime = contextPtr->varioState.timeCurrent;
-    contextPtr->flightState.takeOffPos.lat = contextPtr->varioState.latitude;
-    contextPtr->flightState.takeOffPos.lon = contextPtr->varioState.longitude;
-    contextPtr->flightState.bearingTakeoff = -1;
-    //contextPtr->flightState.flightMode = FMODE_FLYING;
-    contextPtr->flightState.frontPoint = contextPtr->flightState.rearPoint = 0;
-    // init flight-stats
-    contextPtr->flightStats.altitudeMax = contextPtr->varioState.altitudeGPS;
-    contextPtr->flightStats.altitudeMin = contextPtr->varioState.altitudeGPS;
+        // init flight-state
+        contextPtr->flightState.takeOffTime = contextPtr->varioState.timeCurrent;
+        contextPtr->flightState.takeOffPos.lat = contextPtr->varioState.latitude;
+        contextPtr->flightState.takeOffPos.lon = contextPtr->varioState.longitude;
+        contextPtr->flightState.bearingTakeoff = -1;
+        //contextPtr->flightState.flightMode = FMODE_FLYING;
+        contextPtr->flightState.frontPoint = contextPtr->flightState.rearPoint = 0;
+        // init flight-stats
+        contextPtr->flightStats.altitudeMax = contextPtr->varioState.altitudeGPS;
+        contextPtr->flightStats.altitudeMin = contextPtr->varioState.altitudeGPS;
+    }
+    contextLock.leave();
 
     mode = MODE_FLYING;
     tick_stopBase = millis();
 
     // show take-off notify-message
-    Application::lock.enter();
-    Screen::instance()->notifyMesage("Take-off!!");
-    Application::lock.leave();
-    LOGv("Application::startFlight()");
+    //Application::lock.enter();
+    //Screen::instance()->notifyMesage("Take-off!!");
+    //Application::lock.leave();
+    //LOGv("Application::startFlight()");
 }
 
 void Application::stopFlight()
@@ -777,9 +875,6 @@ void Application::stopFlight()
     mode = MODE_GROUND;
     //contextPtr->flightState.flightMode = FMODE_READY;
     contextPtr->flightState.bearingTakeoff = -1;
-
-    // play landing-melody
-    beeper.playMelody(melodyLanding, sizeof(melodyLanding) / sizeof(melodyLanding[0]));
 
     // stop nmea-logging
     bt.stopLogging();
@@ -791,11 +886,17 @@ void Application::stopFlight()
         contextPtr->deviceState.statusSDCard = 1;
     }
 
+    /*
+    LOGv("Application::stopFlight()");
+
     // show lading-message
     Application::lock.enter();
     Screen::instance()->notifyMesage("Landing...");
     Application::lock.leave();
-    LOGv("Application::stopFlight()");
+
+    // play landing-melody
+    beeper.playMelody(melodyLanding, sizeof(melodyLanding) / sizeof(melodyLanding[0]));
+    */
 
     if (contextPtr->volume.autoTurnOn)
     {
@@ -821,6 +922,8 @@ void Application::startVario()
     dispNeedUpdate = true;
 
     LOGv("Application::startVario()");
+    vTaskResume(taskVariometer);
+    vTaskResume(taskFlightComputer);
 }
 
 void Application::onCalibrateAltitude(struct _lv_timer_t * timer)
@@ -845,7 +948,7 @@ void Application::calibrateAltitude()
     #endif
 }
 
-
+/*
 void Application::TaskProc()
 {
     while(1)
@@ -854,4 +957,222 @@ void Application::TaskProc()
 
         vTaskDelay(10);
     }
+}
+*/
+
+
+#define EVENT_NMEA_VALID        (1 << 1)
+#define EVENT_VARIO_VALID       (1 << 2)
+
+
+void Application::FlightComputerTask(void* param)
+{
+    Application* app = (Application *)param;    
+    EventGroupHandle_t evtGrpHandle = app->fcEventGroup;
+    DeviceContext* contextPtr = app->contextPtr;
+
+    vTaskSuspend(NULL);
+
+    while (true)
+    {
+        EventBits_t bits = xEventGroupWaitBits(evtGrpHandle, EVENT_NMEA_VALID | EVENT_VARIO_VALID, pdTRUE, pdFALSE, /*portMAX_DELAY*/ pdMS_TO_TICKS(10));
+
+        if (bits & EVENT_NMEA_VALID)
+        {
+            if (!app->gpsFixed)
+            {
+                // update device-time
+                setDeviceTime(contextPtr->varioState.timeCurrent);
+
+                // notify gps-fixed
+                app->postMessage(MSG_GPS_FIXED, 0);                
+            }
+
+            switch (app->mode)
+            {
+            case MODE_GROUND:
+                if (contextPtr->varioState.speedGround > contextPtr->logger.takeoffSpeed)
+                {
+                    app->startFlight();
+                    app->postMessage(MSG_TAKEOFF, 0);
+                }
+                break;
+            case MODE_FLYING:
+                app->updateFlightState();
+
+                if (contextPtr->varioState.speedGround < contextPtr->logger.landingSpeed) // FLIGHT_START_MIN_SPEED
+                {
+                    if ((millis() - app->tick_stopBase) > contextPtr->logger.landingTimeout) // FLIGHT_LANDING_THRESHOLD
+                    {
+                        app->stopFlight();
+                        app->postMessage(MSG_LANDING, 0);
+                    }
+                }
+                else
+                {
+                    app->tick_stopBase = millis();
+                }                
+                break;
+            }
+
+            app->postMessage(MSG_UPDATE_NMEA, 0);
+        }
+
+        if (bits & EVENT_VARIO_VALID) // signaled every 1s
+        {
+            if (/* busy? interval? */ app->varioNmea.checkInterval())
+            {
+                float height = contextPtr->deviceState.statusGPS == 1 ? contextPtr->varioState.altitudeGPS : -1;
+                float velocity = contextPtr->varioState.speedVertLazy;
+                float temperature = contextPtr->varioState.temperature;
+                float pressure = contextPtr->varioState.pressureLazy; // to hPa
+                float voltage = contextPtr->deviceState.batteryPower;
+
+                app->varioNmea.begin(height, velocity, temperature, pressure, voltage);
+                //app->postMessage(MSG_FLUSH_VARIO_NMEA, 0)
+
+                if (app->mode != MODE_GROUND && contextPtr->deviceState.statusGPS == 0)
+                {
+                    uint32_t curTick = millis();
+
+                    if (velocity < STABLE_SINKING_THRESHOLD || STABLE_SINKING_THRESHOLD < velocity)
+                        app->tick_silentBase = curTick;
+
+                    if (contextPtr->threshold.autoShutdownVario && ((curTick - app->tick_silentBase) > contextPtr->threshold.autoShutdownVario))
+                    {   
+                        app->stopFlight();                     
+                        app->postMessage(MSG_LANDING, 0);
+                    }
+                }
+            }
+
+            app->postMessage(MSG_UPDATE_VARIO, 0);
+        }
+
+        if (!bits)
+        {
+            // button processing
+            app->keyPad.update();
+
+            //
+            if (app->battery.update())
+                contextPtr->deviceState.batteryPower = app->battery.getVoltage();
+
+
+            // update GPS fixed-state
+            bool fixed = app->locParser.isFixed();
+            if ((fixed && !app->gpsFixed) || (!fixed && app->gpsFixed))
+            {
+                app->gpsFixed = fixed;
+                contextPtr->deviceState.statusGPS = fixed ? 1 :0;
+            }
+
+            // update BT state
+            if (contextPtr->deviceState.statusBT > 0)
+            {
+                bool connected = app->bt.isConnected();
+                if ((connected && contextPtr->deviceState.statusBT < 2) || (!connected && contextPtr->deviceState.statusBT > 1))
+                    contextPtr->deviceState.statusBT = connected ? 2 : 1;
+            }            
+        }
+    }
+
+    vTaskDelete(NULL);
+}
+
+void Application::VariometerTask(void* param)
+{
+    Application* app = (Application *)param;
+
+    vTaskSuspend(NULL);
+    
+    Accumulator accVario;
+    Accumulator accPressure;
+
+    accVario.begin(1000, 25);
+    accPressure.begin(1000, 25);
+
+    TickType_t prevWakeTime = xTaskGetTickCount();
+    while (true)
+    {
+        vTaskDelayUntil(&prevWakeTime, pdMS_TO_TICKS(1000 / 25));
+
+        Variometer* vario = &app->vario;
+        DeviceContext* contextPtr = app->contextPtr;
+
+        //
+        vario->update();
+
+        //
+        app->contextLock.enter(); // lock-context
+        contextPtr->varioState.altitudeBaro = vario->getAltitudeFiltered();
+        contextPtr->varioState.altitudeCalibrated = vario->getAltitudeCalibrated();
+        contextPtr->varioState.pressure = vario->getPressure();
+        contextPtr->varioState.temperature = vario->getTemperature();
+        contextPtr->varioState.speedVertActive = vario->getVelocity();
+
+        //contextPtr->varioState.pressureLazy = vario->getLazyPressure();
+        if (accPressure.add(contextPtr->varioState.pressure) > 0)
+            contextPtr->varioState.pressureLazy = accPressure.get();
+
+        //contextPtr->varioState.speedVertLazy = vario->getLazyVario();        
+        if (accVario.add(contextPtr->varioState.speedVertActive) > 0)
+        {
+            contextPtr->varioState.speedVertLazy = accVario.get();
+            //contextPtr->varioState.speedVertHistory.push(accVario.get());
+        
+            // postMessage(EVENT_VARIO_VALID)
+            if (app->fcEventGroup != nullptr)
+                xEventGroupSetBits(app->fcEventGroup, EVENT_VARIO_VALID);
+        }
+        app->contextLock.leave(); // unlock-context
+
+        //
+        app->beeper.setVelocity(contextPtr->varioState.speedVertActive);
+    }
+
+    vTaskDelete(NULL);
+}
+
+void Application::onReadyLocationData()
+{
+    // called by HardwareSerial receive task
+    locParser.update();
+
+    if (locParser.availableLocation()) 
+    {
+        locParser.resetLocation();
+
+        contextLock.enter(); // lock-context
+        contextPtr->varioState.latitudeLast = contextPtr->varioState.latitude;
+        contextPtr->varioState.longitudeLast = contextPtr->varioState.longitude;
+        contextPtr->varioState.headingLast = contextPtr->varioState.heading;
+
+        contextPtr->varioState.latitude = locParser.getLatitude();
+        contextPtr->varioState.longitude = locParser.getLongitude();
+        contextPtr->varioState.altitudeGPS = locParser.getAltitude();
+        contextPtr->varioState.speedGround = locParser.getSpeed();
+        contextPtr->varioState.heading = locParser.getHeading();
+        contextPtr->varioState.timeCurrent = locParser.getDateTime();
+        contextPtr->varioState.altitudeGround = agl.getGroundLevel(contextPtr->varioState.latitude, contextPtr->varioState.longitude);
+        contextPtr->varioState.altitudeAGL = contextPtr->varioState.altitudeGPS - contextPtr->varioState.altitudeGround;
+        contextPtr->varioState.altitudeRef1 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef1;
+        contextPtr->varioState.altitudeRef2 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef2;
+        contextPtr->varioState.altitudeRef3 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef3;        
+        contextLock.leave(); // unlock-context
+
+        // fire location-data valid event
+        if (this->fcEventGroup != nullptr)
+            xEventGroupSetBits(this->fcEventGroup, EVENT_NMEA_VALID);
+    }
+}
+
+void Application::postMessage(uint16_t code, uint16_t data)
+{
+    Message msg;
+
+    msg.code = code;
+    msg.data = data;
+
+    xQueueSend(mainQueue, &msg, 0);    
 }

@@ -51,7 +51,7 @@ class Window;
 class Widget;
 class StartupWindow;
 
-class Application : public KeypadCallback, public TaskBase
+class Application : public KeypadCallback/*, public TaskBase*/
 {
     friend class Window;
     friend class Widget;
@@ -70,6 +70,34 @@ public:
         MODE_SETTING,
     };
 
+    
+    enum MessageCode {
+        MSG_NONE,
+        MSG_UPDATE_NMEA,
+        MSG_UPDATE_VARIO,
+        MSG_UPDATE_ANNUNCIATOR,
+
+        MSG_GPS_FIXED,
+        MSG_TAKEOFF,
+        MSG_LANDING,
+
+        MSG_FLUSH_VARIO_NMEA,
+        MSG_FLUSH_GPS_NMEA,
+
+        //MSG_START_FLIGHT, // MSG_TAKEOFF
+        //MSG_STOP_FLIGHT, // MSG_LANDING
+
+        MSG_KEY_PRESSED,
+        MSG_KEY_LONG_PRESSED,
+        MSG_KEY_RELEASED,
+    };
+
+    struct Message
+    {
+        uint16_t    code;
+        uint16_t    data;
+    };
+
 public:
     void                        begin();
     void                        end();
@@ -84,7 +112,7 @@ protected:
     void                        onReleased(uint8_t key) override;
 
     // TaskBase
-    void                        TaskProc() override;
+    //void                      TaskProc() override;
 
     static void                 onCalibrateAltitude(struct _lv_timer_t * timer);
 
@@ -103,8 +131,16 @@ protected:
     void                        stopFlight();
     void                        startVario();
 
+    //
+    void                        postMessage(uint16_t code, uint16_t data);
+
+    //
     void                        calibrateAltitude();
-    
+
+    void                        onReadyLocationData();
+
+    static void                 FlightComputerTask(void* param);
+    static void                 VariometerTask(void* param);    
 
 public:
     static CriticalSection      lock;
@@ -120,7 +156,7 @@ protected:
     //uint8_t                     varioMode; // init, landing, flying, circling
 
     //    
-    VariometerEx                vario;
+    Variometer                  vario;
     BeeperEx                    beeper;
     LocationParser              locParser;
     VarioSentence               varioNmea;
@@ -157,6 +193,15 @@ protected:
 
     //
     //uint32_t                    modeTick;
+
+    //
+    TaskHandle_t                taskFlightComputer;
+    TaskHandle_t                taskVariometer;
+
+    EventGroupHandle_t          fcEventGroup;
+    QueueHandle_t               mainQueue;
+
+    CriticalSection             contextLock;
 };
 
 

@@ -5,6 +5,7 @@
 
 #include "Variometer.h"
 #include "logger.h"
+#include "utils.h"
 
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
@@ -23,13 +24,15 @@ int Variometer::begin(IBarometer* baro, IVarioFilter* filter)
     baroSensor = baro;
     varioFilter = filter;
 
-    updateCount = 0;
     pressure = seaLevel;
     temperature = 0;
     altitudeDrift = 0;
     altitude = 0;
     altitudeFiltered = 0;
     vario = 0;
+
+    updateCount = 0;
+    lastUpdateTick = millis();
 
     return 0;
 }
@@ -40,6 +43,11 @@ void Variometer::end()
 
 int Variometer::update()
 {
+    uint32_t tick = millis();
+    if (tick - lastUpdateTick < 1000 / 25)
+        return -1;
+    lastUpdateTick = tick;
+
     if (measure() < 0)
         return -1;
 

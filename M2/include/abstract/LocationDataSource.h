@@ -6,10 +6,10 @@
 
 struct ILocationDataSource
 {
-    virtual void begin() = 0;
+    virtual void begin(std::function<void (void)> receiveCb = nullptr) = 0;
     virtual void end() = 0;
 
-    virtual bool available() = 0;
+    virtual int available() = 0;
     virtual int read() = 0;
 };
 

@@ -4,6 +4,8 @@
 #ifndef __VARIOMETER_H__
 #define __VARIOMETER_H__
 
+#include <stdint.h>
+
 #include "abstract/Barometer.h"
 #include "abstract/VarioFilter.h"
 
@@ -47,6 +49,7 @@ protected:
 
     // vario
 	int						updateCount;
+	uint32_t				lastUpdateTick;
     
 	float					pressure;
 	float					temperature;

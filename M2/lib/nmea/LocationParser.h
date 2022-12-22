@@ -83,17 +83,17 @@ protected:
 ////////////////////////////////////////////////////////////////////////////////////////
 //
 
-class LocationParser : public TaskBase, public CriticalSection
+class LocationParser
 {
 public:
     LocationParser();
 
 public:
-    void                begin(ILocationDataSource* iLocation, bool useTask = true);
-    void                end();
-    void                reset();
+    virtual void        begin(ILocationDataSource* iLocation, std::function<void (void)> receiveCb = nullptr);
+    virtual void        end();
+    virtual void        reset();
 
-    void                update();
+    virtual void        update();
 
     bool                isFixed() { return mFixed; }
 
@@ -118,9 +118,9 @@ public:
     void                setTimeZone(float tz) { mTimeZone = tz; }
 
 protected:
-	void				TaskProc() override;
+//	void				TaskProc() override;
 
-private:
+protected:
 	int 				timeStr2TmStruct(struct tm * _tm, int startPos);
 	int	 				dateStr2TmStruct(struct tm * _tm, int startPos);
 	
@@ -131,7 +131,7 @@ private:
 	
 	long				floatToCoordi(float value);
 	
-private:
+protected:
 	//
     ILocationDataSource* mDataSourcePtr;
 	DataQueue			mDataQueue;
