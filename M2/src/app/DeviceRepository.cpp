@@ -203,6 +203,18 @@ size_t DeviceRepository::updateTrackHistory(float lat, float lon, float speedVer
 	return (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
 }
 
+size_t DeviceRepository::updateTrackHistory()
+{
+	FlightState& state = contextPtr->flightState;
+	VarioState& vario = contextPtr->varioState;
+	int16_t latest = state.frontPoint;
+
+	state.trackHistory[state.frontPoint] = TrackHistory(vario.heading, state.distFlight, vario.speedVertLazy);
+	state.frontPoint = (state.frontPoint + 1) & (MAX_TRACK_HISTORY - 1);
+
+	return (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
+}
+
 size_t DeviceRepository::getVSpeedCount()
 {
 	VarioState& state = contextPtr->varioState;

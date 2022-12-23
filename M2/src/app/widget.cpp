@@ -30,7 +30,7 @@ Widget::~Widget()
 
 lv_obj_t* Widget::createObject(lv_obj_t* parent)
 {
-    LOGv("Widget::createObject()");
+    //LOGv("Widget::createObject()");
     lv_obj_t* obj = DisplayObject::createObject(parent);
     if (!obj)
         return NULL;
@@ -75,7 +75,7 @@ Annunciator::Annunciator()
 
 lv_obj_t* Annunciator::createObject(lv_obj_t* parent)
 {
-    LOGv("Annunciator::createObject()");
+    //LOGv("Annunciator::createObject()");
     lv_obj_t* ann = Widget::createObject(parent);
     if (!ann)
         return NULL;

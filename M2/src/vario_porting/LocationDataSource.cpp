@@ -10,13 +10,13 @@
 #include "CriticalSection.h"
 
 #ifndef USE_NMEALOG
-#define USE_NMEALOG       (0)
+#define USE_NMEALOG       (1)
 #endif
 
 #if USE_NMEALOG
 #include "nmea_log2.h"
 
-#define MAX_BUFFER      (128)
+#define MAX_BUFFER      (512)
 #endif
 
 
@@ -40,8 +40,9 @@ public:
     int             read() override;
 
 protected:
+    void            onReceiveError(hardwareSerial_error_t err);
+    
     int             peek();
-
     #if USE_NMEALOG
     void            pump();
 
@@ -76,7 +77,7 @@ protected:
 LocalFileDataSource::LocalFileDataSource()
     : _onReceive(nullptr)
 #if USE_NMEALOG
-    , TaskBase("L", 2 * 1024, 2)
+    , TaskBase("L", 2 * 1024, 4)
 #endif
 {
     #if USE_NMEALOG
@@ -87,6 +88,34 @@ LocalFileDataSource::LocalFileDataSource()
 // send one segment every second.
 // segment index is defined as time difference from when begin was called.
 
+void LocalFileDataSource::onReceiveError(hardwareSerial_error_t err)
+{
+    const char* errStr = nullptr;
+    switch (err)
+    {
+    case UART_BREAK_ERROR:
+        errStr = "UART_BREAK_ERROR";
+        break;
+    case UART_BUFFER_FULL_ERROR:
+        if (_onReceive)
+            _onReceive();
+        break;
+    case UART_FIFO_OVF_ERROR:
+        errStr = "UART_FIFO_OVF_ERROR";
+        break;
+    case UART_FRAME_ERROR:
+        errStr = "UART_FRAME_ERROR";
+        break;
+    case UART_PARITY_ERROR:
+        errStr = "UART_PARITY_ERROR";
+        break;
+    }
+
+    if (errStr)
+    {
+        LOGe("Serial2::onReceiveError(%d: %s)", (int)err, errStr);
+    }
+}
 
 void LocalFileDataSource::begin(std::function<void (void)> receiveCb)
 {
@@ -102,7 +131,10 @@ void LocalFileDataSource::begin(std::function<void (void)> receiveCb)
     create();
     #else
     if (_onReceive)
-        Serial2.onReceive(_onReceive);
+    {
+        Serial2.onReceive(_onReceive, true);
+        Serial2.onReceiveError(std::bind(&LocalFileDataSource::onReceiveError, this, std::placeholders::_1));
+    }
     #endif
 }
 

@@ -180,7 +180,7 @@ static const char *TAG = "es8311";
 ////////////////////////////////////////////////////////////////////////////////////////////
 //
 
-ES8311::ES8311(uint8_t addr, TwoWire& wire) : _address(addr), _wire(wire)
+ES8311::ES8311(uint8_t addr, TwoWireEx& wire) : _address(addr), _wire(wire)
 {
 
 }
@@ -189,22 +189,28 @@ ES8311::ES8311(uint8_t addr, TwoWire& wire) : _address(addr), _wire(wire)
 
 esp_err_t ES8311::write_reg(uint8_t reg_addr, uint8_t data)
 {
+    _wire.lock();
     _wire.beginTransmission(_address);
     _wire.write(reg_addr);
     _wire.write(data);
     _wire.endTransmission();
+    _wire.unlock();
 
     return ESP_OK;
 }
 
 int ES8311::read_reg(uint8_t reg_addr)
 {
+    _wire.lock();
     _wire.beginTransmission(_address);
     _wire.write(reg_addr);
-    _wire.endTransmission(false);
+    _wire.endTransmission();
 
     _wire.requestFrom(_address, (uint8_t)1);
-    return _wire.read();
+    int ret = _wire.read();
+    _wire.unlock();
+
+    return ret;
 }
 
 /*

@@ -30,7 +30,7 @@ static const float HTU21D_TCoeff = -0.15;
  * @param addr Sensor Address (default 0x40)
  * @param wire TWI bus instance (default Wire)
  */
-HTU21D::HTU21D(uint8_t addr, TwoWire& wire) : _addr(addr), _wire(wire), _resolution(RESOLUTION_RH12_T14) {
+HTU21D::HTU21D(uint8_t addr, TwoWireEx& wire) : _addr(addr), _wire(wire), _resolution(RESOLUTION_RH12_T14) {
   
 }
 

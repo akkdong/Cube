@@ -26,11 +26,12 @@
 #define _ES8311_H
 
 #include <Arduino.h>
-#include <Wire.h>
 
 #include "board.h"
 #include "esxxx_common.h"
 #include "audio_hal.h"
+
+#include "TwoWireEx.h"
 
 /* ES8311 address
  * 0x32:CE=1;0x30:CE=0
@@ -127,7 +128,7 @@ typedef enum {
 class ES8311
 {
 public:
-    ES8311(uint8_t addr = ES8311_ADDR, TwoWire& wire = Wire);
+    ES8311(uint8_t addr = ES8311_ADDR, TwoWireEx& wire = WireEx);
 
 public:
     //void begin(es_i2s_fmt_t fmt) { config_fmt(fmt); }
@@ -313,7 +314,7 @@ protected:
 
 protected:
     uint8_t     _address;
-    TwoWire&    _wire;
+    TwoWireEx&  _wire;
 };
 
 

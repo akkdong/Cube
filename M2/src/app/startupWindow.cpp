@@ -19,12 +19,11 @@
 
 StartupWindow::StartupWindow()
 {
-
 }
 
 StartupWindow::~StartupWindow()
 {
-    LOGv("StartupWindow::~StartupWindow()");
+    //LOGv("StartupWindow::~StartupWindow()");
 }
 
 void StartupWindow::onCreate()
@@ -91,10 +90,14 @@ bool StartupWindow::process()
 
 void StartupWindow::start()
 {
-    Screen::instance()->getApplication()->startVario();
-
+    #if 1
     FlightWindow* flight = new FlightWindow;
     Screen::instance()->switchWindow(flight);
+
+    Screen::instance()->getApplication()->startVario();
+    #else
+    Screen::instance()->getApplication()->postMessage(Application::MSG_START_VARIO, 0);
+    #endif
 }
 
 

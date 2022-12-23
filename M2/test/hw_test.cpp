@@ -30,8 +30,9 @@
 #define TEST_WAV        3
 #define TEST_SD         4
 #define TEST_KEYPAD     5
+#define TEST_HWSERIAL   6
 
-#define TEST_METHOD     TEST_KEYPAD
+#define TEST_METHOD     TEST_HWSERIAL
 
 #if TEST_METHOD != TEST_ADC
 #if TEST_METHOD == TEST_AAC
@@ -125,19 +126,57 @@ MySD    sd;
 
 struct MyKeypadCallback : public KeypadCallback
 {
-    virtual void OnPressed(uint8_t key) {
+    virtual void onPressed(uint8_t key) {
         USBSerial.printf("OnPressed: %x\r\n", key);
     }
-    virtual void OnLongPressed(uint8_t key) {
+    virtual void onLongPressed(uint8_t key) {
         USBSerial.printf("OnLongPressed: %x\r\n", key);
     }
-    virtual void OnReleased(uint8_t key) {
+    virtual void onReleased(uint8_t key) {
         USBSerial.printf("OnReleased: %x\r\n", key);
     }
 } _callback;
 
 Keypad keypad(&_callback);
 
+#endif
+
+
+#if TEST_METHOD == TEST_HWSERIAL
+void Serial2_onReceive()
+{
+    while (Serial2.available())
+    {
+        int ch = Serial2.read();
+        USBSerial.write(ch);
+    }
+}
+
+void Serial2_onReceiveError(hardwareSerial_error_t err)
+{
+    const char* errStr = "unknown";
+    switch (err)
+    {
+    case UART_BREAK_ERROR:
+        errStr = "UART_BREAK_ERROR";
+        break;
+    case UART_BUFFER_FULL_ERROR:
+        Serial2_onReceive();
+        errStr = "UART_BUFFER_FULL_ERROR";
+        break;
+    case UART_FIFO_OVF_ERROR:
+        errStr = "UART_FIFO_OVF_ERROR";
+        break;
+    case UART_FRAME_ERROR:
+        errStr = "UART_FRAME_ERROR";
+        break;
+    case UART_PARITY_ERROR:
+        errStr = "UART_PARITY_ERROR";
+        break;
+    }
+
+    USBSerial.printf("Serial2::onReceiveError(%d: %s)\r\n", (int)err, errStr);
+}
 #endif
 
 void setup()
@@ -147,7 +186,7 @@ void setup()
     USBSerial.println("HW Test...");
 
     exio.setOutput(0b00100000); // 0b10110000 : TOUCH, BOOST, AUDIO, LCD, IO3, IO2, IO1, IO0
-    exio.setConfig(0b00001111);    
+    exio.setConfig(0b00001111);
 
     #if TEST_METHOD == TEST_AAC || TEST_METHOD == TEST_WAV
     codec.codec_config(AUDIO_HAL_32K_SAMPLES);
@@ -212,6 +251,11 @@ void setup()
     listDir(sd, "/Music", 0);
     #elif TEST_METHOD == TEST_KEYPAD
     keypad.begin(CreateKeypadInput());
+    #elif TEST_METHOD == TEST_HWSERIAL
+    //Serial2.setRxTimeout(1);
+    //Serial2.onReceive(Serial2_onReceive, false);
+    //Serial2.onReceiveError(Serial2_onReceiveError);
+    Serial2.begin(9600, SERIAL_8N1, 33, -1);
     #endif
 }
 
@@ -274,5 +318,11 @@ void loop()
     keypad.update();
     delay(10);
     #endif
+#elif TEST_METHOD == TEST_HWSERIAL
+    while (Serial2.available())
+    {
+        int ch = Serial2.read();
+        USBSerial.write(ch);
+    }
 #endif
 }

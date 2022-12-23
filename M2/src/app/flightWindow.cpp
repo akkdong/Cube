@@ -12,6 +12,7 @@
 #include "flightWindow.h"
 #include "settingWindow.h"
 #include "widget.h"
+#include "Application.h"
 
 #include "../assets/assets.h"
 
@@ -349,9 +350,12 @@ void FlightWindow::onKeyDown(uint16_t key)
     if (layout != activeLayout)
     {
         activeLayout = layout;
-
         layoutWidget(activeLayout);
-        update();
+
+        //Application* app = Screen::instance()->getApplication();
+        //app->contextLock.enter();
+        //update();
+        //app->contextLock.leave();
     }
 }
 
@@ -536,7 +540,7 @@ void FlightWindow::onUpdate(NumberBox* box)
         sprintf(value, "%.1f", context->flightState.distNextPoint);
         break;
     case NumberBox::DISTANCE_FLIGHT:
-        sprintf(value, "%.1f", context->flightState.distFlight);
+        sprintf(value, "%.1f", context->flightState.distFlightAccum);
         break;
     case NumberBox::GLIDE_RATIO:
         sprintf(value, "%.1f", context->flightState.glideRatio);

@@ -130,10 +130,10 @@ void lv_port_disp_init(void)
 
 static bool notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_io_event_data_t *edata, void *user_ctx)
 {
-    Application::lock.enter();
+    //Application::lock.enter();
     lv_disp_drv_t *disp_driver = (lv_disp_drv_t *)user_ctx;
     lv_disp_flush_ready(disp_driver);
-    Application::lock.leave();
+    //Application::lock.leave();
 
     return false;
 }
@@ -143,10 +143,10 @@ static bool notify_lvgl_flush_ready(esp_lcd_panel_io_handle_t panel_io, esp_lcd_
  *'lv_disp_flush_ready()' has to be called when finished.*/
 static void disp_flush(lv_disp_drv_t * disp_drv, const lv_area_t * area, lv_color_t * color_p)
 {
-    Application::lock.enter();
+    //Application::lock.enter();
     esp_lcd_panel_handle_t panel_handle = (esp_lcd_panel_handle_t) disp_drv->user_data;
     esp_lcd_panel_draw_bitmap(panel_handle, area->x1, area->y1, area->x2 + 1, area->y2 + 1, color_p);
-    Application::lock.leave();
+    //Application::lock.leave();
 }
 
 /*OPTIONAL: GPU INTERFACE*/

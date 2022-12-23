@@ -7,7 +7,7 @@
 #define TCA9554_H
 
 #include <Arduino.h>
-#include <Wire.h>
+#include "TwoWireEx.h"
 
 
 #define TCA9554A_ADDR               (0x3C)
@@ -24,7 +24,7 @@
 class TCA9554
 {
 public:
-    TCA9554(int address = TCA9554A_ADDR, TwoWire& wire = Wire);
+    TCA9554(int address = TCA9554A_ADDR, TwoWireEx& wire = WireEx);
 
 public:
     void setConfig(uint8_t value);
@@ -42,7 +42,7 @@ protected:
 
 private:
     int         _address;
-    TwoWire&    _wire;
+    TwoWireEx&  _wire;
 };
 
 

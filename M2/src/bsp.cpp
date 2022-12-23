@@ -2,7 +2,7 @@
 //
 
 #include <Arduino.h>
-#include <Wire.h>
+#include "TwoWireEx.h"
 
 #include "board.h"
 #include "bsp.h"
@@ -55,8 +55,9 @@ void bsp_hal_init()
 {
     //
     USBSerial.begin(115200);
+	Serial2.setRxBufferSize(1024);
     Serial2.begin(9600, SERIAL_8N1, 33, -1);
-    Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
+    WireEx.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
     USBSerial.println("M2 Variometer");
 
     // io-expander default setttings
@@ -74,11 +75,11 @@ void bsp_hal_init()
 
 
 	// setup-barometer
-	baro.begin(Bme280TwoWireAddress::Primary, &Wire);
+	baro.begin(Bme280TwoWireAddress::Primary, &WireEx);
 	baro.setSettings(varioSettings());
 
     // setup humidity & tempearture
-    ht.begin();
+    //ht.begin();
 
 	// mount SPIFFS : ...
 	SPIFFS.begin();  

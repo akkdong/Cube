@@ -8,7 +8,7 @@
 /////////////////////////////////////////////////////////////////////////////////
 //
 
-FT5x06::FT5x06(uint8_t address, TwoWire& wire) : _address(address), _wire(wire)
+FT5x06::FT5x06(uint8_t address, TwoWireEx& wire) : _address(address), _wire(wire)
 {
 }
 
@@ -46,30 +46,38 @@ void FT5x06::begin()
 
 uint8_t FT5x06::readByte(uint8_t reg)
 {
+    _wire.lock();
     _wire.beginTransmission(_address);
     _wire.write(reg);
-    _wire.endTransmission(false);
+    _wire.endTransmission();
 
     _wire.requestFrom(_address, (uint8_t)1);
-    return _wire.read();
+    uint8_t ret = _wire.read();
+    _wire.unlock();
+
+    return ret;
 }
 
 void FT5x06::readBytes(uint8_t reg, size_t len, uint8_t* data)
 {
+    _wire.lock();
     _wire.beginTransmission(_address);
     _wire.write(reg);
-    _wire.endTransmission(false);
+    _wire.endTransmission();
 
     _wire.requestFrom(_address, len);
     for (size_t i = 0; i < len; i++)
         data[i] = _wire.read();
+    _wire.unlock();
 }
 
 void FT5x06::writeByte(uint8_t reg, uint8_t data)
 {
+    _wire.lock();
     _wire.beginTransmission(_address);
     _wire.write(reg);
     _wire.endTransmission();
+    _wire.unlock();
 }
 
 uint8_t FT5x06::getTouchPointsNum()

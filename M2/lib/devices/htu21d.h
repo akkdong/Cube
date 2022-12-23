@@ -6,7 +6,7 @@
 #define _HTU21D_H
 
 #include "Arduino.h"
-#include "Wire.h"
+#include "TwoWireEx.h"
 
 /**
  * HTU21D Measurement Resolution
@@ -26,7 +26,7 @@ private:
   static const uint8_t HTU21D_ADDR = 0x40;
 
   const uint8_t _addr;
-  TwoWire& _wire;
+  TwoWireEx& _wire;
   HTU21DResolution _resolution;
   
   float temperature;
@@ -46,7 +46,7 @@ private:
   bool measureHumidity();
   bool checkCRC8(uint8_t data[]);
 public:
-  HTU21D(uint8_t addr = HTU21D_ADDR, TwoWire& wire = Wire);
+  HTU21D(uint8_t addr = HTU21D_ADDR, TwoWireEx& wire = WireEx);
   
   bool measure();
   float getTemperature(void) const;

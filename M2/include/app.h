@@ -219,6 +219,17 @@ struct TrackDistance
 	float			dy;
 };
 
+struct TrackHistory
+{
+	TrackHistory() : heading(0.0f), dist(0.0f), vario(0.0f) {}
+	TrackHistory(float _hdg, float _dst, float _spd) : heading(_hdg), dist(_dst), vario(_spd) {}
+	TrackHistory(const TrackHistory& th) : heading(th.heading), dist(th.dist), vario(th.vario) {}
+
+	float			heading;
+	float			dist;
+	float			vario;
+};
+
 enum FlightMode
 {
 	FMODE_READY,	// READY, LANDING
@@ -247,6 +258,7 @@ struct FlightState
 	//
 	TrackPoint		trackPoints[MAX_TRACK_HISTORY];
 	TrackDistance	trackDistance[MAX_TRACK_HISTORY];
+	TrackHistory	trackHistory[MAX_TRACK_HISTORY];
 	int16_t			frontPoint;
 	int16_t			rearPoint;
 
@@ -262,6 +274,7 @@ struct FlightState
 	//
 	float			distTakeoff;
 	float			distFlight;
+	float			distFlightAccum;
 	float			distNextPoint;
 
 	//

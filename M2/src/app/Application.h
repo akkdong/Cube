@@ -50,12 +50,14 @@ class Screen;
 class Window;
 class Widget;
 class StartupWindow;
+class FlightWindow;
 
 class Application : public KeypadCallback/*, public TaskBase*/
 {
     friend class Window;
     friend class Widget;
     friend class StartupWindow;
+    friend class FlightWindow;
 
 public:
     Application();
@@ -76,6 +78,8 @@ public:
         MSG_UPDATE_NMEA,
         MSG_UPDATE_VARIO,
         MSG_UPDATE_ANNUNCIATOR,
+
+        MSG_START_VARIO,
 
         MSG_GPS_FIXED,
         MSG_TAKEOFF,
@@ -140,6 +144,7 @@ protected:
     void                        onReadyLocationData();
 
     static void                 FlightComputerTask(void* param);
+    static void                 LocationTask(void* param);    
     static void                 VariometerTask(void* param);    
 
 public:
@@ -148,7 +153,7 @@ public:
 protected:
     //
     DeviceContext*              contextPtr;
-    DeviceMode                  mode;
+    volatile DeviceMode         mode;
 
     Screen*                     screenPtr;
 
@@ -196,6 +201,7 @@ protected:
 
     //
     TaskHandle_t                taskFlightComputer;
+    TaskHandle_t                taskLocation;
     TaskHandle_t                taskVariometer;
 
     EventGroupHandle_t          fcEventGroup;

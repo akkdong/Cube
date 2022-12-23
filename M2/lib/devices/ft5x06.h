@@ -5,7 +5,7 @@
 #define __FT5X06_H__
 
 #include "Arduino.h"
-#include "Wire.h"
+#include "TwoWireEx.h"
 
 // Gestures
 #define NO_GESTURE   0
@@ -115,7 +115,7 @@
 class FT5x06
 {
 public:
-    FT5x06(uint8_t address = FT5X06_I2C_ADDRESS, TwoWire& wire = Wire);
+    FT5x06(uint8_t address = FT5X06_I2C_ADDRESS, TwoWireEx& wire = WireEx);
 
 public:
     void        begin();
@@ -130,7 +130,7 @@ protected:
 
 protected:
     uint8_t     _address;
-    TwoWire&    _wire;
+    TwoWireEx&  _wire;
 };
 
 #endif // __FT5X06_H__
