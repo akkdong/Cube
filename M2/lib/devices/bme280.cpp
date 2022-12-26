@@ -288,7 +288,7 @@ uint8_t Bme280TwoWire::read8(const uint8_t registerAddress) const {
   wire_->lock();
   wire_->beginTransmission(address_);
   wire_->write(registerAddress);
-  wire_->endTransmission();
+  wire_->endTransmission(false);
   wire_->requestFrom(address_, 1u);
   uint8_t ret = wire_->read();
   wire_->unlock();
@@ -302,7 +302,7 @@ uint16_t Bme280TwoWire::read16(const uint8_t registerAddress) const {
   wire_->lock();
   wire_->beginTransmission(address_);
   wire_->write(registerAddress);
-  wire_->endTransmission();
+  wire_->endTransmission(false);
   wire_->requestFrom(address_, 2u);
   uint16_t ret = (wire_->read() << 8) | wire_->read();
   wire_->unlock();
@@ -316,7 +316,7 @@ uint32_t Bme280TwoWire::read24(const uint8_t registerAddress) const {
   wire_->lock();
   wire_->beginTransmission(address_);
   wire_->write(registerAddress);
-  wire_->endTransmission();
+  wire_->endTransmission(false);
   wire_->requestFrom(address_, 3u);
 
   uint32_t value = wire_->read();

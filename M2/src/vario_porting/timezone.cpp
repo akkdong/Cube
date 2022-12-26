@@ -5,7 +5,7 @@
 #include <time.h>
 
 #include "timezone.h"
-
+#include "logger.h"
 
 
 void setTimeZone(long offset, int daylight)
@@ -38,4 +38,7 @@ void setDeviceTime(time_t time)
 {
     struct timeval now = { time, 0 };
     settimeofday(&now, NULL);
+
+    struct tm * _tm = localtime(&time);
+    LOGv("set device-time: %d:%d:%d", _tm->tm_hour, _tm->tm_min,_tm->tm_sec);
 }

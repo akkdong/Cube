@@ -197,7 +197,7 @@ size_t DeviceRepository::updateTrackHistory(float lat, float lon, float speedVer
 	}
 
 	state.trackDistance[latest].dx = 0;
-	state.trackDistance[latest].dy = 0;			
+	state.trackDistance[latest].dy = 0;
 
 	//LOGv("TrackPoint(%f,%f,%f) [%d-%d]", lat, lon, speedVert, state.rearPoint, state.frontPoint);
 	return (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
@@ -207,10 +207,14 @@ size_t DeviceRepository::updateTrackHistory()
 {
 	FlightState& state = contextPtr->flightState;
 	VarioState& vario = contextPtr->varioState;
-	int16_t latest = state.frontPoint;
 
-	state.trackHistory[state.frontPoint] = TrackHistory(vario.heading, state.distFlight, vario.speedVertLazy);
+	// add new track-position
+	state.trackHistory[state.frontPoint] = TrackHistory(vario.latitude, vario.longitude, vario.heading, state.distFlight, vario.speedVertLazy);
+	//LOGv("Track: %f, %f, %d, %f, %f", vario.latitude, vario.longitude, vario.heading, state.distFlight, vario.speedVertLazy);
+
 	state.frontPoint = (state.frontPoint + 1) & (MAX_TRACK_HISTORY - 1);
+	if (state.frontPoint == state.rearPoint) // overflow
+		state.rearPoint = (state.rearPoint + 1) & (MAX_TRACK_HISTORY - 1);
 
 	return (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
 }

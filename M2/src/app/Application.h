@@ -125,6 +125,7 @@ protected:
     void                        update_time();
 
     void                        updateFlightState();
+    void                        checkFlightMode();
 
     void                        startCircling();
     void                        startGliding();

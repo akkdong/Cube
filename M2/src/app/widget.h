@@ -34,7 +34,7 @@ widget
 
 
 ////////////////////////////////////////////////////////////////////////////////////
-// struct WidgetUpdater
+// struct WidgetUpdateCallback
 
 class Annunciator;
 class NumberBox;
@@ -43,7 +43,7 @@ class CompassWidget;
 class VariometerWidget;
 class ThermalAssistant;
 
-struct WidgetUpdater
+struct WidgetUpdateCallback
 {
     virtual void onUpdate(Annunciator *) = 0;
     virtual void onUpdate(NumberBox *) = 0;
@@ -73,7 +73,7 @@ public:
     };
 
 public:
-    void                    setUpdater(WidgetUpdater* updater) { this->updater = updater; }
+    void                    setUpdateCallback(WidgetUpdateCallback* callback) { this->updateCb = callback; }
 
     //
     static void             init();
@@ -83,7 +83,7 @@ protected:
 
 protected:
     //
-    WidgetUpdater*          updater;
+    WidgetUpdateCallback*   updateCb;
 
     //
     static lv_style_t*      style_default;
@@ -342,13 +342,27 @@ public:
 public:
     //
     void                    update() override;
+    void                    postUpdate() override;
 
+    void                    setOption(int16_t up, int16_t heading, int16_t bearing, int16_t wind);
+    void                    setTrack(TrackHistory* tracks, int16_t front, int16_t rear);
+
+public:
     void                    drawTrack(FlightState& state, float heading);
+    void                    drawTrack();
     void                    drawCompass();
     void                    drawWindDirection();
     void                    drawFlight(float heading, float bearing, int method = 1);
 
 protected:
+    int16_t                 up; // 0: north, 1: heading, 2: bearing
+    int16_t                 heading;
+    int16_t                 bearing;
+    int16_t                 wind;
+
+	TrackDistance	        trackDistance[MAX_TRACK_HISTORY];
+   	float			        trackVario[MAX_TRACK_HISTORY];
+    int                     trackCount;
 };
 
 

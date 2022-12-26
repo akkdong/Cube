@@ -7,10 +7,10 @@
 #include <time.h>
 
 #define MAX_STRING_SIZE					(16)
-#define MAX_VARIO_HISTORY				(128)
+#define MAX_VARIO_HISTORY				(64)
 #define MAX_VARIO_TONE					(12)
 
-#define MAX_TRACK_HISTORY				(128)
+#define MAX_TRACK_HISTORY				(64)
 
 
 
@@ -221,10 +221,12 @@ struct TrackDistance
 
 struct TrackHistory
 {
-	TrackHistory() : heading(0.0f), dist(0.0f), vario(0.0f) {}
-	TrackHistory(float _hdg, float _dst, float _spd) : heading(_hdg), dist(_dst), vario(_spd) {}
-	TrackHistory(const TrackHistory& th) : heading(th.heading), dist(th.dist), vario(th.vario) {}
+	TrackHistory() : lat(0.0f), lon(0.0f), heading(0.0f), dist(0.0f), vario(0.0f) {}
+	TrackHistory(float _lat, float _lon, float _hdg, float _dst, float _spd) : lat(_lat), lon(_lon), heading(_hdg), dist(_dst), vario(_spd) {}
+	TrackHistory(const TrackHistory& th) : lat(th.lat), lon(th.lon), heading(th.heading), dist(th.dist), vario(th.vario) {}
 
+	float			lat;
+	float			lon;
 	float			heading;
 	float			dist;
 	float			vario;

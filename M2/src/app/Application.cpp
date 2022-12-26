@@ -237,12 +237,18 @@ void Application::update()
     case MSG_UPDATE_ANNUNCIATOR:
         {
             //Application::lock.enter();
-            this->contextLock.enter();
             Window* active = Screen::instance()->peekWindow();
             if (active)
+            {
+                // general update-process
+                this->contextLock.enter();
                 active->update();
+                this->contextLock.leave();
+
+                // time-consumed update-process
+                active->postUpdate();
+            }
             //LOGi("update: %u", millis() - tick);
-            this->contextLock.leave();
             //Application::lock.leave();
         }
         break;
@@ -686,7 +692,11 @@ void Application::updateFlightState()
 			contextPtr->varioState.latitudeLast, contextPtr->varioState.longitudeLast);
     contextPtr->flightState.distFlightAccum += contextPtr->flightState.distFlight;
 	// add new track point & calculate relative distance
+    #if 1
 	DeviceRepository::instance().updateTrackHistory(contextPtr->varioState.latitude, contextPtr->varioState.longitude, contextPtr->varioState.speedVertLazy);
+    #else
+    DeviceRepository::instance().updateTrackHistory();
+    #endif
 
 	// update flight statistics
 	contextPtr->flightStats.altitudeMax = _MAX(contextPtr->flightStats.altitudeMax, contextPtr->varioState.altitudeGPS);
@@ -713,7 +723,10 @@ void Application::updateFlightState()
 		contextPtr->flightState.glidingCount = _MIN(MAX_GLIDING_COUNT, contextPtr->flightState.glidingCount + 1);
 	else
 		contextPtr->flightState.glidingCount = _MAX(MIN_GLIDING_COUNT, contextPtr->flightState.glidingCount - 1);
+}
 
+void Application::checkFlightMode()
+{
 	switch (mode)
 	{
 	case MODE_FLYING :
@@ -768,8 +781,22 @@ void Application::updateFlightState()
 		}
 		break;
 	}
-}
 
+    if (contextPtr->varioState.speedGround < contextPtr->logger.landingSpeed) // FLIGHT_START_MIN_SPEED
+    {
+        uint32_t interval = millis() - this->tick_stopBase;
+        //LOGv("stop interval: %u", interval);
+        if (interval > contextPtr->logger.landingTimeout) // FLIGHT_LANDING_THRESHOLD
+        {
+            this->stopFlight();
+            this->postMessage(MSG_LANDING, 0);
+        }
+    }
+    else
+    {
+        this->tick_stopBase = millis();
+    }                
+}
 
 void Application::startCircling()
 {
@@ -1003,14 +1030,14 @@ void Application::FlightComputerTask(void* param)
 
         if (bits & EVENT_NMEA_VALID)
         {
-            if (!app->gpsFixed)
-            {
-                // update device-time
-                setDeviceTime(contextPtr->varioState.timeCurrent);
-
-                // notify gps-fixed
-                app->postMessage(MSG_GPS_FIXED, 0);
-            }
+            //if (!app->gpsFixed)
+            //{
+            //    // update device-time
+            //    setDeviceTime(contextPtr->varioState.timeCurrent);
+            //
+            //    // notify gps-fixed
+            //    app->postMessage(MSG_GPS_FIXED, 0);
+            //}
 
             //app->contextLock.enter();
             if (app->mode == MODE_GROUND)
@@ -1025,21 +1052,7 @@ void Application::FlightComputerTask(void* param)
             {
                 //LOGv("update flight-state: %f, %d", contextPtr->varioState.speedGround, contextPtr->logger.landingSpeed);
                 app->updateFlightState();
-
-                if (contextPtr->varioState.speedGround < contextPtr->logger.landingSpeed) // FLIGHT_START_MIN_SPEED
-                {
-                    uint32_t interval = millis() - app->tick_stopBase;
-                    LOGv("stop interval: %u", interval);
-                    if (interval > contextPtr->logger.landingTimeout) // FLIGHT_LANDING_THRESHOLD
-                    {
-                        app->stopFlight();
-                        app->postMessage(MSG_LANDING, 0);
-                    }
-                }
-                else
-                {
-                    app->tick_stopBase = millis();
-                }                
+                app->checkFlightMode();
             }
             //app->contextLock.leave();
 
@@ -1095,6 +1108,15 @@ void Application::FlightComputerTask(void* param)
             {
                 app->gpsFixed = fixed;
                 contextPtr->deviceState.statusGPS = fixed ? 1 :0;
+
+                if (fixed)
+                {
+                    // update device-time
+                    setDeviceTime(contextPtr->varioState.timeCurrent);
+
+                    // notify gps-fixed
+                    app->postMessage(MSG_GPS_FIXED, 0);
+                }                
             }
 
             // update BT state

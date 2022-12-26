@@ -95,7 +95,7 @@ static Bme280Settings varioSettings()
 
 //Bme280TwoWire	baro;
 //HTU21D        ht;
-//ES8311        codec;
+extern ES8311   codec;
 
 //BLEVario 		  bleDevice;
 
@@ -213,4 +213,16 @@ void loop()
 
     //
     app.update();
+
+    #if 0
+    static uint32_t lastTick = millis();
+    uint32_t tick = millis();
+    if (tick - lastTick >= 5000)
+    {
+      int volume = 0;
+      esp_err_t err = codec.codec_get_voice_volume(&volume);
+      LOGv("codec volume = %d (err=%d)", volume, err);
+      lastTick = tick;
+    }
+    #endif
 }

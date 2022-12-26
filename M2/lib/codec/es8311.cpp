@@ -204,7 +204,7 @@ int ES8311::read_reg(uint8_t reg_addr)
     _wire.lock();
     _wire.beginTransmission(_address);
     _wire.write(reg_addr);
-    _wire.endTransmission();
+    _wire.endTransmission(false);
 
     _wire.requestFrom(_address, (uint8_t)1);
     int ret = _wire.read();

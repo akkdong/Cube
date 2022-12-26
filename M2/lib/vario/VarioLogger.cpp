@@ -175,7 +175,7 @@ int VarioLogger::write(uint8_t ch)
 	
 	// pressure altitude field is replaced by measured pressure altitude : NmeaParser returns null value
 	if (columnCount == IGC_OFFSET_PRESS_ALT)
-		digit.begin(varioAltitude, IGC_SIZE_PRESS_ALT);
+		digit.begin(varioAltitude + 0.5, IGC_SIZE_PRESS_ALT);
 	
 	if (digit.available())
 		ch = digit.read();

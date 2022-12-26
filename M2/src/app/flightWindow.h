@@ -11,7 +11,7 @@
 ///////////////////////////////////////////////////////////////////////////////////
 // class FlightWindow
 
-class FlightWindow : public Window, public WidgetUpdater
+class FlightWindow : public Window, public WidgetUpdateCallback
 {
 public:
     FlightWindow();
@@ -41,6 +41,7 @@ public:
 public:
     //
     void            update() override;
+    void            postUpdate() override;
 
     void            onCreate() override;
     void            onActive() override;
@@ -58,13 +59,13 @@ protected:
     const char *    getElapsedTimeString(char* str, time_t t);
     const char *    getTimeString(char* str, time_t t, bool includeSecond = false);
 
-    //
-    void            onUpdate(Annunciator *);
-    void            onUpdate(NumberBox *);
-    void            onUpdate(ProfileWidget *);
-    void            onUpdate(CompassWidget *);
-    void            onUpdate(VariometerWidget *);
-    void            onUpdate(ThermalAssistant *); 
+    // WidgetUpdateCallback
+    void            onUpdate(Annunciator *) override;
+    void            onUpdate(NumberBox *) override;
+    void            onUpdate(ProfileWidget *) override;
+    void            onUpdate(CompassWidget *) override;
+    void            onUpdate(VariometerWidget *) override;
+    void            onUpdate(ThermalAssistant *) override; 
 
     //
     static bool     getCustomFont(const lv_font_t * font, void * img_src, uint16_t len, uint32_t unicode, uint32_t unicode_next);

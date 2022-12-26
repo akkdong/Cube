@@ -60,6 +60,7 @@ public:
     }
 
     virtual void update() {}
+    virtual void postUpdate() {}
 
     virtual lv_obj_t * getObject() { 
         return _this; 

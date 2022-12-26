@@ -720,7 +720,7 @@ void LocationParser::parseField(int fieldIndex, int startPos)
 				//	mIGCSentence[IGC_OFFSET_PRESS_ALT+i] = digit.read();
 				
 				//
-				digit.begin(mAltitude, IGC_SIZE_GPS_ALT);
+				digit.begin(mAltitude + 0.5, IGC_SIZE_GPS_ALT);
 				for (int i = 0; i < IGC_SIZE_GPS_ALT /*digit.available()*/; i++)
 					mIGCSentence[IGC_OFFSET_GPS_ALT+i] = digit.read();
 			}			

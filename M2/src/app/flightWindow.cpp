@@ -262,7 +262,7 @@ void FlightWindow::onCreate()
     //
     annunciator.create(this);
     //ann.setConfig(...);
-    annunciator.setUpdater(this);
+    annunciator.setUpdateCallback(this);
     annunciator.setPosition(0, 0);
     annunciator.setSize(LCD_WIDTH, MAX_ANNUNCIATOR_HEIGHT);
     annunciator.setFont(fontCustom);
@@ -278,7 +278,7 @@ void FlightWindow::onCreate()
         if (!widgets[i])
             continue;
 
-        widgets[i]->setUpdater(this);
+        widgets[i]->setUpdateCallback(this);
         widgets[i]->setVisible(false);
         
         //lv_obj_add_flag(widgets[i]->getObject(), LV_OBJ_FLAG_HIDDEN);
@@ -373,8 +373,6 @@ void FlightWindow::onKeyUp(uint16_t key)
 {
 }
 
-
-
 void FlightWindow::update()
 {
     annunciator.update();
@@ -385,6 +383,18 @@ void FlightWindow::update()
         if (widgets[i])
             widgets[i]->update();
     }
+}
+
+void FlightWindow::postUpdate()
+{
+    annunciator.postUpdate();
+    bkgndCanvas.postUpdate();
+
+    for (int i = 0; i < sizeof(widgets) / sizeof(widgets[0]); i++)
+    {
+        if (widgets[i])
+            widgets[i]->postUpdate();
+    }    
 }
 
 Widget* FlightWindow::createWidget(Widget::Type type, DisplayObject* parent)
@@ -599,9 +609,14 @@ void FlightWindow::onUpdate(ThermalAssistant* assistant)
         return;
 
     DeviceContext* context = DeviceRepository::instance().getContext();
+    #if 0
+    assistant->setOption(UP_TYPE, /*context->varioState.heading*/ 0, /*context->varioState.bearing*/ -1, -1);
+    assistant->setTrack(context->flightState.trackHistory, context->flightState.frontPoint, context->flightState.rearPoint);
+    #else
     assistant->drawTrack(context->flightState, /*context->varioState.heading*/ 0);
     assistant->drawWindDirection();
     assistant->drawFlight(context->varioState.heading, -1, UP_TYPE);
+    #endif
 }
 
 bool FlightWindow::getCustomFont(const lv_font_t * font, void * img_src, uint16_t len, uint32_t unicode, uint32_t unicode_next)

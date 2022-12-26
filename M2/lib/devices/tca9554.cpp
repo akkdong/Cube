@@ -27,7 +27,7 @@ uint8_t TCA9554::readRegister(uint8_t reg)
   _wire.lock();
   _wire.beginTransmission(_address);
   _wire.write(reg);
-  _wire.endTransmission();
+  _wire.endTransmission(false);
   _wire.requestFrom(_address, 1u);
 
   uint8_t ret = _wire.read();
