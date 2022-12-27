@@ -61,8 +61,9 @@ void bsp_hal_init()
     USBSerial.println("M2 Variometer");
 
     // io-expander default setttings
-    exio.setOutput(0b10110000);
-    exio.setConfig(0b00001111);
+	exio.begin(0b10110000, 0b00001111); // TP, BOOST, AUDIO, LCD, ---- : OOOOIIII
+    //exio.setOutput(0b10110000);
+    //exio.setConfig(0b00001111);
     //
     codec.codec_config(AUDIO_HAL_24K_SAMPLES);
     codec.codec_set_voice_volume(62);
@@ -124,7 +125,7 @@ void bsp_power_on(bool on)
 
 void bsp_lcd_backlight(bool on)
 {
-
+	exio.setOutput(3, on);
 }
 
 void bsp_update()

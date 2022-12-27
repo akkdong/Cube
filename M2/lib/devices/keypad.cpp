@@ -34,6 +34,9 @@ void Keypad::begin(IKeypadInput* input)
 
 void Keypad::update()
 {
+    // read in advance
+    keyInput->PreRead();
+
     for (size_t i = 0; i < sizeof(keyMap) / sizeof(keyMap[0]); i++)
     {
         Key* key = &keyMap[i];

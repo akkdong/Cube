@@ -27,22 +27,29 @@ public:
     TCA9554(int address = TCA9554A_ADDR, TwoWireEx& wire = WireEx);
 
 public:
-    void setConfig(uint8_t value);
-    void setOutput(uint8_t value);
-    void setPolarity(uint8_t value);
+    void        begin(uint8_t output = 0b10110000, uint8_t config = 0b00001111);
 
-    uint8_t getInput()          { return readRegister(INPUT_PORT_REG); }
-    uint8_t getOutput()         { return readRegister(OUTPUT_PORT_REG); }
-    uint8_t getPolarity()       { return readRegister(POLARITY_INVERSION_REG); }
-    uint8_t getConfig()         { return readRegister(CONFIG_REG); }
+    void        setConfig(uint8_t value);
+    void        setOutput(uint8_t value);
+    void        setOutput(uint8_t bit, bool on);
+    void        setPolarity(uint8_t value);
+
+    uint8_t     getInput()          { return readRegister(INPUT_PORT_REG); }
+    uint8_t     getOutput()         { return readRegister(OUTPUT_PORT_REG); }
+    uint8_t     getPolarity()       { return readRegister(POLARITY_INVERSION_REG); }
+    uint8_t     getConfig()         { return readRegister(CONFIG_REG); }
+
 
 protected:
-    void writeRegister(uint8_t reg, uint8_t value);
-    uint8_t readRegister(uint8_t reg);
+    void        writeRegister(uint8_t reg, uint8_t value);
+    uint8_t     readRegister(uint8_t reg);
 
 private:
     int         _address;
     TwoWireEx&  _wire;
+
+    uint8_t     _output;
+    uint8_t     _config;
 };
 
 

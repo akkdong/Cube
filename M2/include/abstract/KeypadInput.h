@@ -9,6 +9,7 @@
 
 struct IKeypadInput
 {
+    virtual void PreRead() = 0;
     virtual int Read(uint8_t pin) = 0;
 };
 
