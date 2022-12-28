@@ -283,7 +283,7 @@ AudioOutputI2SEx audioOut;
 void setup()
 {
     USBSerial.begin();
-    Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
+    WireEx.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
     USBSerial.println("Audio Test...");
 
     io.setOutput(0b10110000); // 0b10110000 : Touch, Boost, Audio, Lcd, 3,2,1,0

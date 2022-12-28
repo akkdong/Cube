@@ -692,7 +692,7 @@ void Application::updateFlightState()
 			contextPtr->varioState.latitudeLast, contextPtr->varioState.longitudeLast);
     contextPtr->flightState.distFlightAccum += contextPtr->flightState.distFlight;
 	// add new track point & calculate relative distance
-    #if 1
+    #if 0
 	DeviceRepository::instance().updateTrackHistory(contextPtr->varioState.latitude, contextPtr->varioState.longitude, contextPtr->varioState.speedVertLazy);
     #else
     DeviceRepository::instance().updateTrackHistory();
@@ -1026,7 +1026,7 @@ void Application::FlightComputerTask(void* param)
 
     while (true)
     {
-        EventBits_t bits = xEventGroupWaitBits(evtGrpHandle, EVENT_NMEA_VALID | EVENT_VARIO_VALID, pdTRUE, pdFALSE, /*portMAX_DELAY*/ pdMS_TO_TICKS(1));
+        EventBits_t bits = xEventGroupWaitBits(evtGrpHandle, EVENT_NMEA_VALID | EVENT_VARIO_VALID, pdTRUE, pdFALSE, /*portMAX_DELAY*/ pdMS_TO_TICKS(2));
 
         if (bits & EVENT_NMEA_VALID)
         {

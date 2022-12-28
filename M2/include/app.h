@@ -221,13 +221,13 @@ struct TrackDistance
 
 struct TrackHistory
 {
-	TrackHistory() : lat(0.0f), lon(0.0f), heading(0.0f), dist(0.0f), vario(0.0f) {}
-	TrackHistory(float _lat, float _lon, float _hdg, float _dst, float _spd) : lat(_lat), lon(_lon), heading(_hdg), dist(_dst), vario(_spd) {}
-	TrackHistory(const TrackHistory& th) : lat(th.lat), lon(th.lon), heading(th.heading), dist(th.dist), vario(th.vario) {}
+	TrackHistory() : lat(0.0f), lon(0.0f), track(0.0f), dist(0.0f), vario(0.0f) {}
+	TrackHistory(float _lat, float _lon, float _track, float _dst, float _spd) : lat(_lat), lon(_lon), track(_track), dist(_dst), vario(_spd) {}
+	TrackHistory(const TrackHistory& th) : lat(th.lat), lon(th.lon), track(th.track), dist(th.dist), vario(th.vario) {}
 
 	float			lat;
 	float			lon;
-	float			heading;
+	float			track;
 	float			dist;
 	float			vario;
 };

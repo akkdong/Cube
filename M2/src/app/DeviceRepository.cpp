@@ -216,7 +216,9 @@ size_t DeviceRepository::updateTrackHistory()
 	if (state.frontPoint == state.rearPoint) // overflow
 		state.rearPoint = (state.rearPoint + 1) & (MAX_TRACK_HISTORY - 1);
 
-	return (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
+	int16_t size = (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
+	LOGv("track-history size: %d", size);
+	return size;
 }
 
 size_t DeviceRepository::getVSpeedCount()

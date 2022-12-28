@@ -49,7 +49,7 @@ uint8_t FT5x06::readByte(uint8_t reg)
     _wire.lock();
     _wire.beginTransmission(_address);
     _wire.write(reg);
-    _wire.endTransmission(false);
+    _wire.endTransmission();
 
     _wire.requestFrom(_address, (uint8_t)1);
     uint8_t ret = _wire.read();
@@ -63,7 +63,7 @@ void FT5x06::readBytes(uint8_t reg, size_t len, uint8_t* data)
     _wire.lock();
     _wire.beginTransmission(_address);
     _wire.write(reg);
-    _wire.endTransmission(false);
+    _wire.endTransmission();
 
     _wire.requestFrom(_address, len);
     for (size_t i = 0; i < len; i++)

@@ -39,6 +39,7 @@ static Bme280Settings varioSettings()
 //
 //
 
+HardwareSerial	SerialGPS(2);
 Bme280TwoWire	baro;
 HTU21D          ht;
 ES8311          codec;
@@ -55,8 +56,8 @@ void bsp_hal_init()
 {
     //
     USBSerial.begin(115200);
-	Serial2.setRxBufferSize(1024);
-    Serial2.begin(9600, SERIAL_8N1, 33, -1);
+	SerialGPS.setRxBufferSize(1024);
+    SerialGPS.begin(9600, SERIAL_8N1, 33, -1);
     WireEx.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
     USBSerial.println("M2 Variometer");
 

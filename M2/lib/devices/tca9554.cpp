@@ -8,7 +8,8 @@
 //
 
 TCA9554::TCA9554(int address, TwoWireEx& wire)
-    : _address(address), _wire(wire)
+    : _address(address)
+    , _wire(wire)
     , _output(0)
     , _config(0)
 {
@@ -17,8 +18,8 @@ TCA9554::TCA9554(int address, TwoWireEx& wire)
 
 void TCA9554::begin(uint8_t output, uint8_t config)
 {
-    setOutput(_output);
-    setConfig(_config);
+    setOutput(output);
+    setConfig(config);
 }
 
 void TCA9554::writeRegister(uint8_t reg, uint8_t value)
@@ -36,7 +37,7 @@ uint8_t TCA9554::readRegister(uint8_t reg)
     _wire.lock();
     _wire.beginTransmission(_address);
     _wire.write(reg);
-    _wire.endTransmission(false);
+    _wire.endTransmission();
     _wire.requestFrom(_address, 1u);
 
     uint8_t ret = _wire.read();

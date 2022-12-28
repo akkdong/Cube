@@ -32,7 +32,7 @@
 #define TEST_KEYPAD     5
 #define TEST_HWSERIAL   6
 
-#define TEST_METHOD     TEST_HWSERIAL
+#define TEST_METHOD     TEST_KEYPAD
 
 #if TEST_METHOD != TEST_ADC
 #if TEST_METHOD == TEST_AAC
@@ -182,11 +182,13 @@ void Serial2_onReceiveError(hardwareSerial_error_t err)
 void setup()
 {
     USBSerial.begin(115200);
-    Wire.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
+    WireEx.begin(GPIO_I2C_SDA, GPIO_I2C_SCL, (uint32_t)400000);
     USBSerial.println("HW Test...");
 
+    #if TEST_METHOD == TEST_KEYPAD
     exio.setOutput(0b00100000); // 0b10110000 : TOUCH, BOOST, AUDIO, LCD, IO3, IO2, IO1, IO0
     exio.setConfig(0b00001111);
+    #endif
 
     #if TEST_METHOD == TEST_AAC || TEST_METHOD == TEST_WAV
     codec.codec_config(AUDIO_HAL_32K_SAMPLES);

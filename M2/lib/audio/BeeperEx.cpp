@@ -62,6 +62,10 @@ void BeeperEx::playMelody(Tone* tones, int toneCount)
 
 void BeeperEx::TaskProc()
 {
+    #ifdef ARDUINO
+    TickType_t prevWakeTime = xTaskGetTickCount();
+    #endif
+
     while (1)
     {
         cs.enter();
@@ -69,9 +73,9 @@ void BeeperEx::TaskProc()
         cs.leave();
 
         #ifdef ARDUINO
-        vTaskDelay(pdMS_TO_TICKS(5));
+        vTaskDelayUntil(&prevWakeTime, pdMS_TO_TICKS(10));
         #else
-        SDL_Delay(5);
+        SDL_Delay(10);
         #endif
     }
 }

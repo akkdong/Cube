@@ -10,7 +10,7 @@
 #include "CriticalSection.h"
 
 #ifndef USE_NMEALOG
-#define USE_NMEALOG       (1)
+#define USE_NMEALOG       (0)
 #endif
 
 #if USE_NMEALOG
@@ -18,6 +18,10 @@
 
 #define MAX_BUFFER      (512)
 #endif
+
+
+extern HardwareSerial SerialGPS;
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -113,7 +117,7 @@ void LocalFileDataSource::onReceiveError(hardwareSerial_error_t err)
 
     if (errStr)
     {
-        LOGe("Serial2::onReceiveError(%d: %s)", (int)err, errStr);
+        LOGe("SerialGPS::onReceiveError(%d: %s)", (int)err, errStr);
     }
 }
 
@@ -132,8 +136,8 @@ void LocalFileDataSource::begin(std::function<void (void)> receiveCb)
     #else
     if (_onReceive)
     {
-        Serial2.onReceive(_onReceive, true);
-        Serial2.onReceiveError(std::bind(&LocalFileDataSource::onReceiveError, this, std::placeholders::_1));
+        SerialGPS.onReceive(_onReceive, true);
+        SerialGPS.onReceiveError(std::bind(&LocalFileDataSource::onReceiveError, this, std::placeholders::_1));
     }
     #endif
 }
@@ -145,7 +149,7 @@ void LocalFileDataSource::end()
 int LocalFileDataSource::available()
 {
     #if !USE_NMEALOG
-    return Serial2.available();
+    return SerialGPS.available();
     #else
     //pump();
     
@@ -159,7 +163,7 @@ int LocalFileDataSource::available()
 int LocalFileDataSource::read()
 {
     #if !USE_NMEALOG
-    return Serial2.read();
+    return SerialGPS.read();
     #else
     if (!available())
         return -1;

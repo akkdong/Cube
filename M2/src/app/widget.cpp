@@ -938,9 +938,12 @@ void ThermalAssistant::drawTrack()
     }
 }
 
-void ThermalAssistant::drawTrack(FlightState& state, float heading)
+void ThermalAssistant::drawTrack(FlightState& state, float up)
 {
 #define ZOOM_FACTOR			(1.0)
+    int16_t size = (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
+    if (size < 2)
+        return;
 
     // 
     lv_draw_rect_dsc_t rect_dsc;
@@ -970,12 +973,12 @@ void ThermalAssistant::drawTrack(FlightState& state, float heading)
     // draw border & background
     _ref->drawRect(_x, _y, _w, _h, &rect_dsc);
 
-
+    #if 0
 	// draw track
     //rect_dsc.outline_color = lv_color_hex(0x000000);
     //rect_dsc.bg_opa = LV_OPA_TRANSP;
 
-	float theta = TO_RADIAN(180 - heading);
+	float theta = TO_RADIAN(180 - up);
 
     for (int i = state.rearPoint; i != state.frontPoint; )
     {
@@ -1002,6 +1005,62 @@ void ThermalAssistant::drawTrack(FlightState& state, float heading)
 
         i = (i + 1) % MAX_TRACK_HISTORY;
     }
+    #else
+    int16_t from = state.rearPoint;
+    int16_t to = (state.frontPoint + MAX_TRACK_HISTORY - 1) & (MAX_TRACK_HISTORY - 1);
+
+    float dist = GET_DISTANCE(state.trackHistory[to].lat, state.trackHistory[to].lon, state.trackHistory[from].lat, state.trackHistory[from].lon);
+    int16_t bearing = GET_BEARING(state.trackHistory[to].lat, state.trackHistory[to].lon, state.trackHistory[from].lat, state.trackHistory[from].lon);
+    LOGv("dist = %f, bearing = %d, size = %d", dist, bearing, size);
+
+	if (bearing > 180)
+		bearing = bearing - 360;
+	if (bearing < -180)
+		bearing = bearing + 360;
+
+    lv_coord_t cx = _x + _w / 2;
+    lv_coord_t cy = _y + _h / 2;
+
+	float dx = dist * ZOOM_FACTOR * std::sin(TO_RADIAN(bearing - up));
+	float dy = dist * ZOOM_FACTOR * std::cos(TO_RADIAN(bearing - up));
+	float x = cx + dx;
+	float y = cy - dy;
+    points[0].x = (lv_coord_t)x;
+    points[0].y = (lv_coord_t)y;
+
+    for (int16_t i = from; i != to; )
+    {
+		double track = state.trackHistory[i].track;
+
+		if (track > 180)
+			track = track - 360;
+		if (track < -180)
+			track = track + 360;
+
+		float dx = state.trackHistory[i].dist * ZOOM_FACTOR * std::sin(TO_RADIAN(track - up));
+		float dy = state.trackHistory[i].dist * ZOOM_FACTOR * std::cos(TO_RADIAN(track - up));
+		x += dx;
+		y -= dy;
+
+        points[1].x = (lv_coord_t)x;
+        points[1].y = (lv_coord_t)y;
+
+        if (state.trackPoints[i].vario < 0)
+            line_dsc.width = 1;
+        else if (state.trackPoints[i].vario < 1.0f)
+            line_dsc.width = 2;
+        else
+            line_dsc.width = 3;
+
+        _ref->drawLine(points, 2, &line_dsc);        
+
+        points[0].x = points[1].x;
+        points[0].y = points[1].y;
+
+        i = (i + 1) & (MAX_TRACK_HISTORY - 1);
+    }
+
+    #endif
 }
 
 void ThermalAssistant::drawCompass()

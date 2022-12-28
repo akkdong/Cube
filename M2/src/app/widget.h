@@ -348,7 +348,7 @@ public:
     void                    setTrack(TrackHistory* tracks, int16_t front, int16_t rear);
 
 public:
-    void                    drawTrack(FlightState& state, float heading);
+    void                    drawTrack(FlightState& state, float up);
     void                    drawTrack();
     void                    drawCompass();
     void                    drawWindDirection();
