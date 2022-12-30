@@ -1261,5 +1261,5 @@ void Application::postMessage(uint16_t code, uint16_t data)
     msg.code = code;
     msg.data = data;
 
-    xQueueSend(mainQueue, &msg, 0);    
+    xQueueSend(mainQueue, &msg, 0);
 }
