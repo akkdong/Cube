@@ -167,7 +167,7 @@ void Application::begin()
     #endif    
 
     vario.begin(CreateBarometer(), &varioFilter);
-    locParser.begin(CreateLocationDataSource(), true);
+    locParser.begin(CreateLocationDataSource());
     beeper.begin(CreateTonePlayer());
     keyPad.begin(CreateKeypadInput());
     speedCalculator.begin(1000, 25);
@@ -243,7 +243,7 @@ void Application::update()
 
     //
     //if (not use task)
-    //  locParser.update();
+      locParser.update();
     int varioUpdated = vario.update();
     beeper.update();
     keyPad.update();    // button processing
@@ -255,7 +255,7 @@ void Application::update()
     //
     if (locParser.availableLocation())
     {
-        locParser.enter();
+        //locParser.enter();
         LOGd("[GPS] %f,%f %f", locParser.getLongitude(), locParser.getLatitude(), locParser.getAltitude());
 
         // update vario-state
@@ -276,7 +276,7 @@ void Application::update()
         contextPtr->varioState.altitudeRef3 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef3;
 
         locParser.resetLocation();
-        locParser.leave();
+        //locParser.leave();
 
         // GPS has been fixed
         if (!gpsFixed)
@@ -407,7 +407,7 @@ void Application::update()
     }
 
 
-    locParser.enter();
+    //locParser.enter();
     {
         // vario-sentense available?    
         bt.update(varioNmea, locParser);
@@ -422,7 +422,7 @@ void Application::update()
                 igc.write(locParser.readIGC());
         }
     }
-    locParser.leave();
+    //locParser.leave();
 }
 
 void Application::onPressed(uint8_t key) 

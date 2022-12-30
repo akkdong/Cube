@@ -134,7 +134,7 @@ public:
     }
 
     size_t write(uint8_t ch) { 
-        fputc(ch, stdout);
+        //fputc(ch, stdout);
         return 1; 
     }
 

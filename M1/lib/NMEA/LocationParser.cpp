@@ -186,7 +186,7 @@ void LocationParser::update()
     {
         //
 		int c = mDataSourcePtr->read();
-		#if DEBUG_PARSING || true
+		#if DEBUG_PARSING
 		trace_putc(c);
 		#endif
 

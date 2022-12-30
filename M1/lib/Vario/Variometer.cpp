@@ -2,6 +2,7 @@
 //
 
 #include <math.h>
+#include <stdint.h>
 
 #include "Variometer.h"
 #include "logger.h"

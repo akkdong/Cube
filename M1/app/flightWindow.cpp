@@ -243,7 +243,7 @@ FlightWindow::~FlightWindow()
 void FlightWindow::onCreate()
 {
     // flight-window background
-    #ifdef ARDUINO
+    #if defined(ARDUINO) || 1
     lv_obj_set_style_bg_color(_this, lv_color_hex(0xFFFFFF), 0);
     #else
     // to test a widget with transparent background

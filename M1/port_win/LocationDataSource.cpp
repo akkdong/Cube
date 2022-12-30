@@ -2,6 +2,7 @@
 //
 
 #include <SDL2/SDL.h>
+#include <functional>
 
 #include "abstract/LocationDataSource.h"
 #include "logger.h"
@@ -24,11 +25,11 @@ public:
     LocalFileDataSource();
 
 public:
-    void            begin();
-    void            end();
+    void            begin(std::function<void (void)> receiveCb = nullptr) override;
+    void            end() override;
 
-    bool            available();
-    int             read();
+    int             available() override;
+    int             read() override;
 
 protected:
     int             peek();
@@ -37,9 +38,9 @@ protected:
     void            TaskProc() override;
 
 protected:
-    const char*     nextPtr;
-    unsigned int    lastTick;
-    int             lineCount;
+    //const char*     nextPtr;
+    //unsigned int    lastTick;
+    //int             lineCount;
 
     uint32_t        startTick;
 
@@ -54,6 +55,9 @@ protected:
     volatile size_t rear;
 
     TaskClass       task;
+
+    //
+    std::function<void (void)> _onReceive;
 };
 
 
@@ -62,19 +66,24 @@ protected:
 //
 
 LocalFileDataSource::LocalFileDataSource()
+    : _onReceive(nullptr)
 {
-    nextPtr = NULL;
+    //nextPtr = NULL;
 
     totalSegment = sizeof(nmea_log_segment) / sizeof(nmea_log_segment[0]);
 }
 
-void LocalFileDataSource::begin()
+void LocalFileDataSource::begin(std::function<void (void)> receiveCb)
 {
     LOGi("LocalFileDataSource::begin()");
-    nextPtr = nmea_log;
-    lastTick = SDL_GetTicks();
-    lineCount = 0;
-    LOGi("  nmea_log = %c%c%c%c%c%c", nextPtr[0], nextPtr[1], nextPtr[2], nextPtr[3], nextPtr[4], nextPtr[5]);
+
+    //
+    _onReceive = receiveCb;
+
+    //nextPtr = nmea_log;
+    //lastTick = SDL_GetTicks();
+    //lineCount = 0;
+    //LOGi("  nmea_log = %c%c%c%c%c%c", nextPtr[0], nextPtr[1], nextPtr[2], nextPtr[3], nextPtr[4], nextPtr[5]);
 
     activeSegment = (uint32_t)-1;
     segmentLength = 0;
@@ -92,7 +101,7 @@ void LocalFileDataSource::end()
 {
 }
 
-bool LocalFileDataSource::available()
+int LocalFileDataSource::available()
 {
     #if 0
     int ch = peek();
@@ -110,9 +119,9 @@ bool LocalFileDataSource::available()
     return true;
     #else
     if (front == rear)
-        return false;
+        return 0;
 
-    return true;    
+    return 1;
     #endif
 }
 
@@ -146,6 +155,7 @@ int LocalFileDataSource::read()
 
 int LocalFileDataSource::peek()
 {
+    #if 0
     if (!nextPtr)
         return -1;
 
@@ -156,6 +166,14 @@ int LocalFileDataSource::peek()
         return -1;
 
     return *nextPtr;
+    #else
+    int ch = -1;
+    enter();
+    if (front != rear)
+        ch = buffer[rear];
+    leave();
+    return ch;
+    #endif
 }
 
 void LocalFileDataSource::pump()
@@ -174,15 +192,16 @@ void LocalFileDataSource::pump()
     }
 
     uint32_t segmentTick = (tick - startTick) % 1000;
-    // 9600ch : 1000ms = x : segmentTick
-    uint32_t charCount = 9600 * segmentTick / 1000;
+    // 9600 bps => 9600 / 11bit ~= 873 bytes
+    // 873 bytes : 1000ms = x : segmentTick
+    uint32_t charCount = 873 * segmentTick / 1000;
 
     for (; segmentOffset < charCount && segmentOffset < segmentLength; segmentOffset++)
     {
         size_t index = (front + 1) % MAX_BUFFER;
         if (rear == index)
         {
-            LOGw("\r\n*F*");
+            //LOGw("\r\n*F*");
             rear = (rear + 1) % MAX_BUFFER;
         }
 
@@ -190,6 +209,9 @@ void LocalFileDataSource::pump()
         //fputc(buffer[front], stdout);
         front = index;
     }
+
+    if (front != rear && _onReceive != nullptr)
+        _onReceive();
 }
 
 void LocalFileDataSource::TaskProc()
