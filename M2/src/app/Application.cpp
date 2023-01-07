@@ -1188,8 +1188,8 @@ void Application::VariometerTask(void* param)
         Variometer* vario = &app->vario;
         DeviceContext* contextPtr = app->contextPtr;
 
-        //
-        vario->update();
+        // periodic update
+        vario->updatePeriodic();
 
         //
         app->contextLock.enter(); // lock-context

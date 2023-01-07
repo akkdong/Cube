@@ -747,76 +747,131 @@ void VariometerWidget::draw(float vario)
 {
     lv_draw_rect_dsc_t rect_dsc;
     lv_draw_line_dsc_t line_dsc;
-    lv_point_t points[3];
+    lv_point_t points[2];
 
     lv_draw_rect_dsc_init(&rect_dsc);
     lv_draw_line_dsc_init(&line_dsc);
 
-    lv_coord_t x = 6 + _x;
-    lv_coord_t y = 6 + _y;
-    lv_coord_t w = _w - 12;
-    lv_coord_t h = _h - 12;
+    lv_coord_t x = _x;
+    lv_coord_t w = _w;
 
-    rect_dsc.outline_color = lv_color_hex(0x000000);
+#define BAR_COUNT       (5)
+#define BAR_SPACE       (2)
+#define BAR_SIDE_EDGE   (4)
+
+    lv_coord_t bar_space = 2;
+    lv_coord_t bar_h = ((_h / 2) - (bar_space * BAR_COUNT + 1)) / BAR_COUNT;
+    lv_coord_t bar_w = _w - BAR_SIDE_EDGE * 2;
+    lv_coord_t draw_x = _x;
+    lv_coord_t draw_w = _w;
+    lv_coord_t draw_center = _y + _h / 2;
+    lv_coord_t draw_half = (bar_h * BAR_COUNT + bar_space * (BAR_COUNT + 1));
+    lv_coord_t draw_y = draw_center - draw_half;
+    lv_coord_t draw_h = draw_half * 2 + 1;
+
+    // draw border
+    rect_dsc.outline_color = lv_color_hex(0x808080);
     rect_dsc.outline_width = 1;
-    rect_dsc.outline_opa = LV_OPA_50;
+    rect_dsc.outline_opa = LV_OPA_COVER;
     rect_dsc.bg_color = lv_color_hex(0x000000);
     rect_dsc.bg_opa = LV_OPA_TRANSP;
 
-    _ref->drawRect(x, y, w, h, &rect_dsc);
+    _ref->drawRect(draw_x, draw_y, draw_w, draw_h, &rect_dsc);
 
     line_dsc.color = lv_color_hex(0x808080);
     line_dsc.width = 1;
-    points[0].x = x;
-    points[0].y = y + h / 2;
-    points[1].x = x + w;
-    points[1].y = y + h / 2;
+    points[0].x = draw_x;
+    points[0].y = draw_center;
+    points[1].x = draw_x + draw_w;
+    points[1].y = draw_center;
     _ref->drawLine(points, 2, &line_dsc);
 
-    x += 4;
-    y += 4;
-    w -= 8;
-    h -= 8;
+    // draw bar
+    int bar_index = (int)floor(vario + 0.8); // ..., -1: [-1.8, -0.8), 0: [-0.8, 0.2), 1: [0.2, 1.2), ...
 
-    lv_coord_t h_half = h / 2;
-    lv_coord_t h_mid = h / 2 + y;
+    if (bar_index >= BAR_COUNT * 2)
+        bar_index = BAR_COUNT * 2 - 1;
+    if (bar_index <= BAR_COUNT * -2)
+        bar_index = BAR_COUNT * -2 + 1;
 
-    //vario = std::clamp<float>(vario, -5.0f, 5.0f);
-    if (vario < -5.0f)
-        vario = -5.0f;
-    if (vario > 5.0f)
-        vario = 5.0f;
-    float v1, v2;
-
-    if (vario > 0.0f)
-    {
-        v1 = vario;
-        v2 = 0.0f;
-    }
-    else 
-    {        
-        v1 = 0.0f;
-        v2 = vario;
-    }
-
-    lv_coord_t y1 = h_mid - h_half * v1 / 5.0f;
-    lv_coord_t y2 = h_mid - h_half * v2 / 5.0f;
-
-    rect_dsc.outline_width = 0;
-    rect_dsc.bg_color = lv_color_black(); // vario < 0.0f ? lv_color_hex(0x0000FF) : lv_color_hex(0xFF0000);
+    rect_dsc.outline_width = 1;
+    rect_dsc.outline_color = lv_color_hex(bar_index > 0 ? 0xFF8080 : 0x8080FF);
+    rect_dsc.bg_color = lv_color_hex(bar_index > 0 ? 0xFF0000 : 0x0000FF);
     rect_dsc.bg_opa = LV_OPA_COVER;
-    rect_dsc.bg_grad.dir = LV_GRAD_DIR_VER;
-    rect_dsc.bg_grad.stops_count = 2;
-    rect_dsc.bg_grad.stops[0].color = vario < 0.0f ? lv_color_hex(0x000040) : lv_color_hex(0xFF0000);
-    rect_dsc.bg_grad.stops[1].color = vario < 0.0f ? lv_color_hex(0x0000FF) : lv_color_hex(0x400000);
 
-    _ref->drawRect(x, y1 < y2 ? y1 : y2, w, y2 - y1, &rect_dsc);    
+    if (bar_index > 0)
+    {
+        // BAR_COUNT = 5
+        // bar_index   = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+        // bar_s_index = [0, 0, 0, 0, 0, 1, 2, 3, 4]
+        // bar_e_index = [1, 2, 3, 4, 5, 5, 5, 5, 5]
+        int s = 0, e = BAR_COUNT;
+
+        if (bar_index > BAR_COUNT)
+            s = bar_index % BAR_COUNT;
+        if (bar_index <= BAR_COUNT)
+            e = (bar_index - 1) % BAR_COUNT + 1;
+        
+        for (int i = s; i < e; i++)
+        {
+            lv_coord_t x = draw_x + BAR_SIDE_EDGE;
+            lv_coord_t y = draw_center - (bar_h + BAR_SPACE) * (i + 1);
+
+            _ref->drawRect(x, y, bar_w, bar_h, &rect_dsc);    
+        }
+    }
+    else if (bar_index < 0)
+    {
+        // BAR_COUNT = 5
+        // bar_index   = [-1, -2, -3, -4, -5, -6, -7, -8, -9]
+        // bar_s_index = [ 0,  0,  0,  0,  0,  1,  2,  3,  4]
+        // bar_e_index = [ 1,  2,  3,  4,  5,  5,  5,  5,  5]
+        int s = 0, e = BAR_COUNT;
+
+        bar_index = 0 - bar_index;
+        if (bar_index > BAR_COUNT)
+            s = bar_index % BAR_COUNT;
+        if (bar_index <= BAR_COUNT)
+            e = (bar_index - 1) % BAR_COUNT + 1;
+        
+        for (int i = s; i < e; i++)
+        {
+            lv_coord_t x = draw_x + BAR_SIDE_EDGE;
+            lv_coord_t y = draw_center + BAR_SPACE + (bar_h + BAR_SPACE) * i;
+
+            _ref->drawRect(x, y, bar_w, bar_h, &rect_dsc);    
+        }
+    } 
 }
 
 
 
 ////////////////////////////////////////////////////////////////////////////////////
 // class ThermalAssistant
+
+static void init_line_dsc(float vario, lv_draw_line_dsc_t* line_dsc)
+{
+    if (vario < -1.0)
+    {
+        line_dsc->width = 4;
+        line_dsc->color = lv_color_hex(0x0000FF);
+    }
+    else if (vario < 0.2)
+    {
+        line_dsc->width = 2;
+        line_dsc->color = lv_color_hex(0x808080);
+    }
+    else if (vario < 1.0)
+    {
+        line_dsc->width = 3;
+        line_dsc->color = lv_color_hex(0xFF0000);
+    }
+    else
+    {
+        line_dsc->width = 5;
+        line_dsc->color = lv_color_hex(0xFFFF00);
+    }
+}
 
 ThermalAssistant::ThermalAssistant(CanvasWidget* ref)
     : CanvasVirtualWidget(ref)
@@ -1011,7 +1066,7 @@ void ThermalAssistant::drawTrack(FlightState& state, float up)
 
     float dist = GET_DISTANCE(state.trackHistory[to].lat, state.trackHistory[to].lon, state.trackHistory[from].lat, state.trackHistory[from].lon);
     int16_t bearing = GET_BEARING(state.trackHistory[to].lat, state.trackHistory[to].lon, state.trackHistory[from].lat, state.trackHistory[from].lon);
-    LOGv("dist = %f, bearing = %d, size = %d", dist, bearing, size);
+    LOGd("dist = %f, bearing = %d, size = %d", dist, bearing, size);
 
 	if (bearing > 180)
 		bearing = bearing - 360;
@@ -1045,12 +1100,14 @@ void ThermalAssistant::drawTrack(FlightState& state, float up)
         points[1].x = (lv_coord_t)x;
         points[1].y = (lv_coord_t)y;
 
-        if (state.trackPoints[i].vario < 0)
-            line_dsc.width = 1;
-        else if (state.trackPoints[i].vario < 1.0f)
-            line_dsc.width = 2;
-        else
-            line_dsc.width = 3;
+        //if (state.trackPoints[i].vario < 0)
+        //    line_dsc.width = 1;
+        //else if (state.trackPoints[i].vario < 1.0f)
+        //    line_dsc.width = 2;
+        //else
+        //    line_dsc.width = 3;
+
+        init_line_dsc(state.trackPoints[i].vario, &line_dsc);
 
         _ref->drawLine(points, 2, &line_dsc);        
 

@@ -119,6 +119,17 @@ WidgetLayout _layout_2[] =
         512, 324, 288, 108, 
         NumberBox::TRACK_HEADING, 
     },
+
+    {
+        FlightWindow::WIDGET_BOX_5,
+        0, 324, 288, 108, 
+        NumberBox::GLIDE_RATIO, 
+    },
+    {
+        FlightWindow::WIDGET_BOX_6,
+        288, 324, 288, 108, 
+        NumberBox::ALTITUDE_AGL, 
+    },    
 };
 
 WidgetLayout _layout_3[] =
@@ -581,7 +592,7 @@ void FlightWindow::onUpdate(ProfileWidget *)
 {
 }
 
-#define UP_TYPE 0
+#define UP_TYPE 1
 
 void FlightWindow::onUpdate(CompassWidget* compass)
 {
@@ -590,7 +601,7 @@ void FlightWindow::onUpdate(CompassWidget* compass)
 
     //app_conf_t* conf = app_get_conf();
     DeviceContext* context = DeviceRepository::instance().getContext();
-    compass->draw(context->varioState.heading, /*context->varioState.bearing*/ 240, UP_TYPE);
+    compass->draw(context->varioState.heading, context->flightState.bearingTakeoff, UP_TYPE);
 }
 
 void FlightWindow::onUpdate(VariometerWidget* variometer)

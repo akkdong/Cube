@@ -23,6 +23,8 @@ public:
 	virtual void			end();
 
 	virtual int				update();
+	virtual int				updatePeriodic();
+	
 	virtual void			resetUpdate();
 
 	float					getPressure() { return pressure; }

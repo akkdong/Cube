@@ -56,6 +56,16 @@ int Variometer::update()
     return 1; // updated(valid)
 }
 
+int Variometer::updatePeriodic()
+{
+    if (measure() < 0)
+        return -1;
+
+    updateInternal();
+
+    return 1; //valid
+}
+
 void Variometer::resetUpdate()
 {
 }
@@ -80,9 +90,9 @@ float Variometer::calculateSeaLevel(float pressure, float temperature, float alt
     //   980 / ((1 - 1000 / ((15 + 273.15) / 0.0065)) ^ 5.255) = 1104.834376914360709808865911983
     // seaLevel1
     //   980 / ((1 - (0.0065 * 1000) / (15 + (0.0065 * 1000) + 273.15)) ^ 5.257) = 1101.9324015827903952343510590759
-    //
+    //   980 * ((1 - (0.0065 * 1000) / (15 + (0.0065 * 1000) + 273.15)) ^ -5.257) = 1101.9324015827903952343510590759
 
-    return pressure * pow(1 - (altitude * 0.0065) / ((altitude * 0.0065) + (temperature + 273.15)), 1 / 5.257);
+    return pressure * pow(1 - (altitude * 0.0065) / ((altitude * 0.0065) + (temperature + 273.15)), -5.257);
 }
 
 int Variometer::measure()
