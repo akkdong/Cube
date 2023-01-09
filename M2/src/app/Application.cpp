@@ -184,7 +184,7 @@ void Application::begin()
     #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
     varioFilter.begin(40.0f, 1000000.0f, 0);
     #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF3
-    varioFilter.begin(500.0f, 8000.0f, 1.0f, 0);
+    varioFilter.begin(500.0f, 6000.0f, 1.0f, 0);
     #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
 
     // injects additional uncertainty depending on magnitude of acceleration
@@ -988,7 +988,7 @@ void Application::calibrateAltitude()
     Screen::instance()->notifyMesage("Calibrate Altitude...");
     //Application::lock.leave();
 
-    #if !USE_SEALEVEL_CALIBRATION
+    #if USE_SEALEVEL_CALIBRATION
     vario.calibrateAltitude(contextPtr->varioState.altitudeGPS);
     #else
     vario.calibrateSeaLevel(contextPtr->varioState.altitudeGPS);

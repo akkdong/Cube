@@ -74,7 +74,7 @@ void Variometer::calibrateSeaLevel(float altitudeRef)
 {
     seaLevel = calculateSeaLevel(pressure, temperature, altitudeRef);
 
-    // ...
+    updateCount = 0;
 }
 
 float Variometer::calculateSeaLevel(float pressure, float temperature, float altitude)

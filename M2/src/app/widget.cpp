@@ -978,12 +978,14 @@ void ThermalAssistant::drawTrack()
 
         if (i > 0)
         {
-            if (trackVario[i] < 0)
-                line_dsc.width = 1;
-            else if (trackVario[i] < 1.0f)
-                line_dsc.width = 2;
-            else
-                line_dsc.width = 3;
+            //if (trackVario[i] < 0)
+            //    line_dsc.width = 1;
+            //else if (trackVario[i] < 1.0f)
+            //    line_dsc.width = 2;
+            //else
+            //    line_dsc.width = 3;
+
+            init_line_dsc(trackVario[i], &line_dsc);
 
             _ref->drawLine(points, 2, &line_dsc);
         }
@@ -1022,8 +1024,8 @@ void ThermalAssistant::drawTrack(FlightState& state, float up)
     //arc_dsc.end_angle = 360;
     //arc_dsc.opa = LV_OPA_COVER;
 
-    line_dsc.color = lv_color_hex(0x808080);
-    line_dsc.width = 1;
+    //line_dsc.color = lv_color_hex(0x808080);
+    //line_dsc.width = 1;
 
     // draw border & background
     _ref->drawRect(_x, _y, _w, _h, &rect_dsc);

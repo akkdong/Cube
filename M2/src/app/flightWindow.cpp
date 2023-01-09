@@ -53,22 +53,22 @@ WidgetLayout _layout_1[] =
     {
         FlightWindow::WIDGET_BOX_2,
         0, 144 + 10, 300, 144 - 20, 
-        NumberBox::TRACK_HEADING, 
+        NumberBox::SPEED_GROUND, 
     },
     {
         FlightWindow::WIDGET_BOX_3,
         0, 288 + 20, 300, 144 - 20, 
-        NumberBox::SPEED_GROUND, 
+        NumberBox::TRACK_HEADING, 
     },
     {
         FlightWindow::WIDGET_BOX_4,
         500, 0, 300, 144 - 20, 
-        NumberBox::ALTITUDE_BARO, 
+        NumberBox::ALTITUDE_AGL, 
     },
     {
         FlightWindow::WIDGET_BOX_5,
         500, 144 + 10, 300, 144 - 20, 
-        NumberBox::SENSOR_PRESSURE, 
+        NumberBox::ALTITUDE_BARO, 
     },
     {
         FlightWindow::WIDGET_BOX_6,
@@ -82,7 +82,7 @@ WidgetLayout _layout_1[] =
     },
     {
         FlightWindow::WIDGET_VARIOMETER,
-        300 + 20 + 6, 200 - 40, 160 - 12, 232 + 40, 
+        300 + 20 + 26, 180, 160 - 52, LCD_HEIGHT - MAX_ANNUNCIATOR_HEIGHT - 180 - 4, 
         0
     },
 };
@@ -91,7 +91,7 @@ WidgetLayout _layout_2[] =
 {
     {
         FlightWindow::WIDGET_THERMAL_ASSISTANT, 
-        0, 0, 512, 432, 
+        0, 0, 512, 432 - 108, 
         0
     },
     {
@@ -112,23 +112,23 @@ WidgetLayout _layout_2[] =
     {
         FlightWindow::WIDGET_BOX_3,
         512, 216, 288, 108, 
-        NumberBox::SPEED_VERTICAL_LAZY, 
+        NumberBox::TRACK_HEADING, 
     },
     {
         FlightWindow::WIDGET_BOX_4,
         512, 324, 288, 108, 
-        NumberBox::TRACK_HEADING, 
+        NumberBox::SPEED_VERTICAL_LAZY, 
     },
 
     {
         FlightWindow::WIDGET_BOX_5,
-        0, 324, 288, 108, 
-        NumberBox::GLIDE_RATIO, 
+        0, 324, 256, 108, 
+        NumberBox::ALTITUDE_AGL, 
     },
     {
         FlightWindow::WIDGET_BOX_6,
-        288, 324, 288, 108, 
-        NumberBox::ALTITUDE_AGL, 
+        256, 324, 256, 108, 
+        NumberBox::GLIDE_RATIO, 
     },    
 };
 
@@ -624,7 +624,7 @@ void FlightWindow::onUpdate(ThermalAssistant* assistant)
     assistant->setOption(UP_TYPE, /*context->varioState.heading*/ 0, /*context->varioState.bearing*/ -1, -1);
     assistant->setTrack(context->flightState.trackHistory, context->flightState.frontPoint, context->flightState.rearPoint);
     #else
-    assistant->drawTrack(context->flightState, /*context->varioState.heading*/ 0);
+    assistant->drawTrack(context->flightState, context->varioState.heading);
     assistant->drawWindDirection();
     assistant->drawFlight(context->varioState.heading, -1, UP_TYPE);
     #endif
