@@ -6,7 +6,7 @@
 #ifndef ARDUINO_BME280_UNIT_TEST
 /* Arduino */
 #include <SPI.h>
-#include <Wire.h>
+#include "TwoWireEx.h"
 
 #define __NOT_VIRTUAL
 #else
@@ -274,7 +274,7 @@ class Bme280TwoWire final : public ::internal::AbstractBme280 {
 
   void begin();
   void begin(const Bme280TwoWireAddress address);
-  void begin(const Bme280TwoWireAddress address, TwoWire *wire);
+  void begin(const Bme280TwoWireAddress address, TwoWireEx *wire);
 
   uint8_t getAddress() const;
 
@@ -285,7 +285,7 @@ class Bme280TwoWire final : public ::internal::AbstractBme280 {
   uint32_t read24(const uint8_t registerAddress) const;
 
   uint8_t address_;
-  TwoWire *wire_;
+  TwoWireEx *wire_;
 };
 
 class Bme280FourWire final : public ::internal::AbstractBme280 {

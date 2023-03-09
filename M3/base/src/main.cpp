@@ -1,45 +1,86 @@
 #include <Arduino.h>
-#include "DacESP32.h"
-#include "bme280.h"
+#include "bsp.h"
+#include "logger.h"
 
-static Bme280Settings varioSettings() 
+#include "Variometer.h"
+#include "keypad.h"
+#include "Beeper.h"
+
+
+#define VFILTER_HARINAIR_KF2     1
+#define VFILTER_HARINAIR_KF3     2
+#define VFILTER_HARINAIR_KF4d    3
+#define VFILTER_ROBIN_KF         4
+
+#define USE_KALMAN_FILTER        VFILTER_HARINAIR_KF3
+
+#if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
+#include "VarioFilter_HarInAirKF2.h"
+#elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF3
+#include "VarioFilter_HarInAirKF3.h"
+#elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
+#include "VarioFilter_HarInAirKF4d.h"
+#elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
+#include "VarioFilter_RobinKF.h"
+#else
+#error "Invalid vario kalman-filter"
+#endif
+
+#if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
+VarioFilter_HarInAirKF2     varioFilter;
+#elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF3
+VarioFilter_HarInAirKF3     varioFilter;
+#elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
+VarioFilter_HarInAirKF4d    varioFilter;
+#elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
+VarioFilter_RobinKF         varioFilter;
+#endif
+
+
+class KeypadHandler : public IKeypadCallback
 {
-	return {
-		.mode = Bme280Mode::Normal,
-		.temperatureOversampling = Bme280Oversampling::X2,
-		.pressureOversampling = Bme280Oversampling::X16,
-		.humidityOversampling = Bme280Oversampling::Off,
-		.filter = Bme280Filter::Off,
-		.standbyTime = Bme280StandbyTime::Ms0_5			
-	};
-}
+public:
+    virtual void onPressed(uint8_t key) {
+      LOGi("key-pressed: %d", key);
+    }
+    virtual void onLongPressed(uint8_t key) {
+      LOGi("key-long-pressed: %d", key);
+    }
+    virtual void onReleased(uint8_t key) {
+      LOGi("key-released: %d", key);
+    }
+};
 
-Bme280TwoWire	baro;
+Variometer vario;
+KeypadHandler keyHandler;
+Keypad keyPad;
+Beeper beeper;
 
-
-DacESP32 dac1(DAC_CHANNEL_1);
-DacESP32 dac2(DAC_CHANNEL_2);
-
-HardwareSerial host(0);
-HardwareSerial gps(1);
 
 void setup() 
 {
-  Serial.begin(115200);
-  Wire.begin(10, 13);
+  bsp_hal_init();
 
-  host.begin(115200, /*config*/ SERIAL_8N1, /*rx*/ 37, /*tx*/ 39);
-  gps.begin(9600, /*config*/ SERIAL_8N1, /*rx*/ 2, /*tx*/ 1);
+  #if USE_KALMAN_FILTER == VFILTER_HARINAIR_KF2
+  varioFilter.begin(40.0f, 1000000.0f, 0);
+  #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF3
+  varioFilter.begin(500.0f, 6000.0f, 1.0f, 0);
+  #elif USE_KALMAN_FILTER == VFILTER_HARINAIR_KF4d
 
-	// setup-barometer
-	baro.begin(Bme280TwoWireAddress::Primary);
-	baro.setSettings(varioSettings());  
+  // injects additional uncertainty depending on magnitude of acceleration
+  // helps respond quickly to large accelerations while heavily filtering
+  // in low acceleration situations.  Range : 0.5 - 1.5
+  #define KF_ACCEL_VARIANCE_DEFAULT   100     // 50 ~ 150
+  #define KF_ADAPT_DEFAULT            10     // 50 ~ 150
 
-  Serial.println();
-  Serial.print("Sketch started. Generating ~1000Hz Sinus signal on GPIO (Pin) numbers: ");
-  Serial.println(DAC_CHANNEL_1_GPIO_NUM);
-  Serial.print(" and ");
-  Serial.println(DAC_CHANNEL_2_GPIO_NUM);
+  varioFilter.begin(KF_ACCEL_VARIANCE_DEFAULT * 1000.0f, KF_ADAPT_DEFAULT / 100.0f, 0, 0, 0);
+  #elif USE_KALMAN_FILTER == VFILTER_ROBIN_KF
+  varioFilter.Configure(30.0f, 4.0f, altitude);
+  #endif   
+
+  vario.begin(CreateBarometer(), &varioFilter);
+  keyPad.begin(CreateKeypadInput(), &keyHandler);
+  beeper.begin(CreateTonePlayer());
 
   // outputs a sinus signal with frequency ~1000Hz and max. amplitude (default)
   //dac1.outputCW(1000);
@@ -49,21 +90,39 @@ void setup()
 
 void loop() 
 {
-  while (gps.available())
+  uint8_t lastChar = 0;
+  while (SerialGPS.available())
   {
-    int ch = gps.read();
-    host.write(ch);
-    Serial.write(ch);
+    lastChar = SerialGPS.read();
+    SerialHost.write(lastChar);
+    //SerialDebug.write(lastChar);
+
+    if (lastChar == '\n')
+      break;
+  }
+
+  keyPad.update();
+  beeper.update();
+
+  static float altitude = 0.0f, vspeed = 0.0f;
+  if (vario.update() > 0)
+  {
+    // update vertical-speed, barometric-altitude, temperature
+    float alt = vario.getAltitudeFiltered();
+    float vel = vario.getVelocity();
+
+    altitude = altitude + (alt - altitude) * 0.1f;
+    vspeed = vspeed + (vel - vspeed) * 0.1f;
+
+    // update beep, vario-nmea, ...
   }
 
   static uint32_t lastTick = millis();
   if (millis() - lastTick > 1000)
   {
-    float t = baro.getTemperature();
-    float p = baro.getPressure();
-    host.printf("Temp: %f, Pressure: %f\r\n", t, p);
-    Serial.printf("Temp: %f, Pressure: %f\r\n", t, p);
-
+    LOGv("Altitude: %f, VSpeed: %f\r\n", altitude, vspeed);
     lastTick = millis();
+
+    beeper.setVelocity(vspeed);
   }
 }
