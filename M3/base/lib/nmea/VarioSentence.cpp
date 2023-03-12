@@ -2,7 +2,7 @@
 //
 
 #include <stdint.h>
-#include "device_defines.h"
+#include "config.h"
 #include "utils.h"
 
 #include "VarioSentence.h"

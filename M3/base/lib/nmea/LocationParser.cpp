@@ -189,7 +189,6 @@ void LocationParser::update()
 		#if DEBUG_PARSING
 		trace_putc(c);
 		#endif
-
 			
 
 		//if (mSimulMode)
@@ -459,7 +458,6 @@ void LocationParser::update()
 					// check GPS data ready condition
 					if (IS_SET(mParseState, GGA_VALID) && IS_SET(mParseState, RMC_VALID))
 					{
-						//LOGv("LOC: %d:%d:%d", mTmStruct.tm_hour, mTmStruct.tm_min, mTmStruct.tm_sec);
 						mDateTime = mktime(&mTmStruct); // mDateTime is UTC: mktime convert GMTx to UTC
 						mFixed = true;
 						mDataReady = true;
@@ -722,7 +720,7 @@ void LocationParser::parseField(int fieldIndex, int startPos)
 				//	mIGCSentence[IGC_OFFSET_PRESS_ALT+i] = digit.read();
 				
 				//
-				digit.begin(mAltitude, IGC_SIZE_GPS_ALT);
+				digit.begin(mAltitude + 0.5, IGC_SIZE_GPS_ALT);
 				for (int i = 0; i < IGC_SIZE_GPS_ALT /*digit.available()*/; i++)
 					mIGCSentence[IGC_OFFSET_GPS_ALT+i] = digit.read();
 			}			
@@ -847,3 +845,22 @@ int	LocationParser::readIGC()
 	
 	return -1;
 }
+
+
+
+//
+//
+//
+/*
+void LocationParser::TaskProc()
+{
+	while (1)
+	{
+		enter();
+		update();
+		leave();
+
+		vTaskDelay(pdMS_TO_TICKS(1));
+	}
+}
+*/

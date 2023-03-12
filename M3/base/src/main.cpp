@@ -3,6 +3,7 @@
 #include "logger.h"
 
 #include "Variometer.h"
+#include "VarioSentence.h"
 #include "keypad.h"
 #include "Beeper.h"
 
@@ -52,6 +53,7 @@ public:
 };
 
 Variometer vario;
+VarioSentence varioSentense(VARIOMETER_LK8_SENTENCE);
 KeypadHandler keyHandler;
 Keypad keyPad;
 Beeper beeper;

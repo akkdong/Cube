@@ -6,13 +6,13 @@
 
 #include <stdint.h>
 #include <time.h>
-#include <functional>
 
-#include "abstract/LocationDataSource.h"
-#include "Task.h"
+#include "TaskBase.h"
 #include "CriticalSection.h"
 
-#define MAX_NMEA_PARSER_BUFFER          (128)
+#include "abstract/LocationDataSource.h"
+
+#define MAX_NMEA_PARSER_BUFFER					(512)
 
 #define MAX_IGC_SENTENCE						(37)	// B-sentence max size
 														// ex: B1602405407121N00249342WA0028000421\r\n
@@ -118,7 +118,7 @@ public:
     void                setTimeZone(float tz) { mTimeZone = tz; }
 
 protected:
-//  void            	TaskProc() override;
+//	void				TaskProc() override;
 
 protected:
 	int 				timeStr2TmStruct(struct tm * _tm, int startPos);
@@ -168,33 +168,6 @@ protected:
 	volatile int		mIGCNext;	// next = 0 ~ MAX_XXX -1 -> available
 	volatile int		mIGCSize;	// size = 0 -> empty, size = MAX_xx -> valid
 };
-
-
-
-////////////////////////////////////////////////////////////////////////////////////////
-//
-/*
-class LocationParserEx : public LocationParser
-{
-public:
-	LocationParserEx() {}
-
-public:
-    void begin(ILocationDataSource* iLocation) override {
-		mDataSourcePtr = iLocation;
-    	mDataSourcePtr->begin(std::bind(&LocationParserEx::OnReceive, this));
-	}
-
-	void OnReceive() {
-		update();
-
-		if (mDataReady) {
-			// set gps-data-ready event
-			resetLocation();
-		}
-	}
-};
-*/
 
 
 #endif // __LOCATION_PARSER_H__
