@@ -7,6 +7,8 @@
 
 
 
+#define PIN_SD          (16)
+
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -37,14 +39,30 @@ TonePlayer::TonePlayer()
 
 void TonePlayer::setup()
 {
-    //pwm.begin(SineGenerator::USE_CHANNEL_1, SineGenerator::SCALE_HALF);
-    
+    //
+    pinMode(PIN_SD, OUTPUT);
+    digitalWrite(PIN_SD, LOW); // mute
+
+    //
+    //dac1.enable();
+    //dac2.enable();
+    dac2.setCwPhase(DAC_CW_PHASE_180);
 }
 
 void TonePlayer::play(int freq)
 {
-    //pwm.setFrequency(freq);
-    dac1.outputCW(freq);
+    if (freq > 0)
+    {
+        dac1.outputCW(freq);
+        dac2.outputCW(freq);
+        digitalWrite(PIN_SD, HIGH);
+    }
+    else
+    {
+        digitalWrite(PIN_SD, LOW);
+        dac1.disable();
+        dac2.disable();
+    }
 }
 
 

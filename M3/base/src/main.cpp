@@ -113,18 +113,17 @@ void loop()
     float alt = vario.getAltitudeFiltered();
     float vel = vario.getVelocity();
 
-    altitude = altitude + (alt - altitude) * 0.1f;
-    vspeed = vspeed + (vel - vspeed) * 0.1f;
+    altitude = altitude + (alt - altitude) * 0.6f;
+    vspeed = vspeed + (vel - vspeed) * 0.6f;
 
     // update beep, vario-nmea, ...
+    beeper.setVelocity(vspeed);
   }
 
   static uint32_t lastTick = millis();
   if (millis() - lastTick > 1000)
   {
-    LOGv("Altitude: %f, VSpeed: %f\r\n", altitude, vspeed);
+    LOGv("Altitude: %f, VSpeed: %f", altitude, vspeed);
     lastTick = millis();
-
-    beeper.setVelocity(vspeed);
   }
 }
