@@ -48,7 +48,7 @@ void bsp_hal_init()
     //
     Serial.begin(115200);
 
-	Serial0.begin(115200, UART_HOST_RX, UART_HOST_TX);
+	Serial0.begin(115200, SERIAL_8N1, UART_HOST_RX, UART_HOST_TX);
 
 	Serial1.setRxBufferSize(1024);
     Serial1.begin(9600, SERIAL_8N1, UART_GPS_RX, UART_GPS_TX);
