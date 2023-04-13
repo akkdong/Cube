@@ -6,6 +6,7 @@
 #include "VarioSentence.h"
 #include "keypad.h"
 #include "Beeper.h"
+#include "CubeSentence.h"
 
 
 #define VFILTER_HARINAIR_KF2     1
@@ -41,15 +42,11 @@ VarioFilter_RobinKF         varioFilter;
 class KeypadHandler : public IKeypadCallback
 {
 public:
-    virtual void onPressed(uint8_t key) {
-      LOGi("key-pressed: %d", key);
-    }
-    virtual void onLongPressed(uint8_t key) {
-      LOGi("key-long-pressed: %d", key);
-    }
-    virtual void onReleased(uint8_t key) {
-      LOGi("key-released: %d", key);
-    }
+    KeypadHandler() {}
+
+    virtual void onPressed(uint8_t key);
+    virtual void onLongPressed(uint8_t key);
+    virtual void onReleased(uint8_t key);
 };
 
 Variometer vario;
@@ -57,6 +54,38 @@ VarioSentence varioSentense(VARIOMETER_LK8_SENTENCE);
 KeypadHandler keyHandler;
 Keypad keyPad;
 Beeper beeper;
+CubeSentence cubeNmea;
+
+
+void KeypadHandler::onPressed(uint8_t key) 
+{
+  LOGi("key-pressed: %d", key);
+
+  cubeNmea.start("KEY");
+  cubeNmea.append((int)key);
+  cubeNmea.append((int)1);
+  cubeNmea.finish();
+}
+
+void KeypadHandler::onLongPressed(uint8_t key) 
+{
+  LOGi("key-long-pressed: %d", key);
+
+  cubeNmea.start("KEY");
+  cubeNmea.append((int)key);
+  cubeNmea.append((int)4);
+  cubeNmea.finish();
+}
+
+void KeypadHandler::onReleased(uint8_t key) 
+{
+  LOGi("key-released: %d", key);
+
+  cubeNmea.start("KEY");
+  cubeNmea.append((int)key);
+  cubeNmea.append((int)2);
+  cubeNmea.finish();
+}
 
 
 void setup() 
@@ -103,6 +132,18 @@ void loop()
       break;
   }
 
+  if (cubeNmea.available() && (lastChar == 0 || lastChar == '\n'))
+  {
+    while (cubeNmea.available())
+    {
+      lastChar = cubeNmea.read();
+      SerialHost.write(lastChar);
+
+      if (lastChar == '\n')
+      break;
+    }
+  }
+
   keyPad.update();
   beeper.update();
 
@@ -121,9 +162,24 @@ void loop()
   }
 
   static uint32_t lastTick = millis();
-  if (millis() - lastTick > 1000)
+  if (millis() - lastTick > 500)
   {
+    float temp = vario.getTemperature();
+    float prs = vario.getPressure();
     LOGv("Altitude: %f, VSpeed: %f", altitude, vspeed);
     lastTick = millis();
+
+    cubeNmea.start("VARIO");
+    cubeNmea.append(prs, 0);
+    cubeNmea.append(temp, 1);
+    cubeNmea.append(vspeed, 1);
+    cubeNmea.finish();
   }
 }
+
+
+// $GPXXX,...,*xx
+//
+// $VARIO,{pressure},{temerature},{vertical-speed}*xx
+// $KEY,{key number},{key state}*xx
+//
