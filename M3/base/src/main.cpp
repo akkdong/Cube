@@ -61,7 +61,7 @@ void KeypadHandler::onPressed(uint8_t key)
 {
   LOGi("key-pressed: %d", key);
 
-  cubeNmea.start("KEY");
+  cubeNmea.start("M3KBD");
   cubeNmea.append((int)key);
   cubeNmea.append((int)1);
   cubeNmea.finish();
@@ -71,7 +71,7 @@ void KeypadHandler::onLongPressed(uint8_t key)
 {
   LOGi("key-long-pressed: %d", key);
 
-  cubeNmea.start("KEY");
+  cubeNmea.start("M3KBD");
   cubeNmea.append((int)key);
   cubeNmea.append((int)4);
   cubeNmea.finish();
@@ -81,7 +81,7 @@ void KeypadHandler::onReleased(uint8_t key)
 {
   LOGi("key-released: %d", key);
 
-  cubeNmea.start("KEY");
+  cubeNmea.start("M3KBD");
   cubeNmea.append((int)key);
   cubeNmea.append((int)2);
   cubeNmea.finish();
@@ -121,7 +121,7 @@ void setup()
 
 void loop() 
 {
-  uint8_t lastChar = 0;
+  static uint8_t lastChar = 0;
   while (SerialGPS.available())
   {
     lastChar = SerialGPS.read();
@@ -132,7 +132,7 @@ void loop()
       break;
   }
 
-  if (cubeNmea.available() && (lastChar == 0 || lastChar == '\n'))
+  if (cubeNmea.available() && (/*lastChar == 0 ||*/ lastChar == '\n'))
   {
     while (cubeNmea.available())
     {
@@ -162,14 +162,14 @@ void loop()
   }
 
   static uint32_t lastTick = millis();
-  if (millis() - lastTick > 500)
+  if (millis() - lastTick > 1000)
   {
     float temp = vario.getTemperature();
     float prs = vario.getPressure();
     LOGv("Altitude: %f, VSpeed: %f", altitude, vspeed);
     lastTick = millis();
 
-    cubeNmea.start("VARIO");
+    cubeNmea.start("M3VAR");
     cubeNmea.append(prs, 0);
     cubeNmea.append(temp, 1);
     cubeNmea.append(vspeed, 1);

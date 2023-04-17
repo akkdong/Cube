@@ -58,6 +58,8 @@ int CubeSentence::append(float value, int precision)
 
     Digit digit;
     digit.begin(value, precision);
+    
+    write(',');
     while (digit.available())
     {
         char ch = digit.get();
@@ -76,6 +78,8 @@ int CubeSentence::append(int value)
     
     Digit digit;
     digit.begin((long)value);
+
+    write(',');
     while (digit.available())
     {
         int ch = digit.get();
