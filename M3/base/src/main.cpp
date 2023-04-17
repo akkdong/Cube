@@ -7,6 +7,7 @@
 #include "keypad.h"
 #include "Beeper.h"
 #include "CubeSentence.h"
+#include "HostCommand.h"
 
 
 #define VFILTER_HARINAIR_KF2     1
@@ -54,7 +55,11 @@ VarioSentence varioSentense(VARIOMETER_LK8_SENTENCE);
 KeypadHandler keyHandler;
 Keypad keyPad;
 Beeper beeper;
+uint8_t mute = 1;
+
 CubeSentence cubeNmea;
+HostCommand hostCommand;
+
 
 
 void KeypadHandler::onPressed(uint8_t key) 
@@ -144,6 +149,19 @@ void loop()
     }
   }
 
+  while (SerialHost.available())
+  {
+    int cmd = hostCommand.push(SerialHost.read());
+    switch (cmd)
+    {
+    case HostCommand::CMD_MUTE:
+      mute = hostCommand.getLastCommand().mute.state;
+      if (mute)
+        beeper.setMute();
+      break;
+    }
+  }
+
   keyPad.update();
   beeper.update();
 
@@ -158,7 +176,8 @@ void loop()
     vspeed = vspeed + (vel - vspeed) * 0.6f;
 
     // update beep, vario-nmea, ...
-    beeper.setVelocity(vspeed);
+    if (mute == 0)
+      beeper.setVelocity(vspeed);
   }
 
   static uint32_t lastTick = millis();
@@ -173,6 +192,7 @@ void loop()
     cubeNmea.append(prs, 0);
     cubeNmea.append(temp, 1);
     cubeNmea.append(vspeed, 1);
+    cubeNmea.append(mute ? 1 : 0);
     cubeNmea.finish();
   }
 }
