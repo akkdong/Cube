@@ -45,10 +45,13 @@ void setup()
   bsp_hal_init();
 
   canvas.createCanvas(960, 540);
-  canvas.setTextSize(4);
-  canvas.drawString("Cube Variometer", 20, 80);
+  canvas.createRender(32, 256);
+  canvas.setTextSize(32);
+  canvas.setTextColor(15);
+  canvas.setTextDatum(TL_DATUM);
+  canvas.drawString("Cube Variometer", 20, 16);
 
-  canvas.pushCanvas(0, 0, UPDATE_MODE_GC16);
+  canvas.pushCanvas(0, 0, UPDATE_MODE_DU4);
 }
 
 void loop() 
@@ -62,7 +65,7 @@ void loop()
   if (M5.BtnP.pressedFor(2000))
   {
     canvas.clear();
-    canvas.drawString("Power Off!!", 20, 80);
+    canvas.drawString("Power Off!!", 20, 16);
     canvas.pushCanvas(0, 0, UPDATE_MODE_GC16);
     delay(1000);
 
