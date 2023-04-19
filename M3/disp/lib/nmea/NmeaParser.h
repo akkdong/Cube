@@ -57,6 +57,7 @@ public:
         float pressure;
         float temperature;
         float vspeed;
+        uint8_t mute;
     };
 
     struct KBD {
@@ -68,6 +69,25 @@ public:
 public:
     int begin();
     int update(int ch);
+
+    bool isFixed() { return fixQuality != 0; }
+    float getLatitude() { return latitude; }
+    float getLongitude() { return longitude; }
+    float getAltitude() { return altitude; }
+    float getSpeed() { return speed; }
+    float getCourse() { return cource; }
+    time_t getDateTime() { return date; }
+
+    float getPressure() { return pressure; }
+    float getTemperature() { return temparture; }
+    float getVerticalSpeed() { return vspeed; }
+    bool isMuted() { return mute != 0; }
+
+    uint8_t getLastKey(uint8_t* state) {
+        if (state)
+            *state = last_keystat;            
+        return last_key;
+    }
 
 protected:
     void parseField();
@@ -85,7 +105,8 @@ protected:
 
 protected:
     //
-    uint8_t fixed; // 0: Invalid, 1: GPS Fix, 2: DGPS Fix, 3: PPS Fix
+    uint8_t valid;
+    uint8_t fixQuality; // 0: Invalid, 1: GPS Fix, 2: DGPS Fix, 3: PPS Fix
     uint8_t fixMode; // 1: NO Fix, 2: 2D Fix, 3: 3D Fix
     float latitude;
     float longitude;
@@ -96,8 +117,18 @@ protected:
     time_t time;
     time_t date;
 
-    uint8_t satellitesIDs[12];
-    Satellite satelittes[12];
+    //
+    float pressure;
+    float temparture;
+    float vspeed;
+    uint8_t mute;
+
+    //
+    uint8_t last_key;
+    uint8_t last_keystat;
+
+    //uint8_t satellitesIDs[12];
+    //Satellite satelittes[12];
     
     // parser context
     struct ParserContext {

@@ -1,57 +1,45 @@
 #include <Arduino.h>
 #include <M5EPD.h>
+#include "font/binaryttf.h"
+#include "logger.h"
+#include "NmeaParser.h"
 
-#define UART_DEVICE_RX        (18)
-#define UART_DEVICE_TX        (19)
+
+// bsp.h
+//
+void bsp_hal_init();
+
+
 
 M5EPD_Canvas canvas(&M5.EPD);
-
-void bsp_hal_init()
-{
-  pinMode(M5EPD_MAIN_PWR_PIN, OUTPUT);
-  M5.enableMainPower();
-
-  Serial.begin(115200);
-	Serial1.begin(115200, SERIAL_8N1, UART_DEVICE_RX, UART_DEVICE_TX);
-  Wire.begin(21, 22, (uint32_t) 400000U);
-  SPI.begin(14, 13, 12, 4);
-  delay(20);
-  Serial.println("M3 Display module");
-
-  pinMode(M5EPD_EXT_PWR_EN_PIN, OUTPUT);
-  pinMode(M5EPD_EPD_PWR_EN_PIN, OUTPUT);
-  pinMode(M5EPD_KEY_RIGHT_PIN, INPUT);
-  pinMode(M5EPD_KEY_PUSH_PIN, INPUT);
-  pinMode(M5EPD_KEY_LEFT_PIN, INPUT);
-  delay(20);
-
-  M5.enableEXTPower();  
-  M5.enableEPDPower();
-  delay(1000);
-
-  M5.EPD.begin(M5EPD_SCK_PIN, M5EPD_MOSI_PIN, M5EPD_MISO_PIN, M5EPD_CS_PIN, M5EPD_BUSY_PIN);
-  M5.EPD.Clear(true);
-  M5.EPD.SetRotation(M5EPD_Driver::ROTATE_0);
-  M5.TP.SetRotation(GT911::ROTATE_0);
-  M5.TP.begin(21, 22, 36);
-  M5.RTC.begin();
-  M5.BatteryADCBegin();
-
-  SD.begin(4, SPI, 20000000);
-}
+M5EPD_Canvas output(&M5.EPD);
+NmeaParser nmea;
 
 void setup() 
 {
+  // 
   bsp_hal_init();
 
-  canvas.createCanvas(960, 540);
+  //
+  canvas.loadFont(binaryttf, sizeof(binaryttf));
+  canvas.createCanvas(960, 80);
+  canvas.createRender(64, 256);
   canvas.createRender(32, 256);
-  canvas.setTextSize(32);
-  canvas.setTextColor(15);
+  canvas.setTextSize(64);
+  canvas.setTextColor(0);
   canvas.setTextDatum(TL_DATUM);
+  canvas.fillRect(20, 16, 660, 64, 15);
   canvas.drawString("Cube Variometer", 20, 16);
 
   canvas.pushCanvas(0, 0, UPDATE_MODE_DU4);
+
+  output.createCanvas(960, 450);
+  output.setTextSize(10);
+  output.setTextColor(15);
+  output.println("NMEA log..");
+
+  //
+  nmea.begin();
 }
 
 void loop() 
@@ -60,11 +48,43 @@ void loop()
   {
     int ch = Serial1.read();
     Serial.write(ch);
+
+    int type = nmea.update(ch);
+    /*
+    if (type == 1)
+    {
+      time_t date = nmea.getDateTime();
+      tm* _tm = localtime(&date);
+
+      output.printf("[%04d/%02d/%02d %02d:%02d:%02d]\n",
+        _tm->tm_year + 1970, _tm->tm_mon + 1, _tm->tm_mday,
+        _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
+      output.printf("GPS: %f %f %f %f\n",
+        nmea.getLatitude(), nmea.getLongitude(),
+        nmea.getSpeed(), nmea.getCourse());
+    }
+    else if (type == 2)
+    {
+      output.printf("VARIO: %f %f %f\n",
+        nmea.getPressure(), nmea.getTemperature(), nmea.getVerticalSpeed());
+    }
+    else if (type == 3)
+    {
+      uint8_t key, state;
+      key = nmea.getLastKey(&state);
+      output.printf("KEY: %d(%s)\n", key, state == 1 ? "ON" : "OFF");
+    }
+
+    if (type != 0)
+      output.pushCanvas(0, 540 - 450, UPDATE_MODE_GL16);
+    */
   }
 
   if (M5.BtnP.pressedFor(2000))
   {
     canvas.clear();
+    canvas.setTextSize(32);
+    canvas.setTextColor(15);
     canvas.drawString("Power Off!!", 20, 16);
     canvas.pushCanvas(0, 0, UPDATE_MODE_GC16);
     delay(1000);

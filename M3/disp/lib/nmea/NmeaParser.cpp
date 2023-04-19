@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <memory.h>
 #include "NmeaParser.h"
-
+#include "logger.h"
 
 
 //////////////////////////////////////////////////////////////////////////////
@@ -17,11 +17,37 @@ NmeaParser::NmeaParser()
 
 int NmeaParser::begin()
 {
-    return -1;
+    //
+    valid = 0;
+    fixQuality = 0;
+    latitude = 0.0f;
+    longitude = 0.0f;
+    altitude = 0.0f;
+    speed = 0.0f;
+    cource = 0.0f;
+
+    time = 0;
+    date = 0;
+
+    pressure = 0.0f;
+    temparture = 0.0f;
+    vspeed = 0.0f;
+    mute = 0;
+
+    //
+    last_key = 0;
+    last_keystat = 0;
+
+    //
+    memset(&parserContext, 0, sizeof(parserContext));
+
+    return 0;
 }
 
 int NmeaParser::update(int ch)
 {
+    int type = 0; // 1: GPS, 2: VARIO, 3: KEY
+
     if (ch == '$')
     {
         memset(&parserContext, 0, sizeof(parserContext));
@@ -38,6 +64,8 @@ int NmeaParser::update(int ch)
     }
     else if (ch == '*')
     {
+        parseField();
+
         parserContext.fieldPos = 0;
         parserContext.field[0] = '\0';
         parserContext.fieldNum = parserContext.fieldNum + 1;
@@ -46,14 +74,80 @@ int NmeaParser::update(int ch)
     }
     else if (ch == '\r')
     {
+        
+    }
+    else if (ch == '\n')
+    {
         if (checkCRC())
         {
             switch (parserContext.statement)
             {
             case STAT_GGA:
+                LOGv("GGA: %d, %f, %f, %f", 
+                    parserContext.gga.time, 
+                    parserContext.gga.latitude,
+                    parserContext.gga.longitude,
+                    parserContext.gga.altitude);
+
+                fixQuality = parserContext.gga.fixQuality;
+                latitude = parserContext.gga.latitude;
+                longitude = parserContext.gga.longitude;
+                altitude = parserContext.gga.altitude;
+                if (time == parserContext.gga.time)
+                {
+                    valid = 1;
+                    type = 1;
+                }
+                else
+                {
+                    valid = 0;
+                    time = parserContext.gga.time;
+                }
+                break;
             case STAT_RMC:
+                LOGv("RMC: %d, %f, %f",
+                    parserContext.rmc.time,
+                    parserContext.rmc.speed,
+                    parserContext.rmc.heading);
+
+                //status = parserContext.rmc.status;
+                latitude = parserContext.rmc.latitude;
+                longitude = parserContext.rmc.longitude;
+                speed = parserContext.rmc.speed;
+                cource = parserContext.rmc.heading;
+                date = parserContext.rmc.date;
+                if (time == parserContext.rmc.time)
+                {
+                    valid = 1;
+                    type = 1;
+                }
+                else
+                {
+                    valid = 0;
+                    time = parserContext.gga.time;
+                }
+                break;
             case STAT_VAR:
+                LOGv("VAR: %f, %f, %f, %d",
+                    parserContext.var.pressure,
+                    parserContext.var.temperature,
+                    parserContext.var.vspeed,
+                    parserContext.var.mute);
+
+                pressure = parserContext.var.pressure;
+                temparture = parserContext.var.temperature;
+                vspeed = parserContext.var.vspeed;
+                mute = parserContext.var.mute;
+                type = 2;
+                break;
             case STAT_KBD:
+                LOGv("KBD: %d, %d",
+                    parserContext.kbd.key,
+                    parserContext.kbd.state);
+
+                last_key = parserContext.kbd.key;
+                last_keystat = parserContext.kbd.state;
+                type = 3;
                 break;
             }
         }
@@ -61,10 +155,6 @@ int NmeaParser::update(int ch)
         {
             // invalid checksum
         }
-    }
-    else if (ch == '\n')
-    {
-
     }
     else
     {
@@ -76,7 +166,7 @@ int NmeaParser::update(int ch)
             parserContext.checksum = parserContext.checksum ^ (uint8_t)ch;
     }
 
-    return -1;
+    return type;
 }
 
 void NmeaParser::parseField()
@@ -207,6 +297,7 @@ void NmeaParser::parseField()
             // 1: Pressure, DDDDDD
             // 2: Tempearture, DD.D
             // 3: vertical speed, DD.D
+            // 4: mute, D
             switch (parserContext.fieldNum)
             {
             case 1:
@@ -217,6 +308,9 @@ void NmeaParser::parseField()
                 break;
             case 3:
                 parserContext.var.vspeed = atof(parserContext.field);
+                break;
+            case 4:
+                parserContext.var.mute = atoi(parserContext.field);
                 break;
             }
         }
@@ -258,7 +352,7 @@ time_t NmeaParser::strToTime(const char* str)
 
     int h = ((str[0] - '0') * 10) + (str[1] - '0');
     int m = ((str[2] - '0') * 10) + (str[3] - '0');
-    int s = ((str[4] - '0') * 10) + (str[4] - '0');
+    int s = ((str[4] - '0') * 10) + (str[5] - '0');
 
     return h * 3600 + m * 60 + s;
 }
