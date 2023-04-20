@@ -83,7 +83,7 @@ int NmeaParser::update(int ch)
             switch (parserContext.statement)
             {
             case STAT_GGA:
-                LOGv("GGA: %d, %f, %f, %f", 
+                LOGd("GGA: %d, %f, %f, %f", 
                     parserContext.gga.time, 
                     parserContext.gga.latitude,
                     parserContext.gga.longitude,
@@ -105,7 +105,7 @@ int NmeaParser::update(int ch)
                 }
                 break;
             case STAT_RMC:
-                LOGv("RMC: %d, %f, %f",
+                LOGd("RMC: %d, %f, %f",
                     parserContext.rmc.time,
                     parserContext.rmc.speed,
                     parserContext.rmc.heading);
@@ -128,7 +128,7 @@ int NmeaParser::update(int ch)
                 }
                 break;
             case STAT_VAR:
-                LOGv("VAR: %f, %f, %f, %d",
+                LOGd("VAR: %f, %f, %f, %d",
                     parserContext.var.pressure,
                     parserContext.var.temperature,
                     parserContext.var.vspeed,
@@ -141,7 +141,7 @@ int NmeaParser::update(int ch)
                 type = 2;
                 break;
             case STAT_KBD:
-                LOGv("KBD: %d, %d",
+                LOGd("KBD: %d, %d",
                     parserContext.kbd.key,
                     parserContext.kbd.state);
 

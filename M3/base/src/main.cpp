@@ -78,7 +78,7 @@ void KeypadHandler::onLongPressed(uint8_t key)
 
   cubeNmea.start("M3KBD");
   cubeNmea.append((int)key);
-  cubeNmea.append((int)4);
+  cubeNmea.append((int)2);
   cubeNmea.finish();
 }
 
@@ -88,7 +88,7 @@ void KeypadHandler::onReleased(uint8_t key)
 
   cubeNmea.start("M3KBD");
   cubeNmea.append((int)key);
-  cubeNmea.append((int)2);
+  cubeNmea.append((int)0);
   cubeNmea.finish();
 }
 
