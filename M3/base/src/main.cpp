@@ -156,6 +156,7 @@ void loop()
     {
     case HostCommand::CMD_MUTE:
       mute = hostCommand.getLastCommand().mute.state;
+      LOGv("Receive Mute: %d", mute);
       if (mute)
         beeper.setMute();
       break;

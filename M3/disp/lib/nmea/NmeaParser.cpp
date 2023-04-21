@@ -24,7 +24,7 @@ int NmeaParser::begin()
     longitude = 0.0f;
     altitude = 0.0f;
     speed = 0.0f;
-    cource = 0.0f;
+    track = 0.0f;
 
     time = 0;
     date = 0;
@@ -93,39 +93,30 @@ int NmeaParser::update(int ch)
                 latitude = parserContext.gga.latitude;
                 longitude = parserContext.gga.longitude;
                 altitude = parserContext.gga.altitude;
-                if (time == parserContext.gga.time)
-                {
-                    valid = 1;
-                    type = 1;
-                }
-                else
-                {
-                    valid = 0;
+                if (time != parserContext.gga.time)
                     time = parserContext.gga.time;
-                }
+                else
+                    type = 1;
                 break;
             case STAT_RMC:
-                LOGd("RMC: %d, %f, %f",
+                LOGd("RMC: %d, %.*f, %.*f, %d",
                     parserContext.rmc.time,
+                    2,
                     parserContext.rmc.speed,
-                    parserContext.rmc.heading);
+                    1,
+                    parserContext.rmc.track,
+                    parserContext.rmc.date);
 
-                //status = parserContext.rmc.status;
+                valid = parserContext.rmc.status == 'A' ? 1 : 0;
                 latitude = parserContext.rmc.latitude;
                 longitude = parserContext.rmc.longitude;
                 speed = parserContext.rmc.speed;
-                cource = parserContext.rmc.heading;
+                track = parserContext.rmc.track;
                 date = parserContext.rmc.date;
-                if (time == parserContext.rmc.time)
-                {
-                    valid = 1;
-                    type = 1;
-                }
-                else
-                {
-                    valid = 0;
+                if (time != parserContext.rmc.time)
                     time = parserContext.gga.time;
-                }
+                else
+                    type = 1;
                 break;
             case STAT_VAR:
                 LOGd("VAR: %f, %f, %f, %d",
@@ -253,7 +244,7 @@ void NmeaParser::parseField()
             //  6: E or W
             //  7: Speed over the ground in knots
             //  8: Track angle in degrees, True
-            //  9: Date, YYMMDD
+            //  9: Date, ddmmyy
             // 10: (empty)
             // 11: (empty)
             // 12: Mode Indicator: A=Autonomous, D=Differenctial, E=Estimated, F=Float RTK, M=Manual input, N=No fix, P=Precise, R=Real time kinematic, S=Simulator
@@ -284,7 +275,7 @@ void NmeaParser::parseField()
                 parserContext.rmc.speed = atof(parserContext.field) * 1.853; // convert knot to km/h
                 break;
             case 8:
-                parserContext.rmc.heading = atof(parserContext.field);
+                parserContext.rmc.track = atof(parserContext.field);
                 break;
             case 9:
                 parserContext.rmc.date = strToDate(parserContext.field, parserContext.rmc.time);
@@ -370,12 +361,14 @@ time_t NmeaParser::strToDate(const char* str, time_t time)
     memset(&_tm, 0, sizeof(_tm));
     _tm.tm_mday = ((str[0] - '0') * 10) + (str[1] - '0');         // tm_mday : 1 ~ 31
     _tm.tm_mon = ((str[2] - '0') * 10) + (str[3] - '0') - 1;      // tm_mon: 0 ~ 11
+    //int y = ((str[4] - '0') * 10) + (str[5] - '0') + 2000;
+    //_tm.tm_year = y - 1900;
     _tm.tm_year = ((str[4] - '0') * 10) + (str[5] - '0') + 100;   // tm_year : 0 -> 1900, nm_year : 0 -> 2000
     _tm.tm_hour = 0;
     _tm.tm_min = 0;
     _tm.tm_sec = 0;    
 
-    return mktime(&_tm) + time;
+    return mktime(&_tm) + time + 619315200;
 }
 
 float NmeaParser::nmeaToDecimal(float nmea)

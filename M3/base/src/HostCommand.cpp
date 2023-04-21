@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <memory.h>
 #include "HostCommand.h"
+#include "logger.h"
 
 
 ///////////////////////////////////////////////////////////////////////////
@@ -29,6 +30,7 @@ int HostCommand::push(int ch)
     {
         if (mPos > 0)
         {
+            LOGv(">> %s", mBuffer);
             if (strncmp(mBuffer, "MUTE ", 5) == 0)
             {
                 cmd = CMD_MUTE;

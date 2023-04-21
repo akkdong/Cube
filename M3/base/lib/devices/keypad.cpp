@@ -19,8 +19,8 @@ Keypad::Keypad()
     : keyInput(NULL)
     , keyCallback(nullptr)
     , keyMap {
-        { GPIO_KEY_UP,      0,  KEY_ESCAPE, RELEASE, 0 }, // active-low
-        { GPIO_KEY_DOWN,	0, 	KEY_ENTER,  RELEASE, 0 }, // active-low
+        { GPIO_KEY_UP,      0,  KEY_ENTER,  RELEASE, 0 }, // active-low
+        { GPIO_KEY_DOWN,	0, 	KEY_ESCAPE, RELEASE, 0 }, // active-low
         { GPIO_KEY_LEFT,    0, 	KEY_LEFT,   RELEASE, 0 }, // active-low
         { GPIO_KEY_RIGHT,   0, 	KEY_RIGHT,  RELEASE, 0 }  // active-low
     }

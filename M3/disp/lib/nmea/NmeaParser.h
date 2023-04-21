@@ -50,7 +50,7 @@ public:
         float latitude;
         float longitude;
         float speed;
-        float heading;
+        float track;
     };
 
     struct VAR {
@@ -70,12 +70,12 @@ public:
     int begin();
     int update(int ch);
 
-    bool isFixed() { return fixQuality != 0; }
+    bool isFixed() { return valid != 0; }
     float getLatitude() { return latitude; }
     float getLongitude() { return longitude; }
     float getAltitude() { return altitude; }
     float getSpeed() { return speed; }
-    float getCourse() { return cource; }
+    float getTrack() { return track; }
     time_t getDateTime() { return date; }
 
     float getPressure() { return pressure; }
@@ -105,14 +105,13 @@ protected:
 
 protected:
     //
-    uint8_t valid;
+    uint8_t valid;  // 0: invalid(unfixed), other: valid (fixed)
     uint8_t fixQuality; // 0: Invalid, 1: GPS Fix, 2: DGPS Fix, 3: PPS Fix
-    uint8_t fixMode; // 1: NO Fix, 2: 2D Fix, 3: 3D Fix
     float latitude;
     float longitude;
     float altitude;
     float speed;
-    float cource; // heading
+    float track; // heading
 
     time_t time;
     time_t date;

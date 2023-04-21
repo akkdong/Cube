@@ -187,6 +187,25 @@ void UpdateScreen(void* param)
     }
   }
 
+  // shutdown
+  M5.EPD.Clear(true);
+
+  canvas.clear();
+  canvas.setTextSize(32);
+  canvas.setTextColor(15);
+  canvas.setTextDatum(TL_DATUM);
+  canvas.drawString("Power Off!!", 20, 16);
+  canvas.pushCanvas(0, 0, UPDATE_MODE_GC16);
+  delay(1000);
+
+  M5.disableEPDPower();
+  M5.disableEXTPower();
+  M5.disableMainPower();
+
+  // ???
+  esp_deep_sleep_start();
+  while (1);  
+
   vTaskDelete(NULL);
 }
 
@@ -266,24 +285,32 @@ void loop()
     //
     if (type == 1)
     {
-      time_t date = nmea.getDateTime();
-      tm* _tm = localtime(&date);
+      if (nmea.isFixed())
+      {
+        // fixed
+        time_t date = nmea.getDateTime();
+        tm* _tm = localtime(&date);
 
-      Serial.printf("[%04d/%02d/%02d %02d:%02d:%02d]\r\n",
-        _tm->tm_year + 1970, _tm->tm_mon + 1, _tm->tm_mday,
-        _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
-      Serial.printf("GPS: %f %f %f %f\r\n",
-        nmea.getLatitude(), nmea.getLongitude(),
-        nmea.getSpeed(), nmea.getCourse());
+        Serial.printf("[%04d/%02d/%02d %02d:%02d:%02d]\r\n",
+          _tm->tm_year + 1900, _tm->tm_mon + 1, _tm->tm_mday,
+          _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
+        Serial.printf("GPS: %f %f %f %f\r\n",
+          nmea.getLatitude(), nmea.getLongitude(),
+          nmea.getSpeed(), nmea.getTrack());
 
-      boxRep[BOX_SPEED].f = nmea.getSpeed();
-      xQueueSend(_UpdateQueue, &boxRep[BOX_SPEED].id, 5);
+        boxRep[BOX_SPEED].f = nmea.getSpeed();
+        xQueueSend(_UpdateQueue, &boxRep[BOX_SPEED].id, 5);
 
-      boxRep[BOX_GPS_ALTITUDE].f = nmea.getAltitude();
-      xQueueSend(_UpdateQueue, &boxRep[BOX_GPS_ALTITUDE].id, 5);
+        boxRep[BOX_GPS_ALTITUDE].f = nmea.getAltitude();
+        xQueueSend(_UpdateQueue, &boxRep[BOX_GPS_ALTITUDE].id, 5);
 
-      boxRep[BOX_HEADING].f = nmea.getCourse();
-      xQueueSend(_UpdateQueue, &boxRep[BOX_HEADING].id, 5);
+        boxRep[BOX_HEADING].f = nmea.getTrack();
+        xQueueSend(_UpdateQueue, &boxRep[BOX_HEADING].id, 5);
+      }
+      else
+      {
+        // unfixed
+      }
     }
     else if (type == 2)
     {
@@ -303,7 +330,18 @@ void loop()
     {
       uint8_t key, state;
       key = nmea.getLastKey(&state);
-      Serial.printf("KEY: %d(%s)\r\n", key, state == 1 ? "ON" : (state == 2 ? "OFF" : "LONG"));
+      Serial.printf("KEY: %d(%s)\r\n", key, state == 0 ? "OFF" : (state == 1 ? "ON" : "LONG"));
+
+      if (key == 0xB0 && state == 2) // KEY_ENTER(UP), LONG
+      {
+        Serial1.println("MUTE 0");
+        Serial.println("MUTE 0");
+      }
+      else if (key == 0xB1 && state == 2) // KEY_ESCAPE(DOWN), LONG
+      {
+        Serial1.println("MUTE 1");
+        Serial.println("MUTE 1");
+      }
     }
 
     //if (type != 0)
@@ -317,24 +355,7 @@ void loop()
     uint32_t cmd = 100;
     xQueueSend(_UpdateQueue, &cmd, 0);
     delay(1000);
-    
-    M5.EPD.Clear(true);
 
-    canvas.clear();
-    canvas.setTextSize(32);
-    canvas.setTextColor(15);
-    canvas.setTextDatum(TL_DATUM);
-    canvas.drawString("Power Off!!", 20, 16);
-    canvas.pushCanvas(0, 0, UPDATE_MODE_GC16);
-    delay(1000);
-
-    M5.disableEPDPower();
-    M5.disableEXTPower();
-    M5.disableMainPower();
-
-    // ???
-    esp_deep_sleep_start();
-    while (1);
   }
 
   M5.update();
