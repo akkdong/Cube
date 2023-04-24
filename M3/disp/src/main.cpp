@@ -177,7 +177,7 @@ void UpdateScreen(void* param)
       if (cmd < sizeof(boxes) / sizeof(boxes[0]))
       {
         // redraw box
-        boxes[cmd]->draw(UPDATE_MODE_DU4);
+        boxes[cmd]->draw(UPDATE_MODE_DU);
       }
       else
       {
@@ -225,7 +225,7 @@ void setup()
   canvas.setTextDatum(CL_DATUM);
   canvas.fillRect(0, 0, 960, 78, M5EPD_Canvas::G10);
   canvas.drawString("Cube", 12, 78 / 2);
-  canvas.pushCanvas(0, 0, UPDATE_MODE_GC16);
+  canvas.pushCanvas(0, 0, UPDATE_MODE_NONE);
 
   for (int i = 0; i < sizeof(boxes) / sizeof(boxes[0]); i++)
   {
@@ -260,8 +260,10 @@ void setup()
       break;
     }
 
-    boxes[i]->draw(UPDATE_MODE_DU4);
+    boxes[i]->draw(UPDATE_MODE_NONE);
   }
+
+  M5.EPD.UpdateFull(UPDATE_MODE_GC16);
 
   //
   nmea.begin();
