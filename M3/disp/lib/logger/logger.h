@@ -5,10 +5,13 @@
 #define __CUBE_LOGGER_H__
 
 #include <stdint.h>
+#include "logger_priv.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+
 
 //
 //
@@ -18,7 +21,13 @@ int     trace_putc(uint8_t c);
 int     trace_puts(const char* str);
 int     trace_printf(const char* format, ...);
 
+
+//
+//
+//
+
 int     _log_printf(int level, const char* format, ...);
+
 
 //
 //

@@ -1,13 +1,9 @@
 #include <Arduino.h>
 #include <M5EPD.h>
+#include "bsp.h"
 #include "font/binaryttf.h"
 #include "logger.h"
 #include "NmeaParser.h"
-
-
-// bsp.h
-//
-void bsp_hal_init();
 
 
 class InfoBox

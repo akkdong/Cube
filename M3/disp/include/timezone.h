@@ -4,6 +4,8 @@
 #ifndef __TIME_ZONE_H__
 #define __TIME_ZONE_H__
 
+#include <time.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
