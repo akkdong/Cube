@@ -118,7 +118,7 @@ void InfoBox::draw(m5epd_update_mode_t mode)
 
     if (sz[0] != 0)
     {
-      mCanvasPtr->setTextSize(64);
+      mCanvasPtr->setTextSize(84);
       mCanvasPtr->setTextDatum(CC_DATUM);
       mCanvasPtr->drawString(sz, m_w / 2, m_h / 2 + 16);
     }
@@ -177,8 +177,10 @@ void UpdateScreen(void* param)
       }
       else
       {
-        // exit loop
-        break;
+        if (cmd == 99)
+          M5.EPD.UpdateFull(UPDATE_MODE_GC16);
+        else // if (cmd == 100)
+          break; // exit loop
       }
     }
   }
@@ -212,21 +214,24 @@ void setup()
   bsp_hal_init();
 
   //
+  #define HEADER_H      (60)
+
   canvas.loadFont(binaryttf, sizeof(binaryttf));
-  canvas.createCanvas(960, 80);
+  canvas.createCanvas(960, HEADER_H);
+  canvas.createRender(84, 256);
   canvas.createRender(64, 256);
   canvas.createRender(32, 256);
   canvas.setTextSize(64);
   canvas.setTextColor(M5EPD_Canvas::G0);
   canvas.setTextDatum(CL_DATUM);
-  canvas.fillRect(0, 0, 960, 78, M5EPD_Canvas::G10);
-  canvas.drawString("Cube", 12, 78 / 2);
-  canvas.pushCanvas(0, 0, UPDATE_MODE_NONE);
+  canvas.fillRect(0, 0, 960, HEADER_H, M5EPD_Canvas::G10);
+  canvas.drawString("Cube", 12, HEADER_H / 2);
+  canvas.pushCanvas(0, 0, UPDATE_MODE_GC16);
 
   for (int i = 0; i < sizeof(boxes) / sizeof(boxes[0]); i++)
   {
     int x = (i % 3) * 320;
-    int y = (i / 3) * 240 + 80;
+    int y = (i / 3) * 240 + HEADER_H;
     boxes[i] = new InfoBox(x, y, 320, 240);
     if (!boxes[i])
     {
@@ -256,10 +261,10 @@ void setup()
       break;
     }
 
-    boxes[i]->draw(UPDATE_MODE_NONE);
+    boxes[i]->draw(UPDATE_MODE_NONE); // UPDATE_MODE_NONE, UPDATE_MODE_DU
   }
 
-  M5.EPD.UpdateFull(UPDATE_MODE_GC16);
+  M5.EPD.UpdateFull(UPDATE_MODE_GLR16);
 
   //
   nmea.begin();
@@ -353,8 +358,13 @@ void loop()
     uint32_t cmd = 100;
     xQueueSend(_UpdateQueue, &cmd, 0);
     delay(1000);
-
   }
+
+  //if (M5.BtnR.pressedFor(500))
+  //{
+  //  uint32_t cmd = 99;
+  //  xQueueSend(_UpdateQueue, &cmd, 5);
+  //}
 
   M5.update();
 }
