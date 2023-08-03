@@ -3,7 +3,7 @@
 
 #include <Arduino.h>
 #include <M5EPD_Canvas.h>
-#include "bsp.h"
+#include "board.h"
 #include "Window.h"
 #include "DeviceContext.h"
 

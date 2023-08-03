@@ -10,7 +10,7 @@
 
 DataQueue::DataQueue()
 {
-	mHead = mTail = mFront = 0;
+	reset();
 }
 
 void DataQueue::push(int ch)
@@ -51,6 +51,11 @@ void DataQueue::acceptReserve()
 void DataQueue::rejectReserve()
 {
 	mFront = mHead;
+}
+
+void DataQueue::reset()
+{
+	mHead = mTail = mFront = 0;
 }
 
 void DataQueue::dumpReserve()

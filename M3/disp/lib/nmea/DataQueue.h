@@ -30,6 +30,7 @@ public:
 	void				acceptReserve();
 	void				rejectReserve();
 
+	void				reset();
 
 	// debugging stubs
 	void				dumpReserve();

@@ -13,9 +13,62 @@
 #include "Screen.h"
 #include "Keypad.h"
 #include "NmeaParser.h"
-#include "DeviceContext.h"
+#include "DeviceRepository.h"
 #include "Battery.h"
+#include "agl.h"
+#include "SdCard.h"
+#include "CriticalSection.h"
 
+#include "BluetoothManager.h"
+#include "VarioLogger.h"
+#include "VarioSentence.h"
+
+
+//
+//
+//
+enum DeviceMode
+{
+    MODE_INIT,
+    MODE_GROUND,
+    MODE_FLYING,
+    MODE_CIRCLING,
+    MODE_GLIDING,
+    MODE_SETTING,
+};
+
+enum MessageCode {
+    MSG_NONE,
+    MSG_UPDATE_GPS, // MSG_UPDATE_NMEA
+    MSG_UPDATE_VARIO,
+    MSG_UPDATE_ANNUNCIATOR,
+    MSG_UPDATE_TH,
+    MSG_UPDATE_BAT,
+
+    MSG_START_VARIO,
+
+    MSG_GPS_FIXED, // data: fixed(1), unfixed(0)
+    MSG_TAKEOFF,
+    MSG_LANDING,
+
+    MSG_FLUSH_VARIO_NMEA,
+    MSG_FLUSH_GPS_NMEA,
+
+    //MSG_START_FLIGHT, // MSG_TAKEOFF
+    //MSG_STOP_FLIGHT, // MSG_LANDING
+
+    MSG_KEY_PRESSED,
+    MSG_KEY_LONG_PRESSED,
+    MSG_KEY_RELEASED,
+
+    MSG_SHUTDOWN,
+};
+
+struct Message
+{
+    uint16_t    code;
+    uint16_t    data;
+};
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -35,6 +88,21 @@ public:
     static void initBoard();
 
 protected:
+    //
+    void startVario();
+
+    void startFlight();
+    void updateFlightState();
+    void checkFlightMode();
+    void stopFlight();
+
+    void startCircling();
+    void stopCircling();
+    void startGliding();
+    void stopGliding();
+
+    void sendMessage(uint16_t code, uint16_t data = 0);
+
     // IKeypadCallback
     virtual void onPressed(uint8_t key);
     virtual void onLongPressed(uint8_t key);
@@ -65,11 +133,27 @@ protected:
     Screen Scrn;
 
     //
-    DeviceContext DevContext;
+    DeviceContext* contextPtr;
+    volatile DeviceMode mode;
+
     NmeaParser  NMEA;
+    AGLClass AGL;
+    BluetoothManager BT;
+    VarioLogger IGC;
+    VarioSentence varioNmea;
 
     //
     QueueHandle_t msgQueue;
+    CriticalSection contextLock;
+
+    //
+    uint32_t tick_updateTime;
+    uint32_t tick_updateDisp;
+    uint32_t tick_stopBase;
+    uint32_t tick_silentBase;
+
+    bool gpsFixed;
+    bool dispNeedUpdate;    
 };
 
 

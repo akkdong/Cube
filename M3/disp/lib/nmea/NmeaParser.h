@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include <time.h>
 
+#include "DataQueue.h"
+
 
 //////////////////////////////////////////////////////////////////////////////
 // class NmeaParser
@@ -89,6 +91,13 @@ public:
         return last_key;
     }
 
+    bool availableDataQueue() {
+        return !dataQueue.isEmpty();
+    }
+    int readDataQueue() {
+        return dataQueue.pop();
+    }
+
 protected:
     void parseField();
     bool checkCRC();
@@ -147,6 +156,9 @@ protected:
     };
 
     ParserContext parserContext;
+
+    //
+    DataQueue dataQueue;
 };
 
 #endif // __NMEA_PARSER_H__

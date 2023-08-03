@@ -22,7 +22,7 @@ Window * Screen::activateWindow(Window *wnd)
         return nullptr;
 
     // push window to top
-    m_wndStack[++m_topIndex] = wnd;
+    pushWindow(wnd);
     // notify activation
     wnd->onActive();
 

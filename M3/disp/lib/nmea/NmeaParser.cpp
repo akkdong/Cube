@@ -40,6 +40,8 @@ int NmeaParser::begin()
 
     //
     memset(&parserContext, 0, sizeof(parserContext));
+    //
+    dataQueue.reset();
 
     return 0;
 }
@@ -47,6 +49,9 @@ int NmeaParser::begin()
 int NmeaParser::update(int ch)
 {
     int type = 0; // 1: GPS, 2: VARIO, 3: KEY
+
+    //
+    dataQueue.push(ch);
 
     if (ch == '$')
     {
@@ -74,10 +79,15 @@ int NmeaParser::update(int ch)
     }
     else if (ch == '\r')
     {
-        
+        // ignore
     }
     else if (ch == '\n')
     {
+        if (parserContext.statement == STAT_GGA || parserContext.statement == STAT_RMC)
+            dataQueue.acceptReserve();
+        else
+            dataQueue.rejectReserve();
+            
         if (checkCRC())
         {
             switch (parserContext.statement)
