@@ -1,9 +1,10 @@
 #include <Arduino.h>
 #include <M5EPD.h>
-#include "bsp.h"
+#include "board.h"
 #include "font/binaryttf.h"
 #include "logger.h"
 #include "NmeaParser.h"
+#include "Digit.h"
 
 
 class InfoBox
@@ -207,6 +208,7 @@ void UpdateScreen(void* param)
   vTaskDelete(NULL);
 }
 
+void bsp_hal_init();
 
 void setup() 
 {

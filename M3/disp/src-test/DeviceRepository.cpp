@@ -59,11 +59,11 @@ DeviceRepository::DeviceRepository()
     #endif
 }
 
-
 DeviceRepository& DeviceRepository::instance()
 {
-    static DeviceRepository repo;
-    return repo;
+	static DeviceRepository _repo;
+
+    return _repo;
 }
 
 bool DeviceRepository::loadPref()

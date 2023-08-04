@@ -83,6 +83,15 @@ public:
         WID_COUNT
     };
 
+    enum ValueType {
+        VT_ALTITUDE,
+        VT_GROUND_SPEED,
+        VT_VERTICAL_SPEED,
+        VT_AGL,
+        VT_LD,
+        VT_TRACK
+    };
+
     //
     virtual int update(DeviceContext *context);
     virtual void draw();

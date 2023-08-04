@@ -45,6 +45,8 @@ enum MessageCode {
     MSG_UPDATE_TH,
     MSG_UPDATE_BAT,
 
+    MSG_REDRAW,
+
     MSG_START_VARIO,
 
     MSG_GPS_FIXED, // data: fixed(1), unfixed(0)
@@ -134,8 +136,6 @@ protected:
 
     //
     DeviceContext* contextPtr;
-    volatile DeviceMode mode;
-
     NmeaParser  NMEA;
     AGLClass AGL;
     BluetoothManager BT;
@@ -143,10 +143,8 @@ protected:
     VarioSentence varioNmea;
 
     //
-    QueueHandle_t msgQueue;
-    CriticalSection contextLock;
+    volatile DeviceMode mode;
 
-    //
     uint32_t tick_updateTime;
     uint32_t tick_updateDisp;
     uint32_t tick_stopBase;
@@ -154,6 +152,14 @@ protected:
 
     bool gpsFixed;
     bool dispNeedUpdate;    
+
+    //
+    TaskHandle_t taskScreen;
+    TaskHandle_t taskDevice;
+
+    QueueHandle_t msgQueue;
+
+    CriticalSection contextLock;
 };
 
 

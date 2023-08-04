@@ -60,6 +60,32 @@ void Application::initBoard()
     Serial1.begin(115200, SERIAL_8N1, UART_DEVICE_RX, UART_DEVICE_TX);
     Wire.begin(TOUCH_SDA, TOUCH_SCL, (uint32_t) 400000U);
     SPI.begin(SPI_SCLK, SPI_MISO, SPI_MOSI, SPI_CS_SD);
+
+    // mount SPIFFS
+    SPIFFS.begin();
+    // check SD-Card and ready to use
+    //SD_CARD.begin();
+
+    if (SD_CARD.valid())
+    {
+        // do firmware-update
+        #if SUPPPORT_FIRMWAREUPDATE
+        FirmwareUpdater fu;
+
+		if (fu.checkUpdate())
+		{
+			//
+			fu.performUpdate(display);
+			//
+			ESP.restart();
+		}		
+		// else go down
+        #endif
+    }
+    else
+    {
+        LOGi("No SD card inserted!!");
+    }
 }
 
 void Application::begin()
@@ -71,17 +97,17 @@ void Application::begin()
     //
     TP.SetRotation(GT911::ROTATE_0);
     TP.begin(TOUCH_SDA, TOUCH_SCL, TOUCH_INT);
-    //
-    SD.begin(4, SPI, 20000000);    
     // battery begin
     BAT.begin();
     //
     KEY.begin(CreateKeypadInput());
     //
     //TH.Begin();
+    //
+    NMEA.begin();
 
 
-    // startup
+    // GUI startup
     Display.loadFont(binaryttf, sizeof(binaryttf));
     Display.createCanvas(M5EPD_PANEL_W, M5EPD_PANEL_H);
     Display.createRender(32);
@@ -96,34 +122,37 @@ void Application::begin()
     //
     //
     //
-    mode = MODE_INIT;
+    DeviceRepository& repo = DeviceRepository::instance();
+    repo.reset();
+    repo.loadPref();
 
     contextPtr = DeviceRepository::instance().getContext();
 
-    //if (DeviceContext.deviceDefault.enableBT)
-    //    BT.begin(0x03, DeviceContext.deviceDefault.btName);    
-
-
     //
-    NMEA.begin();
-
+    setTimeZone(contextPtr->deviceDefault.timezone * -3600, 0);   
     //
     disableCore0WDT();
 
     //
     msgQueue = xQueueCreate(10, sizeof(Message));
 
-    xTaskCreatePinnedToCore(ScreenTask, "US", 4096, this, 2, NULL, 0);    
-    xTaskCreatePinnedToCore(DeviceTask, "DEV", 2048, this, 0, NULL, 0); 
+    xTaskCreate(ScreenTask, "SCR", 4096, this, 2, &taskScreen);    
+    xTaskCreate(DeviceTask, "DEV", 2048, this, 0, &taskDevice); 
+
 
     //
-    setTimeZone(contextPtr->deviceDefault.timezone * -3600, 0);   
+    //
+    //
+    mode = MODE_INIT;
+
+    if (contextPtr->deviceDefault.enableBT)
+        BT.begin(0x03, contextPtr->deviceDefault.btName);    
 
     //
-    tick_updateTime = millis();
-    tick_updateDisp = millis() - 1000;
-
-    tick_stopBase = tick_silentBase = millis();
+    uint32_t now = millis();
+    tick_stopBase = tick_silentBase = now;
+    tick_updateTime = now;
+    tick_updateDisp = now - 1000;
 
     startVario();
 }
@@ -148,7 +177,7 @@ void Application::update()
         int type = NMEA.update(ch);
 
         //
-        if (type == 1) // parsed GPS setence
+        if (type == 1) // parsed GPS sentence
         {
             bool fixed = NMEA.isFixed();
             if (fixed) // is fixed?
@@ -156,7 +185,6 @@ void Application::update()
                 LOGv("GPS: %f %f %f %f", NMEA.getLatitude(), NMEA.getLongitude(), NMEA.getSpeed(), NMEA.getTrack());
 
                 // LOCK
-
                 contextPtr->varioState.latitudeLast = contextPtr->varioState.latitude;
                 contextPtr->varioState.longitudeLast = contextPtr->varioState.longitude;
                 contextPtr->varioState.headingLast = contextPtr->varioState.heading;
@@ -178,9 +206,9 @@ void Application::update()
                 sendMessage(MSG_UPDATE_GPS);
             }
 
-            if ((fixed && !Application::gpsFixed) || (!fixed && Application::gpsFixed))
+            if ((fixed && !gpsFixed) || (!fixed && gpsFixed))
             {
-                Application::gpsFixed = fixed;
+                gpsFixed = fixed;
                 contextPtr->deviceState.statusGPS = fixed ? 1 : 0;
                 if (fixed)
                 {
@@ -321,7 +349,7 @@ void Application::update()
                 }
             }
 
-            sendMessage(MSG_UPDATE_VARIO, 0);
+            //sendMessage(MSG_UPDATE_VARIO, 0);
         }        
 
         //if (type != 0)
@@ -353,7 +381,14 @@ void Application::update()
     }
     */
 
-   delay(1);
+    uint32_t tick = millis();
+    if (tick - tick_updateTime > 1000)
+    {
+        sendMessage(MSG_REDRAW, 0);
+        tick_updateTime = tick;
+    }
+
+    delay(1);
 }
 
 void Application::startVario()
@@ -364,19 +399,13 @@ void Application::startVario()
     contextPtr->deviceState.statusGPS = 0;
     contextPtr->deviceState.batteryPower = BAT.getVoltage();
 
-    //if (contextPtr->deviceDefault.enableBT)
-    //    bt.begin(3);
-    //
-    //vario.begin();
-
     mode = MODE_GROUND;
     tick_silentBase = millis();
     tick_updateDisp = millis() - 1000;
     dispNeedUpdate = true;
 
-    //vTaskResume(taskFlightComputer);
-    //vTaskResume(taskVariometer);
-    //vTaskResume(taskLocation);
+    vTaskResume(taskScreen);
+    vTaskResume(taskDevice);
 }
 
 void Application::startFlight()
@@ -413,7 +442,7 @@ void Application::startFlight()
 
     LOGv("mode: %d", MODE_FLYING);
     mode = MODE_FLYING;
-    tick_stopBase = millis();    
+    tick_stopBase = millis();
 }
 
 void Application::updateFlightState()
@@ -687,6 +716,9 @@ void Application::onReleased(uint8_t key)
 
 void Application::ScreenTask(void* param)
 {
+    // suspend this task and wait resume
+    vTaskSuspend(NULL);
+
     Application* pThis = (Application *)param;    
     pThis->ScreenTask();
     
@@ -695,6 +727,9 @@ void Application::ScreenTask(void* param)
 
 void Application::DeviceTask(void* param)
 {
+    // suspend this task and wait resume
+    vTaskSuspend(NULL);
+
     Application* pThis = (Application *)param;
     pThis->DeviceTask();
 
@@ -720,13 +755,20 @@ void Application::ScreenTask()
             if (msg.code == MSG_SHUTDOWN)
                 break; // exit loop
 
+            //
+            active = Scrn.getActiveWindow();
+
             switch (msg.code)
             {
             case MSG_UPDATE_GPS:
             case MSG_UPDATE_VARIO:
+                active->update(contextPtr);
+                break;
+            case MSG_REDRAW:
+                active->draw();
                 break;
             }
-        }        
+        }
     }
 
     //

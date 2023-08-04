@@ -89,6 +89,19 @@ int MainWindow::update(DeviceContext *context)
             this->setDirty(true);
     }
 
+    // Altitude
+    m_vbox[0].setValue(context->varioState.altitudeGPS, 0);
+    // Speed H
+    m_vbox[1].setValue(context->varioState.speedGround, 0);
+    // Speed V
+    m_vbox[2].setValue(context->varioState.speedVertActive, 2);
+    // Temperature
+    m_vbox[3].setValue(context->deviceState.temperature, 0);
+    // Pressure
+    m_vbox[4].setValue(context->varioState.pressure, 0);
+    // Track
+    m_vbox[5].setValue(context->varioState.heading, 0);
+
     return isDirty() ? 1 : 0;
 }
 
@@ -102,7 +115,8 @@ void MainWindow::draw()
         m_widgets[i]->onDraw();
 
     // update full or fast(?)
-    m_pRefCanvas->pushCanvas(0, 0, UPDATE_MODE_GLR16);
+    static uint32_t refreshCount = 0;
+    m_pRefCanvas->pushCanvas(0, 0, ((++refreshCount) % 60) == 0 ? UPDATE_MODE_GC16 : UPDATE_MODE_DU);
 }
 
 void MainWindow::onActive()
@@ -147,25 +161,25 @@ void MainWindow::onActive()
 
     m_vbox[0].setTitle("Altitude");
     m_vbox[0].setDescription("m");
-    m_vbox[0].setValue(2045, 0);
+    m_vbox[0].setValue(0, 0);
 
     m_vbox[1].setTitle("Speed H");
     m_vbox[1].setDescription("km/h");
-    m_vbox[1].setValue(32.4, 1);
+    m_vbox[1].setValue(0, 0);
 
     m_vbox[2].setTitle("Speed V");
     m_vbox[2].setDescription("m/s");
-    m_vbox[2].setValue(2.54, 2);
+    m_vbox[2].setValue(0, 2);
 
-    m_vbox[3].setTitle("AGL");
-    m_vbox[3].setDescription("m");
-    m_vbox[3].setValue(1045, 0);
+    m_vbox[3].setTitle("Temperature");
+    m_vbox[3].setDescription("C");
+    m_vbox[3].setValue(0, 0);
 
-    m_vbox[4].setTitle("L/D");
+    m_vbox[4].setTitle("Pressure");
     m_vbox[4].setDescription("");
-    m_vbox[4].setValue(2.4, 1);
+    m_vbox[4].setValue(0, 0);
 
     m_vbox[5].setTitle("Track");
     m_vbox[5].setDescription("deg.");
-    m_vbox[5].setValue(245, 0);
+    m_vbox[5].setValue(0, 0);
 }
