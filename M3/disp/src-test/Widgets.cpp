@@ -143,13 +143,28 @@ void Annunciator::onDraw()
     x += 32 + 4;
     m_pRefCanvas->pushImage(x, y, 32, 32, (const uint8_t *)ImageResource_battery_full_32x32);
 
+    // time
+    char sz[32];
+    getTimeString(sz, time(NULL), true);
 
     m_pRefCanvas->setTextSize(32);
     m_pRefCanvas->setTextColor(M5EPD_Canvas::G15);      
     m_pRefCanvas->setTextDatum(CR_DATUM);
-    m_pRefCanvas->drawString("HH:MM:SS", M5EPD_PANEL_W - 8, 30);
+    m_pRefCanvas->drawString(sz, M5EPD_PANEL_W - 8, 30);
 
 }
+
+const char * Annunciator::getTimeString(char* str, time_t t, bool includeSecond)
+{
+	struct tm * _tm = localtime(&t);    
+    if (includeSecond)
+	    sprintf(str, "%02d:%02d:%02d", _tm->tm_hour, _tm->tm_min,_tm->tm_sec);
+    else
+        sprintf(str, "%02d:%02d", _tm->tm_hour, _tm->tm_min);
+
+    return str;
+}
+
 
 
 

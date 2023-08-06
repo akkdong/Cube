@@ -2,7 +2,7 @@
 //
 
 #include "VarioLogger.h"
-#include "SdCard.h"
+#include "SD.h"
 
 
 // IGC parsing settings
@@ -67,7 +67,7 @@ char pathBuf[64];
 // HFDTM100GPSDATUM:WGS-84
 const char * igcHeader[] =
 {
-	"AXXX CUBE Variometer & GPS Loggger v2", 
+	"AXXX M3 Variometer & GPS Loggger v2", 
 	"\r\nHFDTE",					// ex) DDMMYY
 	NULL,
 	"\r\nHFPLTPILOT:",				// ex) akkdong
@@ -98,16 +98,16 @@ VarioLogger::VarioLogger()
 
 bool VarioLogger::begin(time_t date)
 {
-	if (! SD_CARD.valid())
+	if (SD.cardType() == CARD_NONE)
 	{
 		SET_STATE(LOGGER_INIT_FAILED);
 		return false;
 	}
 
 	// 
-	if (! SD_CARD.exists(logsFolder))
+	if (! SD.exists(logsFolder))
 	{
-		if (! SD_CARD.mkdir(logsFolder))
+		if (! SD.mkdir(logsFolder))
 		{
 			SET_STATE(LOGGER_INIT_FAILED);
 			return false;
@@ -128,7 +128,7 @@ bool VarioLogger::begin(time_t date)
 	strcat(pathBuf, "/");
 	strcat(pathBuf, name);
 
-	if ((file = SD_CARD.open(pathBuf, FILE_WRITE)))
+	if ((file = SD.open(pathBuf, FILE_WRITE)))
 	{
 		//
 		SET_STATE(LOGGER_WORKING);
@@ -276,7 +276,7 @@ const char * VarioLogger::makeFileName(char * buf, time_t date)
 		strcat(pathBuf, "/");
 		strcat(pathBuf, buf);
 
-		if (! SD_CARD.exists(pathBuf))
+		if (! SD.exists(pathBuf))
 			return buf;
 		
 		buf[19] = (i / 10) + '0';

@@ -172,14 +172,14 @@ void MainWindow::onActive()
     m_vbox[2].setValue(0, 2);
 
     m_vbox[3].setTitle("Temperature");
-    m_vbox[3].setDescription("C");
+    m_vbox[3].setDescription("Celsius");
     m_vbox[3].setValue(0, 0);
 
     m_vbox[4].setTitle("Pressure");
-    m_vbox[4].setDescription("");
+    m_vbox[4].setDescription("hPa");
     m_vbox[4].setValue(0, 0);
 
     m_vbox[5].setTitle("Track");
-    m_vbox[5].setDescription("deg.");
+    m_vbox[5].setDescription("deg");
     m_vbox[5].setValue(0, 0);
 }

@@ -79,6 +79,7 @@ public:
 
 
 protected:
+    const char * getTimeString(char* str, time_t t, bool includeSecond);
 };
 
 
@@ -87,6 +88,48 @@ protected:
 
 class ValueBox : public Widget
 {
+public:
+    enum VType {
+        UNDEF = 0,
+        ALTITUDE_GROUND,
+        ALTITUDE_BARO,
+        ALTITUDE_AGL,       // Height Above Ground Level
+        ALTITUDE_PROFILE,
+        SPEED_GROUND,
+        SPEED_AIR,
+        SPEED_VERTICAL,
+        SPEED_VERTICAL_LAZY,
+        TRACK_HEADING,
+        TARCK_BEARING,
+        TIME_FLIGHT,
+        TIME_CURRENT,
+        TIME_TO_NEXT_WAYPOINT,
+        TIME_REMAIN,
+        DISTANCE_TAKEOFF,
+        DISTANCE_LANDING,
+        DISTANCE_NEXT_WAYPOINT,
+        DISTANCE_FLIGHT,    // odometer
+        GLIDE_RATIO,
+        COMPASS,
+        VSPEED_BAR,
+        VSPEED_PROFILE,
+        TRACK_FLIGHT,
+        SENSOR_PRESSURE,
+        SENSOR_TEMPERATURE,
+        SENSOR_HUMIDITY,
+        END_OF_BOX,
+        BOX_COUNT = END_OF_BOX,        
+    };
+
+    enum BType {
+        BORDER_NONE = 0,
+        BORDER_LEFT = (1 << 0),
+        BORDER_RIGHT = (1 << 1),
+        BORDER_TOP = (1 << 2),
+        BORDER_BOTTOM = (1 << 3),
+        BORDER_ALL = BORDER_LEFT | BORDER_RIGHT | BORDER_TOP | BORDER_BOTTOM,
+    };
+        
 public:
     //
     ValueBox(M5EPD_Canvas* pRefCanvas);

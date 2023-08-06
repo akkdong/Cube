@@ -3,6 +3,7 @@
 
 #include "agl.h"
 #include "utils_geo.h"
+#include "SD.h"
 
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -137,10 +138,10 @@ int AGLClass::openFile(const char * name)
 
 	char file[32]; // /agl/NXXEXXX.HGT
 
-	strcpy(file, "/agl/");
+	strcpy(file, "/AGL/");
 	strcat(file, name);
 
-    mFile = SD_CARD.open(file, FILE_READ);
+    mFile = SD.open(file, FILE_READ);
 	if (mFile)
         return 0;
 

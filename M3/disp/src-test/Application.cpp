@@ -64,9 +64,9 @@ void Application::initBoard()
     // mount SPIFFS
     SPIFFS.begin();
     // check SD-Card and ready to use
-    //SD_CARD.begin();
+    //SD.begin(4, SPI, 20000000)
 
-    if (SD_CARD.valid())
+    if (SD.cardType() != CARD_NONE)
     {
         // do firmware-update
         #if SUPPPORT_FIRMWAREUPDATE
@@ -169,7 +169,7 @@ void Application::update()
     //   update canvas(screen)
     // 
 
-    bool engMode = false;
+    bool engMode = true;
     Stream& input = engMode ? Serial : Serial1;
     while (input.available())
     {
@@ -203,7 +203,7 @@ void Application::update()
                 // UNLOCK
 
                 // update GPS relative widgets
-                sendMessage(MSG_UPDATE_GPS);
+                //sendMessage(MSG_UPDATE_GPS);
             }
 
             if ((fixed && !gpsFixed) || (!fixed && gpsFixed))
@@ -395,7 +395,7 @@ void Application::startVario()
 {
     LOGv("Application::startVario()");
 
-    contextPtr->deviceState.statusSDCard = SD_CARD.valid() ? 1 : 0;
+    contextPtr->deviceState.statusSDCard = SD.cardType() != CARD_NONE ? 1 : 0;
     contextPtr->deviceState.statusGPS = 0;
     contextPtr->deviceState.batteryPower = BAT.getVoltage();
 
@@ -412,7 +412,10 @@ void Application::startFlight()
 {
     // turn on sound if auto-turn-on is setted
     if (contextPtr->volume.autoTurnOn)
+    {
         contextPtr->volume.effect = contextPtr->volume.vario = 100;
+        Serial1.println("MUTE 0");
+    }
 
     // start bt-logging
     if (contextPtr->deviceDefault.enableNmeaLogging)
@@ -598,6 +601,8 @@ void Application::stopFlight()
     {
         contextPtr->volume.vario = contextPtr->volume.varioDefault;
         contextPtr->volume.effect = contextPtr->volume.effectDefault;
+
+        Serial1.println("MUTE 1");
     }
 }
 
@@ -773,6 +778,8 @@ void Application::ScreenTask()
 
     //
     {
+        EPD.Clear(true);
+
         Display.clear();
         int x = (LCD_WIDTH - 128) / 2;
         int y = (LCD_HEIGHT - 128) / 2;

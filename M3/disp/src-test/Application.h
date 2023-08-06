@@ -16,7 +16,6 @@
 #include "DeviceRepository.h"
 #include "Battery.h"
 #include "agl.h"
-#include "SdCard.h"
 #include "CriticalSection.h"
 
 #include "BluetoothManager.h"

@@ -9,7 +9,6 @@
 #include "logger.h"
 #include "agl.h"
 #include "CriticalSection.h"
-#include "SdCard.h"
 #include "NmeaParser.h"
 #include "Keypad.h"
 #include "Window.h"
