@@ -78,6 +78,13 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
         }
     }
     */
+   
+   m_vbox[0].setUserData(ValueBox::VType::ALTITUDE_GROUND);
+   m_vbox[1].setUserData(ValueBox::VType::SPEED_GROUND);
+   m_vbox[2].setUserData(ValueBox::VType::SPEED_VERTICAL);
+   m_vbox[3].setUserData(ValueBox::VType::SENSOR_TEMPERATURE);
+   m_vbox[4].setUserData(ValueBox::VType::SENSOR_PRESSURE);
+   m_vbox[5].setUserData(ValueBox::VType::TRACK_HEADING);
 }
 
 int MainWindow::update(DeviceContext *context) 
@@ -88,19 +95,6 @@ int MainWindow::update(DeviceContext *context)
         if (update > 0)
             this->setDirty(true);
     }
-
-    // Altitude
-    m_vbox[0].setValue(context->varioState.altitudeGPS, 0);
-    // Speed H
-    m_vbox[1].setValue(context->varioState.speedGround, 0);
-    // Speed V
-    m_vbox[2].setValue(context->varioState.speedVertActive, 2);
-    // Temperature
-    m_vbox[3].setValue(context->deviceState.temperature, 0);
-    // Pressure
-    m_vbox[4].setValue(context->varioState.pressure, 0);
-    // Track
-    m_vbox[5].setValue(context->varioState.heading, 0);
 
     return isDirty() ? 1 : 0;
 }
@@ -115,7 +109,7 @@ void MainWindow::draw()
         m_widgets[i]->onDraw();
 
     // update full or fast(?)
-    static uint32_t refreshCount = 0;
+    static uint32_t refreshCount = -1;
     m_pRefCanvas->pushCanvas(0, 0, ((++refreshCount) % 60) == 0 ? UPDATE_MODE_GC16 : UPDATE_MODE_DU);
 }
 
@@ -127,7 +121,7 @@ void MainWindow::onActive()
         switch (i)
         {
         case WID_ANNUNCIATOR:
-            m_widgets[i]->move(0, 0, LCD_WIDTH, LCD_HEIGHT);
+            m_widgets[i]->move(0, 0, LCD_WIDTH, 60);
             break;
         case WID_THERMALASSIST:
             m_widgets[i]->move(0, 60, 640, 360);
@@ -171,7 +165,7 @@ void MainWindow::onActive()
     m_vbox[2].setDescription("m/s");
     m_vbox[2].setValue(0, 2);
 
-    m_vbox[3].setTitle("Temperature");
+    m_vbox[3].setTitle("Temp");
     m_vbox[3].setDescription("Celsius");
     m_vbox[3].setValue(0, 0);
 

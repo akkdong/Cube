@@ -169,7 +169,7 @@ void Application::update()
     //   update canvas(screen)
     // 
 
-    bool engMode = true;
+    bool engMode = false;
     Stream& input = engMode ? Serial : Serial1;
     while (input.available())
     {
@@ -462,9 +462,9 @@ void Application::updateFlightState()
 			contextPtr->varioState.latitudeLast, contextPtr->varioState.longitudeLast);
     contextPtr->flightState.distFlightAccum += contextPtr->flightState.distFlight;
 	// add new track point & calculate relative distance
-    #if 0
+    #if 1 // OLD METHOD
 	DeviceRepository::instance().updateTrackHistory(contextPtr->varioState.latitude, contextPtr->varioState.longitude, contextPtr->varioState.speedVertLazy);
-    #else
+    #else // NEW BUT TRICKY METHOD
     DeviceRepository::instance().updateTrackHistory();
     #endif
 
@@ -767,6 +767,8 @@ void Application::ScreenTask()
             {
             case MSG_UPDATE_GPS:
             case MSG_UPDATE_VARIO:
+            case MSG_UPDATE_BAT:
+            case MSG_UPDATE_TH:
                 active->update(contextPtr);
                 break;
             case MSG_REDRAW:

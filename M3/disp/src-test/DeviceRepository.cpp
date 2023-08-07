@@ -4,6 +4,8 @@
 #ifdef ARDUINO
 #include <Arduino.h>
 #include <ArduinoJson.h>
+#include <SPIFFS.h>
+#include <FS.h>
 #else
 #include <stdint.h>
 #include <stdio.h>
@@ -69,7 +71,20 @@ DeviceRepository& DeviceRepository::instance()
 bool DeviceRepository::loadPref()
 {
     #ifdef ARDUINO
+	File file = SPIFFS.open("/config.json");
+	if (file)
+	{
+		const size_t capacity = JSON_OBJECT_SIZE(31) + 700;
+		DynamicJsonDocument doc(capacity);
 
+		DeserializationError error = deserializeJson(doc, file);
+		file.close();
+
+		if (! error)
+			set(doc);
+
+		//dump();
+	}	
     return true;
     #else
     return true;
@@ -146,7 +161,7 @@ void DeviceRepository::reset()
 
     contextPtr->deviceDefault.timezone = VARIOMETER_TIME_ZONE; 			// GMT+9	
 
-	strcpy(contextPtr->deviceDefault.btName, "Cube-002");
+	strcpy(contextPtr->deviceDefault.btName, "M3-001");
 	strcpy(contextPtr->deviceDefault.wifiSSID, "");
 	strcpy(contextPtr->deviceDefault.wifiPassword, "");
 
@@ -241,4 +256,114 @@ void DeviceRepository::resetFlightState()
 void DeviceRepository::resetFlightStats() 
 { 
 	memset(&contextPtr->flightStats, 0, sizeof(FlightStats)); 
+}
+
+
+
+void DeviceRepository::set(JsonDocument& doc)
+{
+	if (! doc["vario_climb_threshold"].isNull())
+		contextPtr->varioSettings.climbThreshold = doc["vario_climb_threshold"]; // 0.2
+	if (! doc["vario_sink_threshold"].isNull())
+		contextPtr->varioSettings.sinkThreshold = doc["vario_sink_threshold"]; // -3
+	if (! doc["vario_sensitivity"].isNull())
+		contextPtr->varioSettings.sensitivity = doc["vario_sensitivity"]; // 0.12
+	if (! doc["vario_ref_altitude_1"].isNull())
+		contextPtr->varioSettings.altitudeRef1 = doc["vario_ref_altitude_1"]; // 0
+	if (! doc["vario_ref_altitude_2"].isNull())
+		contextPtr->varioSettings.altitudeRef2 = doc["vario_ref_altitude_2"]; // 0
+	if (! doc["vario_ref_altitude_3"].isNull())
+		contextPtr->varioSettings.altitudeRef3 = doc["vario_ref_altitude_3"]; // 0
+	if (! doc["vario_damping_factor"].isNull())
+		contextPtr->varioSettings.dampingFactor = doc["vario_damping_factor"]; // 0.05
+	if (! doc["glider_type"].isNull())
+		contextPtr->gliderInfo.type = doc["glider_type"]; // 1
+	if (! doc["glider_manufacture"].isNull())
+		strcpy(contextPtr->gliderInfo.manufacture, (const char *)doc["glider_manufacture"]); // "Ozone"
+	if (! doc["glider_model"].isNull())
+		strcpy(contextPtr->gliderInfo.model, (const char *)doc["glider_model"]); // "Zeno"
+	if (! doc["igc_enable_logging"].isNull())
+		contextPtr->logger.enable = doc["igc_enable_logging"]; // true
+	if (! doc["igc_takeoff_speed"].isNull())
+		contextPtr->logger.takeoffSpeed = doc["igc_takeoff_speed"]; // 6
+	if (! doc["igc_landing_speed"].isNull())
+		contextPtr->logger.landingSpeed = doc["igc_landing_speed"]; // 2
+	if (! doc["igc_landing_timeout"].isNull())
+		contextPtr->logger.landingTimeout = doc["igc_landing_timeout"]; // 10000
+	if (! doc["igc_logging_interval"].isNull())
+		contextPtr->logger.loggingInterval = doc["igc_logging_interval"]; // 1000
+	if (! doc["igc_pilot"].isNull())
+		strcpy(contextPtr->logger.pilot, (const char *)doc["igc_pilot"]); // "akkdong"
+	if (! doc["volume_enable_vario"].isNull())
+		contextPtr->volume.varioDefault = contextPtr->volume.vario = doc["volume_enable_vario"] ? 100 : 0; // false
+	if (! doc["volume_enable_effect"].isNull())
+		contextPtr->volume.effectDefault = contextPtr->volume.effect = doc["volume_enable_effect"] ? 100 : 0; // false
+	if (! doc["volume_auto_turnon"].isNull())
+		contextPtr->volume.autoTurnOn = doc["volume_auto_turnon"]; // true
+	if (! doc["threshold_low_battery"].isNull())
+		contextPtr->threshold.lowBattery = doc["threshold_low_battery"]; // 2.9
+	if (! doc["threshold_auto_shutdown"].isNull())
+		contextPtr->threshold.autoShutdownVario = doc["threshold_auto_shutdown"]; // 600000
+	if (! doc["kalman_var_zmeas"].isNull())
+		contextPtr->kalman.varZMeas = doc["kalman_var_zmeas"]; // 400
+	if (! doc["kalman_var_zaccel"].isNull())
+		contextPtr->kalman.varZAccel = doc["kalman_var_zaccel"]; // 1000
+	if (! doc["kalman_var_abias"].isNull())
+		contextPtr->kalman.varAccelBias = doc["kalman_var_abias"]; // 1
+	if (! doc["device_enable_bt"].isNull())
+		contextPtr->deviceDefault.enableBT = doc["device_enable_bt"]; // false
+	if (! doc["device_enable_sound"].isNull())
+		contextPtr->deviceDefault.enableSound = doc["device_enable_sound"]; // false
+	if (! doc["device_bt_name"].isNull())
+		strcpy(contextPtr->deviceDefault.btName, (const char *)doc["device_bt_name"]); // "MiniVario"
+	if (! doc["device_enable_simulation"].isNull())
+		contextPtr->deviceDefault.enableSimulation = doc["device_enable_simulation"]; // false
+	if (! doc["device_enable_nmea_logging"].isNull())
+		contextPtr->deviceDefault.enableNmeaLogging = doc["device_enable_nmea_logging"]; // false
+	if (! doc["wifi_ssid"].isNull())
+		strcpy(contextPtr->deviceDefault.wifiSSID, (const char *)doc["wifi_ssid"]); // "MiniVario"
+	if (! doc["wifi_password"].isNull())
+		strcpy(contextPtr->deviceDefault.wifiPassword, (const char *)doc["wifi_password"]); // "123456789"
+	if (! doc["timezone"].isNull())
+		contextPtr->deviceDefault.timezone = doc["wifi_password"]; // 9
+}
+
+void DeviceRepository::dump()
+{
+	Serial.printf("DeviceDefault.enableBT = %d\n", contextPtr->deviceDefault.enableBT);
+	Serial.printf("DeviceDefault.enableSound = %d\n", contextPtr->deviceDefault.enableSound);
+	Serial.printf("DeviceDefault.enableSimulation = %d\n", contextPtr->deviceDefault.enableSimulation);
+	Serial.printf("DeviceDefault.enableNmeaLogging = %d\n", contextPtr->deviceDefault.enableNmeaLogging);
+	Serial.printf("DeviceDefault.btName = %s\n", contextPtr->deviceDefault.btName);
+	Serial.printf("DeviceDefault.wifiSSID = %s\n", contextPtr->deviceDefault.wifiSSID);
+	Serial.printf("DeviceDefault.wifiPassword = %s\n", contextPtr->deviceDefault.wifiPassword);
+	Serial.printf("DeviceDefault.timezone = %f\n", contextPtr->deviceDefault.timezone);
+
+	Serial.printf("VolumeSettings.vario = %d\n", contextPtr->volume.vario);
+	Serial.printf("VolumeSettings.effect = %d\n", contextPtr->volume.effect);
+	Serial.printf("VolumeSettings.autoTurnOn = %d\n", contextPtr->volume.autoTurnOn);
+
+	Serial.printf("VarioSettings.sinkThreshold = %f\n", contextPtr->varioSettings.sinkThreshold);
+	Serial.printf("VarioSettings.climbThreshold = %f\n", contextPtr->varioSettings.climbThreshold);
+	Serial.printf("VarioSettings.sensitivity = %f\n", contextPtr->varioSettings.sensitivity);
+	Serial.printf("VarioSettings.sentence = %d\n", contextPtr->varioSettings.sentence);
+	Serial.printf("VarioSettings.altitudeRef1 = %f\n", contextPtr->varioSettings.altitudeRef1);
+	Serial.printf("VarioSettings.altitudeRef2 = %f\n", contextPtr->varioSettings.altitudeRef2);
+	Serial.printf("VarioSettings.altitudeRef3 = %f\n", contextPtr->varioSettings.altitudeRef3);
+	Serial.printf("VarioSettings.dampingFactor = %f\n", contextPtr->varioSettings.dampingFactor);
+
+	//Serial.printf("KalmanParameter.varZMeas = %f\n", contextPtr->kalman.varZMeas);
+	//Serial.printf("KalmanParameter.varZAccel = %f\n", contextPtr->kalman.varZAccel);
+	//Serial.printf("KalmanParameter.varAccelBias = %f\n", contextPtr->kalman.varAccelBias);
+
+	Serial.printf("GliderInfo.type = %d\n", contextPtr->gliderInfo.type);
+	Serial.printf("GliderInfo.manufacture = %s\n", contextPtr->gliderInfo.manufacture);
+	Serial.printf("GliderInfo.model = %s\n", contextPtr->gliderInfo.model);
+
+	Serial.printf("IGCLogger.enable = %d\n", contextPtr->logger.enable);
+	Serial.printf("IGCLogger.takeoffSpeed = %d\n", contextPtr->logger.takeoffSpeed);
+	Serial.printf("IGCLogger.landingSpeed = %d\n", contextPtr->logger.landingSpeed);
+	Serial.printf("IGCLogger.landingTimeout = %d\n", contextPtr->logger.landingTimeout);
+	Serial.printf("IGCLogger.loggingInterval = %d\n", contextPtr->logger.loggingInterval);
+	Serial.printf("IGCLogger.pilot = %s\n", contextPtr->logger.pilot);
 }

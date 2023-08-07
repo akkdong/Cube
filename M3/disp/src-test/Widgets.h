@@ -80,6 +80,10 @@ public:
 
 protected:
     const char * getTimeString(char* str, time_t t, bool includeSecond);
+
+    // BBGGSSVVCCCC
+    uint32_t mState;
+    float mVoltage;
 };
 
 

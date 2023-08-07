@@ -4,9 +4,9 @@
 #ifndef __DEVICE_REPOSITORY_H__
 #define __DEVICE_REPOSITORY_H__
 
+#include <ArduinoJson.h>
 #include "config.h"
 #include "DeviceContext.h"
-
 
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -39,6 +39,8 @@ public:
     void                        resetFlightStats();
 
 protected:
+    void                        set(JsonDocument& doc);
+    void                        dump();
 
 protected:
     DeviceContext*              contextPtr;
