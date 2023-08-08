@@ -297,12 +297,16 @@ int ValueBox::update(DeviceContext* context)
         setValue(context->varioState.altitudeGPS, 0);
         setDirty(true);
         break;
+    case ValueBox::VType::ALTITUDE_BARO:
+        setValue(context->varioState.altitudeBaro, 0);
+        setDirty(true);
+        break;
     case ValueBox::VType::SPEED_GROUND:
         setValue(context->varioState.speedGround, 0);
         setDirty(true);
         break;
     case ValueBox::VType::SPEED_VERTICAL:
-        setValue(context->varioState.speedVertActive, 0);
+        setValue(context->varioState.speedVertActive, 2);
         setDirty(true);
         break;
     case ValueBox::VType::SENSOR_TEMPERATURE:

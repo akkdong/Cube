@@ -82,7 +82,7 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
    m_vbox[0].setUserData(ValueBox::VType::ALTITUDE_GROUND);
    m_vbox[1].setUserData(ValueBox::VType::SPEED_GROUND);
    m_vbox[2].setUserData(ValueBox::VType::SPEED_VERTICAL);
-   m_vbox[3].setUserData(ValueBox::VType::SENSOR_TEMPERATURE);
+   m_vbox[3].setUserData(ValueBox::VType::ALTITUDE_BARO);
    m_vbox[4].setUserData(ValueBox::VType::SENSOR_PRESSURE);
    m_vbox[5].setUserData(ValueBox::VType::TRACK_HEADING);
 }
@@ -165,8 +165,10 @@ void MainWindow::onActive()
     m_vbox[2].setDescription("m/s");
     m_vbox[2].setValue(0, 2);
 
-    m_vbox[3].setTitle("Temp");
-    m_vbox[3].setDescription("Celsius");
+    //m_vbox[3].setTitle("Temp");
+    //m_vbox[3].setDescription("Celsius");
+    m_vbox[3].setTitle("Alt Baro");
+    m_vbox[3].setDescription("m");
     m_vbox[3].setValue(0, 0);
 
     m_vbox[4].setTitle("Pressure");

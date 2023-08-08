@@ -39,6 +39,8 @@ int CubeSentence::start(const char* id)
 {
     if (write('$') == 0)
         return 0;
+
+    // reset CHECKSUM
     mCheckSum = 0;
 
     for (const char* ptr = id; *ptr; ptr++)
@@ -58,8 +60,10 @@ int CubeSentence::append(float value, int precision)
 
     Digit digit;
     digit.begin(value, precision);
-    
+
     write(',');
+    mCheckSum ^= ',';
+
     while (digit.available())
     {
         char ch = digit.get();
@@ -80,6 +84,8 @@ int CubeSentence::append(int value)
     digit.begin((long)value);
 
     write(',');
+    mCheckSum ^= ',';
+
     while (digit.available())
     {
         int ch = digit.get();

@@ -252,14 +252,18 @@ void Application::update()
             LOGv("VARIO: %f %f %f", NMEA.getPressure(), NMEA.getTemperature(), NMEA.getVerticalSpeed());
 
             // LOCK
-            contextPtr->varioState.pressure = NMEA.getPressure();
             contextPtr->varioState.temperature = NMEA.getTemperature();
-            contextPtr->varioState.speedVertActive = NMEA.getVerticalSpeed();            
+            contextPtr->varioState.pressure = NMEA.getPressure();
+            contextPtr->varioState.altitudeBaro = NMEA.getAltitudeBaro();
+            contextPtr->varioState.speedVertActive = NMEA.getVerticalSpeed();
+
+            contextPtr->volume.vario = NMEA.isMuted() ? 0 : 100;
+            contextPtr->volume.effect = NMEA.isMuted() ? 0 : 100;
 
             //contextPtr->varioState.altitudeBaro = calculateAltitude(contextPtr->varioState.pressure);
             //contextPtr->varioState.altitudeCalibrated = contextPtr->varioState.altitudeBaro - contextPtr->varioState.altitudeDrift;
-            //contextPtr->varioState.pressureLazy += (contextPtr->varioState.pressure - contextPtr->varioState.pressureLazy) * 0.2;
-            //contextPtr->varioState.speedVertLazy += (contextPtr->varioState.speedVertActive - contextPtr->varioState.speedVertLazy) * 0.2;
+            contextPtr->varioState.pressureLazy += (contextPtr->varioState.pressure - contextPtr->varioState.pressureLazy) * 0.2;
+            contextPtr->varioState.speedVertLazy += (contextPtr->varioState.speedVertActive - contextPtr->varioState.speedVertLazy) * 0.2;
             // UNLOCK
 
             // update VARIO relative widgets

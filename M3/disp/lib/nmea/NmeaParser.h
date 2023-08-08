@@ -56,8 +56,9 @@ public:
     };
 
     struct VAR {
-        float pressure;
         float temperature;
+        float pressure;
+        float altitude;
         float vspeed;
         uint8_t mute;
     };
@@ -80,8 +81,9 @@ public:
     float getTrack() { return track; }
     time_t getDateTime() { return date; }
 
-    float getPressure() { return pressure; }
     float getTemperature() { return temparture; }
+    float getPressure() { return pressure; }
+    float getAltitudeBaro() { return altitudeBaro; }
     float getVerticalSpeed() { return vspeed; }
     bool isMuted() { return mute != 0; }
 
@@ -126,8 +128,9 @@ protected:
     time_t date;
 
     //
-    float pressure;
     float temparture;
+    float pressure;
+    float altitudeBaro;
     float vspeed;
     uint8_t mute;
 

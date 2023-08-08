@@ -29,8 +29,9 @@ int NmeaParser::begin()
     time = 0;
     date = 0;
 
-    pressure = 0.0f;
     temparture = 0.0f;
+    pressure = 0.0f;
+    altitudeBaro = 0.0f;
     vspeed = 0.0f;
     mute = 0;
 
@@ -129,14 +130,16 @@ int NmeaParser::update(int ch)
                     type = 1;
                 break;
             case STAT_VAR:
-                LOGd("VAR: %f, %f, %f, %d",
-                    parserContext.var.pressure,
+                LOGd("VAR: %f, %f, %f, %f, %d",
                     parserContext.var.temperature,
+                    parserContext.var.pressure,
+                    parserContext.var.altitude,
                     parserContext.var.vspeed,
                     parserContext.var.mute);
 
-                pressure = parserContext.var.pressure;
                 temparture = parserContext.var.temperature;
+                pressure = parserContext.var.pressure;
+                altitudeBaro = parserContext.var.altitude;
                 vspeed = parserContext.var.vspeed;
                 mute = parserContext.var.mute;
                 type = 2;
@@ -295,22 +298,26 @@ void NmeaParser::parseField()
         }
         else if (parserContext.statement == STAT_VAR)
         {
-            // 1: Pressure, DDDDDD
-            // 2: Tempearture, DD.D
-            // 3: vertical speed, DD.D
-            // 4: mute, D
+            // 1: Tempearture, DD.D
+            // 2: Pressure, DDDDDD
+            // 3: Altitude, DD.D
+            // 4: Vertical speed, DD.D
+            // 5: Mute, D
             switch (parserContext.fieldNum)
             {
             case 1:
-                parserContext.var.pressure = atof(parserContext.field);
-                break;
-            case 2:
                 parserContext.var.temperature = atof(parserContext.field);
                 break;
+            case 2:
+                parserContext.var.pressure = atof(parserContext.field);
+                break;
             case 3:
-                parserContext.var.vspeed = atof(parserContext.field);
+                parserContext.var.altitude = atof(parserContext.field);
                 break;
             case 4:
+                parserContext.var.vspeed = atoi(parserContext.field);
+                break;
+            case 5:
                 parserContext.var.mute = atoi(parserContext.field);
                 break;
             }

@@ -9,6 +9,7 @@
 #include "CubeSentence.h"
 #include "HostCommand.h"
 
+#define DEBUG_MODE               0
 
 #define VFILTER_HARINAIR_KF2     1
 #define VFILTER_HARINAIR_KF3     2
@@ -59,7 +60,7 @@ uint8_t mute = 1;
 
 CubeSentence cubeNmea;
 HostCommand hostCommand;
-
+HostCommand debugCommand;
 
 
 void KeypadHandler::onPressed(uint8_t key) 
@@ -92,6 +93,22 @@ void KeypadHandler::onReleased(uint8_t key)
   cubeNmea.finish();
 }
 
+void processCommand(Stream& stream, HostCommand& cmd)
+{
+  while (stream.available())
+  {
+    int code = cmd.push(stream.read());
+    switch (code)
+    {
+    case HostCommand::CMD_MUTE:
+      mute = cmd.getLastCommand().mute.state;
+      LOGv("Receive Mute: %d", mute);
+      if (mute)
+        beeper.setMute();
+      break;
+    }
+  }
+}
 
 void setup() 
 {
@@ -131,7 +148,9 @@ void loop()
   {
     lastChar = SerialGPS.read();
     SerialHost.write(lastChar);
-    //SerialDebug.write(lastChar);
+    #if DEBUG_MODE
+    SerialDebug.write(lastChar);
+    #endif
 
     if (lastChar == '\n')
       break;
@@ -143,12 +162,16 @@ void loop()
     {
       lastChar = cubeNmea.read();
       SerialHost.write(lastChar);
+      #if DEBUG_MODE
+      SerialDebug.write(lastChar);
+      #endif
 
       if (lastChar == '\n')
-      break;
+        break;
     }
   }
 
+  #if PROCESS_HOST_ONLY
   while (SerialHost.available())
   {
     int cmd = hostCommand.push(SerialHost.read());
@@ -162,19 +185,27 @@ void loop()
       break;
     }
   }
+  #else
+  processCommand(SerialHost, hostCommand);
+  #if DEBUG_MODE
+  processCommand(SerialDebug, debugCommand);
+  #endif
+  #endif
 
   keyPad.update();
   beeper.update();
 
   static float altitude = 0.0f, vspeed = 0.0f;
+  static float dampingFactor = 1.0f;
+
   if (vario.update() > 0)
   {
     // update vertical-speed, barometric-altitude, temperature
     float alt = vario.getAltitudeFiltered();
     float vel = vario.getVelocity();
 
-    altitude = altitude + (alt - altitude) * 0.6f;
-    vspeed = vspeed + (vel - vspeed) * 0.6f;
+    altitude = altitude + (alt - altitude) * dampingFactor;
+    vspeed = vspeed + (vel - vspeed) * dampingFactor;
 
     // update beep, vario-nmea, ...
     if (mute == 0)
@@ -182,16 +213,20 @@ void loop()
   }
 
   static uint32_t lastTick = millis();
-  if (millis() - lastTick > 1000)
+  if (millis() - lastTick > 500)
   {
+    //
+    lastTick = millis();
+
+    //
     float temp = vario.getTemperature();
     float prs = vario.getPressure();
     LOGv("Altitude: %f, VSpeed: %f", altitude, vspeed);
-    lastTick = millis();
 
     cubeNmea.start("M3VAR");
-    cubeNmea.append(prs, 0);
     cubeNmea.append(temp, 1);
+    cubeNmea.append(prs, 0);
+    cubeNmea.append(altitude, 0);
     cubeNmea.append(vspeed, 1);
     cubeNmea.append(mute ? 1 : 0);
     cubeNmea.finish();
