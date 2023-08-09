@@ -3,6 +3,7 @@
 
 #include <Arduino.h>
 #include "BLEVario.h"
+#include "ble.h"
 
 //
 //

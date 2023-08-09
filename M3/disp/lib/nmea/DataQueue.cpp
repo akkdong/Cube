@@ -15,8 +15,12 @@ DataQueue::DataQueue()
 
 void DataQueue::push(int ch)
 {
+	int nNext = (mFront + 1) % MAX_NMEA_PARSER_BUFFER;
+	if (nNext == mTail)
+		return;
+
 	mBuffer[mFront] = ch;
-	mFront = (mFront + 1) % MAX_NMEA_PARSER_BUFFER;
+	mFront = nNext;
 }
 
 int DataQueue::pop()

@@ -133,21 +133,19 @@ int Annunciator::update(DeviceContext* context)
     mState |= (uint32_t)context->deviceState.statusSDCard << 6;
     mState |= (uint32_t)(context->volume.vario > 0 ? 1 : 0) << 4;
     
-    uint32_t bat = 5; // empty, 1/4, 2/4, 3/4, 4/4, charging
-    if (context->deviceState.batteryPower < 3.3)
+    uint32_t bat = 4; // empty, 1/3, 1/2, full, charging
+    if (context->deviceState.batteryPower < 4.3)
     {
-        bat = 4;
-        if (context->deviceState.batteryPower < 3.1)
+        bat = 3;
+        if (context->deviceState.batteryPower < 3.6)
         {
-            bat = 3;
-            if (context->deviceState.batteryPower < 3.0)
+            bat = 2;
+            if (context->deviceState.batteryPower < 3.2)
             {
-                bat = 2;
-                if (context->deviceState.batteryPower < 2.9)
+                bat = 1;
+                if (context->deviceState.batteryPower < 2.8)
                 {
-                    bat = 1;
-                    if (context->deviceState.batteryPower < 2.8)
-                        bat = 0;
+                    bat = 0;
                 }
             }
         }
@@ -160,11 +158,11 @@ int Annunciator::update(DeviceContext* context)
 
 void Annunciator::onDraw()
 {
-    #define ICON_W      32
-    #define ICON_H      32
+    #define ICON_W      48
+    #define ICON_H      48
     #define STATUS_H    60
     #define ICON_MARGIN  8
-    #define ICON_SPACE   4
+    #define ICON_SPACE   0
 
     //m_pRefCanvas->drawRect(m_x, m_y, M5EPD_PANEL_W, STATUS_H, M5EPD_Canvas::G15);
     m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
@@ -172,35 +170,35 @@ void Annunciator::onDraw()
     int y = m_y + (m_h - ICON_H) / 2;
     // WOLF
     {
-        m_pRefCanvas->pushImage(x, y, ICON_W, ICON_H, (const uint8_t *)ImageResource_logo_wolf_howl_32x32);
+        m_pRefCanvas->pushImage(x, y, ICON_W, ICON_H, (const uint8_t *)ImageResource_logo_wolf_small_48x48);
         x += ICON_W + ICON_MARGIN;
     }
     // BT
     uint8_t state = (mState >> 10) & 0x03;
     if( state > 0)
     {
-        const uint8_t *img = state > 1 ? ImageResource_bluetooh_paired_32x32 : ImageResource_bluetooth_unpaired_32x32;
+        const uint8_t *img = state > 1 ? ImageResource_bluetooth_paried_48x48 : ImageResource_bluetooth_unpaired_48x48;
         m_pRefCanvas->pushImage(x, y, ICON_W, ICON_H, img);
         x += ICON_W + ICON_SPACE;
     }
     // GPS
     state = (mState >> 8) & 0x03;
     {
-        const uint8_t *img = state > 0 ? ImageResource_gps_fixed_32x32 : ImageResource_gps_unfixed_32x32;
+        const uint8_t *img = state > 0 ? ImageResource_gps_fixed_48x48 : ImageResource_gps_unfixed_48x48;
         m_pRefCanvas->pushImage(x, y, ICON_W, ICON_H, img);
         x += ICON_W + ICON_SPACE;
     }
     // SD
     state = (mState >> 6) & 0x03;
     {
-        const uint8_t *img = state > 1 ? ImageResource_sd_logging_32x32 : ImageResource_sd_ready_32x32;
+        const uint8_t *img = state > 1 ? ImageResource_sd_logging_48x48 : ImageResource_sd_exist_48x48;
         m_pRefCanvas->pushImage(x, y, ICON_W, ICON_H, img);
         x += ICON_W + ICON_SPACE;
     }
     // VOLUME
     state = (mState >> 4) & 0x03;
     {
-        const uint8_t *img = state > 0 ? ImageResource_volume_on_32x32 : ImageResource_volume_mute_32x32;
+        const uint8_t *img = state > 0 ? ImageResource_volume_on_48x48 : ImageResource_volume_mute_48x48;
         m_pRefCanvas->pushImage(x, y, ICON_W, ICON_H, img);
         x += ICON_W + ICON_SPACE;
     }
@@ -210,16 +208,15 @@ void Annunciator::onDraw()
         const uint8_t *img;
         switch (state)
         {
-        case 5: img = ImageResource_battery_charging_32x32; break;
-        case 4: img = ImageResource_battery_full_32x32; break;
-        case 3: img = ImageResource_battery_three_quaters_32x32; break;
-        case 2: img = ImageResource_battery_half_32x32; break;
-        case 1: img = ImageResource_battery_one_quaters_32x32; break;
+        case 4: img = ImageResource_battery_charging_48x48; break;
+        case 3: img = ImageResource_battery_full_48x48; break;
+        case 2: img = ImageResource_battery_half_48x48; break;
+        case 1: img = ImageResource_battery_low_48x48; break;
         case 0:
-        default:  img = ImageResource_battery_empty_32x32; break;
+        default:  img = ImageResource_battery_empty_48x48; break;
         }
 
-        m_pRefCanvas->pushImage(x, y, ICON_W, ICON_H, (const uint8_t *)ImageResource_battery_full_32x32);
+        m_pRefCanvas->pushImage(x, y, ICON_W, ICON_H, img);
         x += ICON_W + ICON_SPACE;
         y = m_y + m_h / 2;
 

@@ -134,6 +134,24 @@ void Application::begin()
     disableCore0WDT();
 
     //
+    {
+        int retry = 0;
+        int status;
+    
+        while ((status == BAT.update()) > 0 || retry++ > 10)
+            delay(10);
+
+        if (status > 0)
+        {
+            // update battery voltage
+            float volt = BAT.getVoltage();
+            LOGv("Battery: %.2fv", volt);
+
+            contextPtr->deviceState.batteryPower = volt;
+        }
+    }
+
+    //
     msgQueue = xQueueCreate(10, sizeof(Message));
 
     xTaskCreate(ScreenTask, "SCR", 4096, this, 2, &taskScreen);    
@@ -194,7 +212,7 @@ void Application::update()
                 contextPtr->varioState.altitudeGPS = NMEA.getAltitude();
                 contextPtr->varioState.speedGround = NMEA.getSpeed();
                 contextPtr->varioState.heading = NMEA.getTrack();
-                contextPtr->varioState.timeCurrent = NMEA.getDateTime();
+                contextPtr->varioState.timeCurrent = NMEA.getDateTime() + contextPtr->deviceDefault.timezone * 3600;
                 contextPtr->varioState.altitudeGround = AGL.getGroundLevel(contextPtr->varioState.latitude, contextPtr->varioState.longitude);
                 contextPtr->varioState.altitudeAGL = contextPtr->varioState.altitudeGPS - contextPtr->varioState.altitudeGround;
                 contextPtr->varioState.altitudeRef1 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef1;
@@ -204,6 +222,32 @@ void Application::update()
 
                 // update GPS relative widgets
                 //sendMessage(MSG_UPDATE_GPS);
+            }
+
+            if (fixed)
+            {
+                if (Application::mode == MODE_GROUND)
+                {
+                    if (contextPtr->varioState.speedGround > contextPtr->logger.takeoffSpeed)
+                    {
+                        startFlight();
+                        sendMessage(MSG_TAKEOFF, 0);
+                    }
+                }
+                else // MODE_FLYING/CIRCLING/GLIDING/SETTING
+                {
+                    igcSentence.begin(
+                        contextPtr->varioState.timeCurrent,
+                        contextPtr->varioState.latitude,
+                        contextPtr->varioState.longitude,
+                        contextPtr->varioState.altitudeBaro,
+                        contextPtr->varioState.altitudeGPS);
+
+                    updateFlightState();
+                    checkFlightMode();
+                }
+
+                sendMessage(MSG_UPDATE_GPS, 0);
             }
 
             if ((fixed && !gpsFixed) || (!fixed && gpsFixed))
@@ -219,33 +263,6 @@ void Application::update()
                 // notify gps-fixed
                 sendMessage(MSG_GPS_FIXED, fixed);
             }
-
-            /*
-            // update BT state
-            if (contextPtr->deviceState.statusBT > 0)
-            {
-                bool connected = app->bt.isConnected();
-                if ((connected && contextPtr->deviceState.statusBT < 2) || (!connected && contextPtr->deviceState.statusBT > 1))
-                    contextPtr->deviceState.statusBT = connected ? 2 : 1;
-            }
-
-            //locParser.enter();
-            {
-                // vario-sentense available?
-                app->bt.update(app->varioNmea, app->locParser);
-
-                // write igc-sentence
-                if (app->igc.isLogging() && app->locParser.availableIGC()) 
-                {
-                    float altitude = app->vario.getAltitudeCalibrated();
-                    app->igc.updateBaroAltitude(altitude);
-
-                    while (app->locParser.availableIGC())
-                        app->igc.write(app->locParser.readIGC());
-                }
-            }
-            //locParser.leave();
-            */
         }
         else if (type == 2) // parsed VARIO sentence
         {
@@ -262,12 +279,39 @@ void Application::update()
 
             //contextPtr->varioState.altitudeBaro = calculateAltitude(contextPtr->varioState.pressure);
             //contextPtr->varioState.altitudeCalibrated = contextPtr->varioState.altitudeBaro - contextPtr->varioState.altitudeDrift;
-            contextPtr->varioState.pressureLazy += (contextPtr->varioState.pressure - contextPtr->varioState.pressureLazy) * 0.2;
-            contextPtr->varioState.speedVertLazy += (contextPtr->varioState.speedVertActive - contextPtr->varioState.speedVertLazy) * 0.2;
+            contextPtr->varioState.pressureLazy += (contextPtr->varioState.pressure - contextPtr->varioState.pressureLazy) * 0.6;
+            contextPtr->varioState.speedVertLazy += (contextPtr->varioState.speedVertActive - contextPtr->varioState.speedVertLazy) * 0.6;
             // UNLOCK
 
             // update VARIO relative widgets
             sendMessage(MSG_UPDATE_VARIO);
+
+            //if (/* busy? interval? */ varioNmea.checkInterval())
+            {
+                // update vario-setence
+                float height = contextPtr->deviceState.statusGPS == 1 ? contextPtr->varioState.altitudeGPS : -1;
+                float velocity = contextPtr->varioState.speedVertLazy;
+                float temperature = contextPtr->varioState.temperature;
+                float pressure = contextPtr->varioState.pressureLazy; // to hPa
+                float voltage = contextPtr->deviceState.batteryPower;
+
+                varioNmea.begin(height, velocity, temperature, pressure, voltage);
+
+                //
+                if (Application::mode != MODE_GROUND /*&& contextPtr->deviceState.statusGPS == 0*/)
+                {
+                    uint32_t curTick = millis();
+
+                    if (velocity < STABLE_SINKING_THRESHOLD || STABLE_SINKING_THRESHOLD < velocity)
+                        tick_silentBase = curTick;
+
+                    if (contextPtr->threshold.autoShutdownVario && ((curTick - tick_silentBase) > contextPtr->threshold.autoShutdownVario))
+                    {   
+                        stopFlight();                     
+                        sendMessage(MSG_LANDING);
+                    }
+                }
+            }
         }
         else if (type == 3) // parsed KBD sentence
         {
@@ -290,109 +334,41 @@ void Application::update()
             case 0xB3: // >  ENTER
                 sendMessage(msg, EXT_KEY_RIGHT);
                 break;
-            }
-
-            /*
-            if (key == 0xB0 && state == 2) // KEY_ENTER(UP), LONG
-            {
-                Serial1.println("MUTE 0");
-                Serial.println("MUTE 0");
-            }
-            else if (key == 0xB1 && state == 2) // KEY_ESCAPE(DOWN), LONG
-            {
-                Serial1.println("MUTE 1");
-                Serial.println("MUTE 1");
-            }
-            */            
+            }          
         }
 
-        if (type == 1 && NMEA.isFixed())
+        // update BT state
+        if (contextPtr->deviceState.statusBT > 0)
         {
-            if (Application::mode == MODE_GROUND)
-            {
-                if (contextPtr->varioState.speedGround > contextPtr->logger.takeoffSpeed)
-                {
-                    startFlight();
-                    sendMessage(MSG_TAKEOFF, 0);
-                }
-            }
-            else // MODE_FLYING/CIRCLING/GLIDING/SETTING
-            {
-                updateFlightState();
-                checkFlightMode();
-            }
-
-            sendMessage(MSG_UPDATE_GPS, 0);
+            bool connected = BT.isConnected();
+            if ((connected && contextPtr->deviceState.statusBT < 2) || (!connected && contextPtr->deviceState.statusBT > 1))
+                contextPtr->deviceState.statusBT = connected ? 2 : 1;
         }
 
-        if (type == 2) // signaled every 1s
+        // write igc-sentence
+        if (IGC.isLogging() && igcSentence.available()) 
         {
-            //if (/* busy? interval? */ app->varioNmea.checkInterval())
-            {
-                float height = contextPtr->deviceState.statusGPS == 1 ? contextPtr->varioState.altitudeGPS : -1;
-                float velocity = contextPtr->varioState.speedVertLazy;
-                float temperature = contextPtr->varioState.temperature;
-                float pressure = contextPtr->varioState.pressureLazy; // to hPa
-                float voltage = contextPtr->deviceState.batteryPower;
+            //float altitude = NMEA.getAltitude();
+            //IGC.updateBaroAltitude(altitude);
 
-                //app->varioNmea.begin(height, velocity, temperature, pressure, voltage);
-                //app->postMessage(MSG_FLUSH_VARIO_NMEA, 0)
-
-                if (Application::mode != MODE_GROUND && contextPtr->deviceState.statusGPS == 0)
-                {
-                    uint32_t curTick = millis();
-
-                    if (velocity < STABLE_SINKING_THRESHOLD || STABLE_SINKING_THRESHOLD < velocity)
-                        tick_silentBase = curTick;
-
-                    if (contextPtr->threshold.autoShutdownVario && ((curTick - tick_silentBase) > contextPtr->threshold.autoShutdownVario))
-                    {   
-                        stopFlight();                     
-                        sendMessage(MSG_LANDING);
-                    }
-                }
-            }
-
-            //sendMessage(MSG_UPDATE_VARIO, 0);
-        }        
-
-        //if (type != 0)
-        //  output.pushCanvas(0, 540 - 450, UPDATE_MODE_GL16);
-
-        //
+            while (igcSentence.available())
+                IGC.write(igcSentence.read());
+        }
     }
+
+    // 
+    BT.update(varioNmea, NMEA);
 
     //
-    //KEY.update();
-
-    /*
-    if (BTN[1].pressedFor(2000))
-    {
-        Display.clear();
-        int x = (M5EPD_PANEL_W - 128) / 2;
-        int y = (M5EPD_PANEL_H - 128) / 2;
-        Display.pushImage(x, y, 128, 128, ImageResource_biglogo_wolf_howl_128x128);
-        Display.pushCanvas(0, 0, UPDATE_MODE_GLD16);
-        //EPD.UpdateFull(UPDATE_MODE_GC16);
-
-        delay(1000);
-
-        digitalWrite(M5EPD_EXT_PWR_EN_PIN, 0);
-        digitalWrite(M5EPD_EPD_PWR_EN_PIN, 0);        
-        delay(100);
-        digitalWrite(M5EPD_MAIN_PWR_PIN, 0);
-        while(1);
-    }
-    */
-
     uint32_t tick = millis();
     if (tick - tick_updateTime > 1000)
     {
         sendMessage(MSG_REDRAW, 0);
         tick_updateTime = tick;
     }
+    //
 
-    delay(1);
+    //delay(1);
 }
 
 void Application::startVario()
@@ -773,6 +749,7 @@ void Application::ScreenTask()
             case MSG_UPDATE_VARIO:
             case MSG_UPDATE_BAT:
             case MSG_UPDATE_TH:
+            case MSG_GPS_FIXED:
                 active->update(contextPtr);
                 break;
             case MSG_REDRAW:
@@ -786,10 +763,12 @@ void Application::ScreenTask()
     {
         EPD.Clear(true);
 
+        #define LOGO_WIDTH  256
+        #define LOG_HEIGHT  256
         Display.clear();
-        int x = (LCD_WIDTH - 128) / 2;
-        int y = (LCD_HEIGHT - 128) / 2;
-        Display.pushImage(x, y, 128, 128, ImageResource_biglogo_wolf_howl_128x128);
+        int x = (LCD_WIDTH - LOGO_WIDTH) / 2;
+        int y = (LCD_HEIGHT - LOG_HEIGHT) / 2;
+        Display.pushImage(x, y, LOGO_WIDTH, LOG_HEIGHT, ImageResource_logo_wolf_large_256x256);
         Display.pushCanvas(0, 0, UPDATE_MODE_GLD16);
 
         delay(1000);

@@ -21,6 +21,7 @@
 #include "BluetoothManager.h"
 #include "VarioLogger.h"
 #include "VarioSentence.h"
+#include "IGCSentence.h"
 
 
 //
@@ -32,12 +33,20 @@ enum DeviceMode
     MODE_GROUND,
     MODE_FLYING,
     MODE_CIRCLING,
-    MODE_GLIDING,
-    MODE_SETTING,
+    MODE_GLIDING
 };
+
+// UDPATE FLAG
+#define UFLAG_GPS_DATA      0x0001
+#define UFLAG_VARIO_DATA    0x0002
+#define UFLAG_BAT_DATA      0x0004
+#define UFLAG_TH_DATA       0x0008
+
 
 enum MessageCode {
     MSG_NONE,
+    MSG_UPDATE_CONTENT,
+
     MSG_UPDATE_GPS, // MSG_UPDATE_NMEA
     MSG_UPDATE_VARIO,
     MSG_UPDATE_ANNUNCIATOR,
@@ -140,6 +149,7 @@ protected:
     BluetoothManager BT;
     VarioLogger IGC;
     VarioSentence varioNmea;
+    IGCSentence igcSentence;
 
     //
     volatile DeviceMode mode;

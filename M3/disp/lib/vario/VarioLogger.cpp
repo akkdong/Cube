@@ -166,7 +166,7 @@ int VarioLogger::write(uint8_t ch)
 	if (! IS_SET(LOGGER_WORKING))
 		return 0;
 	
-	#if 1	
+	#if 0	
 	if (columnCount < 0 && ch != 'B')
 		return 0;
 	

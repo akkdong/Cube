@@ -84,7 +84,11 @@ int NmeaParser::update(int ch)
     }
     else if (ch == '\n')
     {
+        #if ACCEPT_GPS_ONLY
         if (parserContext.statement == STAT_GGA || parserContext.statement == STAT_RMC)
+        #else
+        if (parserContext.statement != STAT_UNKNOWN)
+        #endif
             dataQueue.acceptReserve();
         else
             dataQueue.rejectReserve();
@@ -94,7 +98,7 @@ int NmeaParser::update(int ch)
             switch (parserContext.statement)
             {
             case STAT_GGA:
-                LOGd("GGA: %d, %f, %f, %f", 
+                LOGv("GGA: %d, %f, %f, %f", 
                     parserContext.gga.time, 
                     parserContext.gga.latitude,
                     parserContext.gga.longitude,
@@ -104,13 +108,13 @@ int NmeaParser::update(int ch)
                 latitude = parserContext.gga.latitude;
                 longitude = parserContext.gga.longitude;
                 altitude = parserContext.gga.altitude;
-                if (time != parserContext.gga.time)
+                if (time != parserContext.gga.time && parserContext.gga.time != 0)
                     time = parserContext.gga.time;
                 else
                     type = 1;
                 break;
             case STAT_RMC:
-                LOGd("RMC: %d, %.*f, %.*f, %d",
+                LOGv("RMC: %d, %.*f, %.*f, %d",
                     parserContext.rmc.time,
                     2,
                     parserContext.rmc.speed,
@@ -124,13 +128,13 @@ int NmeaParser::update(int ch)
                 speed = parserContext.rmc.speed;
                 track = parserContext.rmc.track;
                 date = parserContext.rmc.date;
-                if (time != parserContext.rmc.time)
+                if (time != parserContext.rmc.time && parserContext.rmc.time != 0)
                     time = parserContext.gga.time;
                 else
                     type = 1;
                 break;
             case STAT_VAR:
-                LOGd("VAR: %f, %f, %f, %f, %d",
+                LOGv("VAR: %f, %f, %f, %f, %d",
                     parserContext.var.temperature,
                     parserContext.var.pressure,
                     parserContext.var.altitude,
@@ -145,7 +149,7 @@ int NmeaParser::update(int ch)
                 type = 2;
                 break;
             case STAT_KBD:
-                LOGd("KBD: %d, %d",
+                LOGv("KBD: %d, %d",
                     parserContext.kbd.key,
                     parserContext.kbd.state);
 
@@ -315,7 +319,7 @@ void NmeaParser::parseField()
                 parserContext.var.altitude = atof(parserContext.field);
                 break;
             case 4:
-                parserContext.var.vspeed = atoi(parserContext.field);
+                parserContext.var.vspeed = atof(parserContext.field);
                 break;
             case 5:
                 parserContext.var.mute = atoi(parserContext.field);
