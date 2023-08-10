@@ -108,7 +108,7 @@ int NmeaParser::update(int ch)
                 latitude = parserContext.gga.latitude;
                 longitude = parserContext.gga.longitude;
                 altitude = parserContext.gga.altitude;
-                if (time != parserContext.gga.time && parserContext.gga.time != 0)
+                if (parserContext.gga.time == 0 || time != parserContext.gga.time)
                     time = parserContext.gga.time;
                 else
                     type = 1;
@@ -128,8 +128,8 @@ int NmeaParser::update(int ch)
                 speed = parserContext.rmc.speed;
                 track = parserContext.rmc.track;
                 date = parserContext.rmc.date;
-                if (time != parserContext.rmc.time && parserContext.rmc.time != 0)
-                    time = parserContext.gga.time;
+                if (parserContext.rmc.time == 0 || time != parserContext.rmc.time)
+                    time = parserContext.rmc.time;
                 else
                     type = 1;
                 break;
@@ -389,7 +389,7 @@ time_t NmeaParser::strToDate(const char* str, time_t time)
     _tm.tm_min = 0;
     _tm.tm_sec = 0;    
 
-    return mktime(&_tm) + time + 619315200;
+    return mktime(&_tm) + time /*+ 619315200*/;
 }
 
 float NmeaParser::nmeaToDecimal(float nmea)

@@ -71,6 +71,10 @@ enum MessageCode {
     MSG_KEY_LONG_PRESSED,
     MSG_KEY_RELEASED,
 
+    MSG_TOUCH_PRESSED,
+    MSG_TOUCH_LONG_PRESSED,
+    MSG_TOUCH_RELEASED,
+
     MSG_SHUTDOWN,
 };
 
@@ -152,7 +156,7 @@ protected:
     IGCSentence igcSentence;
 
     //
-    volatile DeviceMode mode;
+    volatile DeviceMode deviceMode;
 
     uint32_t tick_updateTime;
     uint32_t tick_updateDisp;

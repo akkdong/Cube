@@ -20,6 +20,9 @@ AGLClass::~AGLClass()
 
 double AGLClass::getGroundLevel(double _lat, double _lon)
 {
+	if (SD.cardType() == CARD_NONE)
+		return 0;
+
 	if (! mFile || (int)_lat != mLat || (int)_lon != mLon)
 	{
 		mLat = (int16_t)_lat;

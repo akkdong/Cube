@@ -23,7 +23,8 @@
 Widget::Widget(M5EPD_Canvas *pRefCanvas)
     : m_pRefCanvas(pRefCanvas)
     , m_x(0), m_y(0), m_w(0), m_h(0)
-    , m_flag(0){
+    , m_flag(0)
+{
 }
 
 Widget::Widget(M5EPD_Canvas *pRefCanvas, int x, int y, int w, int h)
@@ -67,7 +68,7 @@ void Widget::show(bool show)
         m_flag = m_flag & (~WSTATE_VISIBLE);
 }
 
-int Widget::update(DeviceContext *context)
+int Widget::update(DeviceContext *context, uint32_t updateHints)
 {
     return 0;
 }
@@ -118,7 +119,7 @@ Annunciator::Annunciator(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
 {
 }
 
-int Annunciator::update(DeviceContext* context)
+int Annunciator::update(DeviceContext* context, uint32_t updateHints)
 {
     // 109876543210           
     // BBGGSSVVCCCC
@@ -171,7 +172,7 @@ void Annunciator::onDraw()
     // WOLF
     {
         m_pRefCanvas->pushImage(x, y, ICON_W, ICON_H, (const uint8_t *)ImageResource_logo_wolf_small_48x48);
-        x += ICON_W + ICON_MARGIN;
+        x += ICON_W /*+ ICON_MARGIN*/;
     }
     // BT
     uint8_t state = (mState >> 10) & 0x03;
@@ -190,6 +191,7 @@ void Annunciator::onDraw()
     }
     // SD
     state = (mState >> 6) & 0x03;
+    if (state > 0)
     {
         const uint8_t *img = state > 1 ? ImageResource_sd_logging_48x48 : ImageResource_sd_exist_48x48;
         m_pRefCanvas->pushImage(x, y, ICON_W, ICON_H, img);
@@ -253,6 +255,60 @@ const char * Annunciator::getTimeString(char* str, time_t t, bool includeSecond)
 
 
 
+
+/////////////////////////////////////////////////////////////////////////////////
+//
+
+class NumberData : public ValueProvider
+{
+public:
+    NumberData(int decimalPlace) : m_value(0), m_decimalPlace(decimalPlace) {}
+
+public:
+    void setValue(float value) override {
+        m_value = value;
+    }
+    void setValue(int16_t value) override {
+        m_value = value;
+    }
+
+    const char * getValue(char * buf, int bufLen) override {
+        sprintf(buf, "%.*f", m_decimalPlace, m_value);
+        return buf;
+    }
+
+protected:
+    float m_value;
+    int m_decimalPlace;
+};
+
+class TimeStringData : public ValueProvider
+{
+public:
+    TimeStringData(bool shortStr) : m_value(0), m_shortStr(shortStr) {}
+
+public:
+    void setValue(time_t value) override {
+        m_value = value;
+    }
+
+    const char * getValue(char * buf, int bufLen) override {
+        struct tm * _tm = localtime(&m_value);    
+        if (m_shortStr)
+            sprintf(buf, "%02d:%02d:%02d", _tm->tm_hour, _tm->tm_min,_tm->tm_sec);
+        else
+            sprintf(buf, "%02d:%02d", _tm->tm_hour * 3600 + _tm->tm_min, _tm->tm_sec);
+
+        return buf;
+    }
+
+protected:
+    time_t m_value;
+    bool m_shortStr;
+};
+
+
+
 /////////////////////////////////////////////////////////////////////////////////
 // class ValueBox
 
@@ -263,8 +319,7 @@ ValueBox::ValueBox(M5EPD_Canvas* pRefCanvas)
     : Widget(pRefCanvas, 0, 0, 0, 0)
     , m_title("")
     , m_desc("")
-    , m_value(0)
-    , m_decimalPlace(1)    
+    , m_pValueProvider(nullptr)
 {
 
 }
@@ -273,10 +328,142 @@ ValueBox::ValueBox(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
     : Widget(pRefCanvas, x, y, w, h)
     , m_title("")
     , m_desc("")
-    , m_value(0)
-    , m_decimalPlace(1)    
+    , m_pValueProvider(nullptr)
 {
 
+}
+
+ValueBox::~ValueBox()
+{
+    if (m_pValueProvider)
+        delete m_pValueProvider;
+}
+
+void ValueBox::init(uint16_t vType)
+{
+    // set value-box type as user-data
+    setUserData(vType);
+
+    // set title & description
+    const char *title, *desc;
+    unsigned int decimalPlaces = 0;
+
+    switch (vType)
+    {
+    case ALTITUDE_GROUND:
+        title = "Alt Ground";
+        desc = "m";
+        break;
+    case ALTITUDE_BARO:
+        title = "Alt Baro";
+        desc = "m";
+        break;
+    case ALTITUDE_AGL:
+        title = "AGL";
+        desc = "m";
+        break;
+    case SPEED_GROUND:
+        title = "Speed Ground";
+        desc = "km/s";
+        break;
+    case SPEED_AIR:
+        title = "Speed AIR";
+        desc = "km/s";
+        break;
+    case SPEED_VERTICAL:
+        title = "Variometer";
+        desc = "m/s";
+        decimalPlaces = 2;
+        break;
+    case SPEED_VERTICAL_LAZY:
+        title = "Alt Ground";
+        desc = "m/s";
+        decimalPlaces = 2;
+        break;
+    case TRACK_HEADING:
+        title = "Heading";
+        desc = "Deg";
+        break;
+    case TARCK_BEARING:
+        title = "Bearing";
+        desc = "Deg";
+        break;
+    case TIME_FLIGHT:
+        title = "Time Flight";
+        desc = "hh:mm:ss";
+        break;
+    case TIME_CURRENT:
+        title = "Time";
+        desc = "hh:mm:ss";
+        break;
+    case TIME_TO_NEXT_WAYPOINT:
+        title = "Time Next";
+        desc = "mm:ss";
+        break;
+    case TIME_REMAIN:
+        title = "Time Remain";
+        desc = "mm:ss";
+        break;
+    case DISTANCE_TAKEOFF:
+        title = "Dist. Takeoff";
+        desc = "km";
+        decimalPlaces = 1;
+        break;
+    case DISTANCE_LANDING:
+        title = "Dist. Landing";
+        desc = "km";
+        decimalPlaces = 1;
+        break;
+    case DISTANCE_NEXT_WAYPOINT:
+        title = "Dist. Next";
+        desc = "km";
+        decimalPlaces = 1;
+        break;
+    case DISTANCE_FLIGHT:
+        title = "Dist. Flight";
+        desc = "km";
+        decimalPlaces = 1;
+        break;
+    case GLIDE_RATIO:
+        title = "L/D";
+        desc = "";
+        decimalPlaces = 1;
+        break;
+    case SENSOR_PRESSURE:
+        title = "Pressure";
+        desc = "Pa";
+        break;
+    case SENSOR_TEMPERATURE:
+        title = "Temp";
+        desc = "Celsius";
+        decimalPlaces = 1;
+        break;
+    case SENSOR_HUMIDITY:
+        title = "Humidity";
+        desc = "%";
+        break;
+    default:
+        return;
+    }
+
+    setTitle(title);
+    setDescription(desc);
+
+    // set value-provider
+    switch (vType)
+    {
+    case TIME_FLIGHT:
+    case TIME_CURRENT:
+        m_pValueProvider = new TimeStringData(false);
+        break;
+    case TIME_TO_NEXT_WAYPOINT:
+    case TIME_REMAIN:
+        m_pValueProvider = new TimeStringData(true);
+        break;
+    default:
+        m_pValueProvider = new NumberData(decimalPlaces);
+        break;
+    }
 }
 
 void ValueBox::setFontSize(int titleSize, int valueSize)
@@ -285,44 +472,40 @@ void ValueBox::setFontSize(int titleSize, int valueSize)
     m_valueFontSize = valueSize;
 }
 
-int ValueBox::update(DeviceContext* context)
+int ValueBox::update(DeviceContext* context, uint32_t updateHints)
 {
+    if (!m_pValueProvider)
+        return 0;
+
     // update value and title, desc if necessary
     switch (getUserData())
     {
     case ValueBox::VType::ALTITUDE_GROUND:
-        setValue(context->varioState.altitudeGPS, 0);
-        setDirty(true);
+        m_pValueProvider->setValue(context->varioState.altitudeGPS);
         break;
     case ValueBox::VType::ALTITUDE_BARO:
-        setValue(context->varioState.altitudeBaro, 0);
-        setDirty(true);
+        m_pValueProvider->setValue(context->varioState.altitudeBaro);
         break;
     case ValueBox::VType::SPEED_GROUND:
-        setValue(context->varioState.speedGround, 0);
-        setDirty(true);
+        m_pValueProvider->setValue(context->varioState.speedGround);
         break;
     case ValueBox::VType::SPEED_VERTICAL:
-        setValue(context->varioState.speedVertActive, 2);
-        setDirty(true);
+        m_pValueProvider->setValue(context->varioState.speedVertActive);
         break;
     case ValueBox::VType::SENSOR_TEMPERATURE:
-        setValue(context->varioState.temperature, 0);
-        setDirty(true);
+        m_pValueProvider->setValue(context->varioState.temperature);
         break;
     case ValueBox::VType::SENSOR_PRESSURE:
-        setValue(context->varioState.pressure, 0);
-        setDirty(true);
+        m_pValueProvider->setValue(context->varioState.pressure);
         break;
     case ValueBox::VType::TRACK_HEADING:
-        setValue(context->varioState.heading, 0);
-        setDirty(true);
+        m_pValueProvider->setValue(context->varioState.heading);
         break;
     default:
-        break;
+        return 0;
     }
 
-    return isDirty() ? 1 : 0;
+    return 1;
 }
 
 void ValueBox::onDraw()
@@ -339,7 +522,7 @@ void ValueBox::onDraw()
     m_pRefCanvas->setTextSize(m_valueFontSize);
 
     char sz[32];
-    sprintf(sz, "%.*f", m_decimalPlace, m_value);
+    m_pValueProvider->getValue(sz, sizeof(sz));
     m_pRefCanvas->drawString(sz, m_x + m_w - 8, m_y + m_h);
 }
 
@@ -359,7 +542,7 @@ ThermalAssist::ThermalAssist(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int 
 {
 }
 
-int ThermalAssist::update(DeviceContext* context)
+int ThermalAssist::update(DeviceContext* context, uint32_t updateHints)
 {
     return 0;
 }
@@ -439,7 +622,7 @@ Compass::Compass(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
 {
 }
 
-int Compass::update(DeviceContext* context)
+int Compass::update(DeviceContext* context, uint32_t updateHints)
 {
     return 0;
 }
@@ -468,7 +651,7 @@ VarioMeter::VarioMeter(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
 {
 }
 
-int VarioMeter::update(DeviceContext* context)
+int VarioMeter::update(DeviceContext* context, uint32_t updateHints)
 {
     return 0;
 }

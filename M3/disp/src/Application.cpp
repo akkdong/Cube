@@ -10,6 +10,7 @@
 #include "Application.h"
 #include "Widgets.h"
 #include "Window.h"
+#include "MainWindow.h"
 #include "font/binaryttf.h"
 #include "ImageResource.h"
 #include "KeypadInput.h"
@@ -33,7 +34,7 @@ Application::Application()
     , DBG(Serial)
     , Display(&EPD)
     , contextPtr(nullptr)
-    , mode(MODE_INIT)
+    , deviceMode(MODE_INIT)
     , varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
 {
 }
@@ -64,7 +65,7 @@ void Application::initBoard()
     // mount SPIFFS
     SPIFFS.begin();
     // check SD-Card and ready to use
-    //SD.begin(4, SPI, 20000000)
+    SD.begin(4, SPI, 20000000);
 
     if (SD.cardType() != CARD_NONE)
     {
@@ -161,7 +162,7 @@ void Application::begin()
     //
     //
     //
-    mode = MODE_INIT;
+    deviceMode = MODE_INIT;
 
     if (contextPtr->deviceDefault.enableBT)
         BT.begin(0x03, contextPtr->deviceDefault.btName);    
@@ -187,7 +188,7 @@ void Application::update()
     //   update canvas(screen)
     // 
 
-    bool engMode = false;
+    bool engMode = true;
     Stream& input = engMode ? Serial : Serial1;
     while (input.available())
     {
@@ -220,13 +221,7 @@ void Application::update()
                 contextPtr->varioState.altitudeRef3 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef3;        
                 // UNLOCK
 
-                // update GPS relative widgets
-                //sendMessage(MSG_UPDATE_GPS);
-            }
-
-            if (fixed)
-            {
-                if (Application::mode == MODE_GROUND)
+                if (Application::deviceMode == MODE_GROUND)
                 {
                     if (contextPtr->varioState.speedGround > contextPtr->logger.takeoffSpeed)
                     {
@@ -236,12 +231,19 @@ void Application::update()
                 }
                 else // MODE_FLYING/CIRCLING/GLIDING/SETTING
                 {
-                    igcSentence.begin(
-                        contextPtr->varioState.timeCurrent,
-                        contextPtr->varioState.latitude,
-                        contextPtr->varioState.longitude,
-                        contextPtr->varioState.altitudeBaro,
-                        contextPtr->varioState.altitudeGPS);
+                    if (IGC.isLogging())
+                    {
+                        igcSentence.begin(
+                            contextPtr->varioState.timeCurrent - contextPtr->deviceDefault.timezone * 3600,
+                            contextPtr->varioState.latitude,
+                            contextPtr->varioState.longitude,
+                            contextPtr->varioState.altitudeBaro,
+                            contextPtr->varioState.altitudeGPS);
+
+                        #if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+                        igcSentence.dump(Serial);
+                        #endif
+                    }
 
                     updateFlightState();
                     checkFlightMode();
@@ -254,10 +256,20 @@ void Application::update()
             {
                 gpsFixed = fixed;
                 contextPtr->deviceState.statusGPS = fixed ? 1 : 0;
+                LOGv("GPS Fixed: %s", gpsFixed ? "TRUE" : "FALSE");
+
                 if (fixed)
                 {
                     // update device-time
                     setDeviceTime(contextPtr->varioState.timeCurrent);
+                }
+                else
+                {
+                    contextPtr->varioState.altitudeGPS = 0;
+                    contextPtr->varioState.speedGround = 0;
+                    contextPtr->varioState.heading = 0;
+
+                    sendMessage(MSG_UPDATE_GPS, 0);
                 }
 
                 // notify gps-fixed
@@ -266,7 +278,7 @@ void Application::update()
         }
         else if (type == 2) // parsed VARIO sentence
         {
-            LOGv("VARIO: %f %f %f", NMEA.getPressure(), NMEA.getTemperature(), NMEA.getVerticalSpeed());
+            LOGv("VARIO: %f %f %f %f", NMEA.getPressure(), NMEA.getTemperature(), NMEA.getAltitudeBaro(), NMEA.getVerticalSpeed());
 
             // LOCK
             contextPtr->varioState.temperature = NMEA.getTemperature();
@@ -298,7 +310,7 @@ void Application::update()
                 varioNmea.begin(height, velocity, temperature, pressure, voltage);
 
                 //
-                if (Application::mode != MODE_GROUND /*&& contextPtr->deviceState.statusGPS == 0*/)
+                if (Application::deviceMode != MODE_GROUND && contextPtr->deviceState.statusGPS == 0)
                 {
                     uint32_t curTick = millis();
 
@@ -317,8 +329,8 @@ void Application::update()
         {
             uint8_t key, state;
             key = NMEA.getLastKey(&state);
-            LOGv("KEY: %d(%s)", key, state == 0 ? "OFF" : (state == 1 ? "ON" : "LONG"));
             uint16_t msg = state == 0 ? MSG_KEY_RELEASED : (state == 1 ? MSG_KEY_PRESSED : MSG_KEY_LONG_PRESSED);
+            LOGv("KEY: %d(%s)", key, state == 0 ? "OFF" : (state == 1 ? "ON" : "LONG"));
 
             switch (key)
             {
@@ -336,53 +348,54 @@ void Application::update()
                 break;
             }          
         }
-
-        // update BT state
-        if (contextPtr->deviceState.statusBT > 0)
-        {
-            bool connected = BT.isConnected();
-            if ((connected && contextPtr->deviceState.statusBT < 2) || (!connected && contextPtr->deviceState.statusBT > 1))
-                contextPtr->deviceState.statusBT = connected ? 2 : 1;
-        }
-
-        // write igc-sentence
-        if (IGC.isLogging() && igcSentence.available()) 
-        {
-            //float altitude = NMEA.getAltitude();
-            //IGC.updateBaroAltitude(altitude);
-
-            while (igcSentence.available())
-                IGC.write(igcSentence.read());
-        }
     }
 
-    // 
+    // update BT state
+    if (contextPtr->deviceState.statusBT > 0)
+    {
+        bool connected = BT.isConnected();
+        if ((connected && contextPtr->deviceState.statusBT < 2) || (!connected && contextPtr->deviceState.statusBT > 1))
+            contextPtr->deviceState.statusBT = connected ? 2 : 1;
+    }
+
+    // flush bt buffer
     BT.update(varioNmea, NMEA);
 
-    //
+    // flush igc-sentence
+    if (IGC.isLogging() && igcSentence.available()) 
+    {
+        //float altitude = NMEA.getAltitude();
+        //IGC.updateBaroAltitude(altitude);
+
+        while (igcSentence.available())
+            IGC.write(igcSentence.read());
+    }
+
+    /*
     uint32_t tick = millis();
     if (tick - tick_updateTime > 1000)
     {
         sendMessage(MSG_REDRAW, 0);
         tick_updateTime = tick;
     }
-    //
+    */
 
     //delay(1);
 }
 
 void Application::startVario()
 {
-    LOGv("Application::startVario()");
+    LOGi("Application::startVario()");
 
     contextPtr->deviceState.statusSDCard = SD.cardType() != CARD_NONE ? 1 : 0;
     contextPtr->deviceState.statusGPS = 0;
     contextPtr->deviceState.batteryPower = BAT.getVoltage();
 
-    mode = MODE_GROUND;
+    deviceMode = MODE_GROUND;
     tick_silentBase = millis();
-    tick_updateDisp = millis() - 1000;
+    tick_updateDisp = tick_silentBase - 1000;
     dispNeedUpdate = true;
+    gpsFixed = false;
 
     vTaskResume(taskScreen);
     vTaskResume(taskDevice);
@@ -393,7 +406,7 @@ void Application::startFlight()
     // turn on sound if auto-turn-on is setted
     if (contextPtr->volume.autoTurnOn)
     {
-        contextPtr->volume.effect = contextPtr->volume.vario = 100;
+        //contextPtr->volume.effect = contextPtr->volume.vario = 100;
         Serial1.println("MUTE 0");
     }
 
@@ -423,8 +436,8 @@ void Application::startFlight()
     contextPtr->flightStats.altitudeMax = contextPtr->varioState.altitudeGPS;
     contextPtr->flightStats.altitudeMin = contextPtr->varioState.altitudeGPS;
 
-    LOGv("mode: %d", MODE_FLYING);
-    mode = MODE_FLYING;
+    LOGi("Start Flight!");
+    deviceMode = MODE_FLYING;
     tick_stopBase = millis();
 }
 
@@ -477,7 +490,7 @@ void Application::updateFlightState()
 
 void Application::checkFlightMode()
 {
-	switch (mode)
+	switch (deviceMode)
 	{
 	case MODE_FLYING :
 		if (abs(contextPtr->flightState.deltaHeading_SUM) > 360)
@@ -532,7 +545,7 @@ void Application::checkFlightMode()
 		break;
 	}
 
-    if (contextPtr->varioState.speedGround < contextPtr->logger.landingSpeed) // FLIGHT_START_MIN_SPEED
+    if (/*deviceMode != MODE_GROUND &&*/ contextPtr->varioState.speedGround < contextPtr->logger.landingSpeed) // FLIGHT_START_MIN_SPEED
     {
         uint32_t interval = millis() - this->tick_stopBase;
         //LOGv("stop interval: %u", interval);
@@ -551,7 +564,7 @@ void Application::checkFlightMode()
 void Application::stopFlight()
 {
     // stop-flight
-    mode = MODE_GROUND;
+    deviceMode = MODE_GROUND;
     //contextPtr->flightState.flightMode = FMODE_READY;
     contextPtr->flightState.bearingTakeoff = -1;
 
@@ -579,11 +592,13 @@ void Application::stopFlight()
 
     if (contextPtr->volume.autoTurnOn)
     {
-        contextPtr->volume.vario = contextPtr->volume.varioDefault;
-        contextPtr->volume.effect = contextPtr->volume.effectDefault;
+        //contextPtr->volume.vario = contextPtr->volume.varioDefault;
+        //contextPtr->volume.effect = contextPtr->volume.effectDefault;
 
         Serial1.println("MUTE 1");
     }
+
+    LOGi("Stop Flight!");
 }
 
 
@@ -591,7 +606,7 @@ void Application::startCircling()
 {
 	// start of circling
 	//contextPtr->flightState.flightMode = FMODE_CIRCLING;
-    mode = MODE_CIRCLING;
+    deviceMode = MODE_CIRCLING;
 
 	// save circling state
 	contextPtr->flightState.circlingStartTime = contextPtr->varioState.timeCurrent;
@@ -614,7 +629,7 @@ void Application::stopCircling()
 {
 	// now normal flying
 	//contextPtr->flightState.flightMode = FMODE_FLYING;
-    mode = MODE_FLYING;
+    deviceMode = MODE_FLYING;
 
 	// update flight-statistics : thermaling count, max-gain
 	if (contextPtr->flightState.circlingGain > 10 && contextPtr->flightState.circlingTime > 0)
@@ -635,7 +650,7 @@ void Application::startGliding()
 {
 	// start of circling
 	//contextPtr->flightState.flightMode = FMODE_GLIDING;
-    mode = MODE_GLIDING;
+    deviceMode = MODE_GLIDING;
 
 	//
 	contextPtr->flightState.glidingStartPos.lon = contextPtr->varioState.longitude;
@@ -649,7 +664,7 @@ void Application::stopGliding()
 {
 	// now normal flying
 	//contextPtr->flightState.flightMode = FMODE_FLYING;
-    mode = MODE_FLYING;
+    deviceMode = MODE_FLYING;
 
 	//
 	contextPtr->flightState.glideRatio = -1;
@@ -725,18 +740,19 @@ void Application::ScreenTask()
 {
     //
     Window* active = Scrn.getActiveWindow();
-    active->update(contextPtr);
+    active->update(contextPtr, 0);
     active->draw(/*true*/);
 
-
-    const TickType_t xDelay = pdMS_TO_TICKS(500); // 500 / portTICK_PERIOD_MS;    
+    const TickType_t xDelay = pdMS_TO_TICKS(200); // 500 / portTICK_PERIOD_MS;
+    TickType_t lastTick = 0;
+    int isUpdated = 0;
 
     while (true)
     {
         Message msg;
         if (xQueueReceive(msgQueue, &msg, 10))
         {
-            LOGv("MSG: code(%d), data(%d)", msg.code, msg.data);
+            LOGd("MSG: code(%d), data(%d)", msg.code, msg.data);
             if (msg.code == MSG_SHUTDOWN)
                 break; // exit loop
 
@@ -745,16 +761,56 @@ void Application::ScreenTask()
 
             switch (msg.code)
             {
+            case MSG_UPDATE_ANNUNCIATOR:
             case MSG_UPDATE_GPS:
             case MSG_UPDATE_VARIO:
             case MSG_UPDATE_BAT:
             case MSG_UPDATE_TH:
+                isUpdated = active->update(contextPtr, /*updateHints*/ 0);
+                break;
+
             case MSG_GPS_FIXED:
-                active->update(contextPtr);
+                // update annunciator
+                //isUpdated = active->update(contextPtr, /*updateHints*/ 0);
+                // & show alert
+                //active->notify("GPS Fixed!"); or 
                 break;
-            case MSG_REDRAW:
-                active->draw();
+
+            case MSG_START_VARIO:
+                // nop
                 break;
+            case MSG_TAKEOFF:
+                //active->notify("Takeoff...");
+                break;
+            case MSG_LANDING:
+                //active->notify("Landing...");
+                break;
+
+            case MSG_KEY_PRESSED:
+            case MSG_KEY_LONG_PRESSED:
+            case MSG_KEY_RELEASED:
+
+            case MSG_TOUCH_PRESSED:
+            case MSG_TOUCH_LONG_PRESSED:
+            case MSG_TOUCH_RELEASED:
+                break;
+            }
+        }
+        else
+        {
+            //
+            lastTick += 10;
+
+            //
+            if (lastTick >= xDelay) // redraw every 200ms
+            {
+                if (isUpdated)
+                {
+                    active->draw();                    
+                    isUpdated = 0;
+                }
+
+                lastTick = 0;
             }
         }
     }

@@ -3,6 +3,7 @@
 
 #include "VarioLogger.h"
 #include "SD.h"
+#include "logger.h"
 
 
 // IGC parsing settings
@@ -98,9 +99,11 @@ VarioLogger::VarioLogger()
 
 bool VarioLogger::begin(time_t date)
 {
+	LOGv("Start IGC Logging... : %u", date);
 	if (SD.cardType() == CARD_NONE)
 	{
 		SET_STATE(LOGGER_INIT_FAILED);
+		LOGv(" --> No SD Card!!");
 		return false;
 	}
 
@@ -130,6 +133,8 @@ bool VarioLogger::begin(time_t date)
 
 	if ((file = SD.open(pathBuf, FILE_WRITE)))
 	{
+		LOGi("Open IGC File : %s", pathBuf);
+
 		//
 		SET_STATE(LOGGER_WORKING);
 		

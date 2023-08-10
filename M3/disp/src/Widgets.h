@@ -14,7 +14,10 @@
 //
 
 class M5EPD_Canvas;
+
 class DeviceContext;
+class ValueProvider;
+
 
 /////////////////////////////////////////////////////////////////////////////////
 // class Widget
@@ -26,6 +29,7 @@ public:
     //Widget();
     Widget(M5EPD_Canvas* pRefCanvas);
     Widget(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
+    virtual ~Widget() {}
 
     //
     void setDirty(bool dirty);
@@ -40,7 +44,7 @@ public:
     uint16_t getUserData() { return (uint16_t)(m_flag & WSTATE_USER_MASK); }
 
     //
-    virtual int update(DeviceContext* context);
+    virtual int update(DeviceContext* context, uint32_t updateHints);
     virtual void draw() {}
 
     //
@@ -57,7 +61,7 @@ public:
 protected:
 
 protected:
-    M5EPD_Canvas* m_pRefCanvas;
+    M5EPD_Canvas *m_pRefCanvas;
     int m_x, m_y, m_w, m_h;
     uint32_t m_flag; // visible, dirty, ...
 };
@@ -73,7 +77,7 @@ public:
     Annunciator(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
 
     //
-    virtual int update(DeviceContext* context);
+    virtual int update(DeviceContext* context, uint32_t updateHints);
     //
     virtual void onDraw();
 
@@ -84,6 +88,21 @@ protected:
     // BBGGSSVVCCCC
     uint32_t mState;
     float mVoltage;
+};
+
+
+
+/////////////////////////////////////////////////////////////////////////////////
+// class ValueProvider
+
+class ValueProvider
+{
+public:
+    virtual void setValue(float value) {};
+    virtual void setValue(int16_t value) {};
+    virtual void setValue(time_t value) {};
+
+    virtual const char * getValue(char * buf, int bufLen) = 0;
 };
 
 
@@ -98,7 +117,6 @@ public:
         ALTITUDE_GROUND,
         ALTITUDE_BARO,
         ALTITUDE_AGL,       // Height Above Ground Level
-        ALTITUDE_PROFILE,
         SPEED_GROUND,
         SPEED_AIR,
         SPEED_VERTICAL,
@@ -114,15 +132,10 @@ public:
         DISTANCE_NEXT_WAYPOINT,
         DISTANCE_FLIGHT,    // odometer
         GLIDE_RATIO,
-        COMPASS,
-        VSPEED_BAR,
-        VSPEED_PROFILE,
-        TRACK_FLIGHT,
         SENSOR_PRESSURE,
         SENSOR_TEMPERATURE,
         SENSOR_HUMIDITY,
-        END_OF_BOX,
-        BOX_COUNT = END_OF_BOX,        
+        VTYPE_COUNT,
     };
 
     enum BType {
@@ -138,25 +151,26 @@ public:
     //
     ValueBox(M5EPD_Canvas* pRefCanvas);
     ValueBox(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
+    virtual ~ValueBox();
 
     //
+    void init(uint16_t vType);
+
     void setTitle(const char* title) { m_title = title; }
     void setDescription(const char* desc) { m_desc = desc; }
-    void setValue(double value, unsigned int decimalPlace) { m_value = value; m_decimalPlace = decimalPlace; }
 
     //
     static void setFontSize(int titleSize, int valueSize);
 
     //
-    virtual int update(DeviceContext* context);
+    virtual int update(DeviceContext* context, uint32_t updateHints);
     //
     virtual void onDraw();
 
 protected:
     const char *m_title;
     const char *m_desc;
-    double m_value;
-    unsigned int m_decimalPlace;
+    ValueProvider *m_pValueProvider;
 
     static int m_titleFontSize;
     static int m_valueFontSize;
@@ -175,7 +189,7 @@ public:
     ThermalAssist(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
 
     //
-    virtual int update(DeviceContext* context);
+    virtual int update(DeviceContext* context, uint32_t updateHints);
     //
     virtual void onDraw();
 };
@@ -193,7 +207,7 @@ public:
     Compass(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
 
     //
-    virtual int update(DeviceContext* context);
+    virtual int update(DeviceContext* context, uint32_t updateHints);
     //
     virtual void onDraw();
 };
@@ -213,7 +227,7 @@ public:
     VarioMeter(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
 
     //
-    virtual int update(DeviceContext* context);
+    virtual int update(DeviceContext* context, uint32_t updateHints);
     //
     virtual void onDraw();
 };
