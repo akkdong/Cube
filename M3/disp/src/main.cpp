@@ -24,9 +24,6 @@ Application App;
 
 void setup()
 {
-    // turn-off ESP log
-    esp_log_level_set("*", ESP_LOG_NONE);
-
     //
     // BSP initialize
     //
