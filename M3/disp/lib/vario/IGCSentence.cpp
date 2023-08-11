@@ -30,11 +30,11 @@ void IGCSentence::begin(long stime, float lat, float lon, float altB, float altG
     char we = lon < 0 ? 'W' : 'E';
     int _lat = d2n(abs(lat));
     int _lon = d2n(abs(lon));
-    Serial.printf("lat:%d %c, lon: %d %c\r\n", _lat, sn, _lon, we);
+    //LOGd("lat:%d %c, lon: %d %c\r\n", _lat, sn, _lon, we);
 
     //
-    struct tm * _tm = localtime(&stime);    
-    sprintf(&mSentence[IGC_OFFSET_TIME], "%02d%02d%02d", _tm->tm_hour, _tm->tm_min,_tm->tm_sec);
+    struct tm * _tm = localtime(&stime);
+    sprintf(&mSentence[IGC_OFFSET_TIME], "%02d%02d%02d", _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
 
     //
     FixedLenDigit digit;

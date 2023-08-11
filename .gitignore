@@ -31,6 +31,12 @@
 *.out
 *.app
 
+# backup
+*.bck
+*.kicad_pcb-bak
+*.sch-bak
+fp-info-cache
+
 .vscode
 /bin
 /M1-Watch

@@ -179,6 +179,7 @@ struct DeviceDefault
 	char			wifiPassword[MAX_STRING_SIZE];
 
 	float			timezone;
+	long			timezoneOffset;
 };
 
 struct FlightStats

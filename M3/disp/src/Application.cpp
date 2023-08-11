@@ -95,6 +95,10 @@ void Application::begin()
     EPD.begin(M5EPD_SCK_PIN, M5EPD_MOSI_PIN, M5EPD_MISO_PIN, M5EPD_CS_PIN, M5EPD_BUSY_PIN);
     EPD.Clear(true);
     EPD.SetRotation(M5EPD_Driver::ROTATE_0);
+
+    EPD.WritePartGram4bpp((LCD_WIDTH - 256) / 2, (LCD_HEIGHT - 256) / 2, 256, 256, ImageResource_logo_wolf_large_256x256);
+    EPD.UpdateFull(UPDATE_MODE_GC16);
+
     //
     TP.SetRotation(GT911::ROTATE_0);
     TP.begin(TOUCH_SDA, TOUCH_SCL, TOUCH_INT);
@@ -130,7 +134,7 @@ void Application::begin()
     contextPtr = DeviceRepository::instance().getContext();
 
     //
-    setTimeZone(contextPtr->deviceDefault.timezone * -3600, 0);   
+    setTimeZone(0 - contextPtr->deviceDefault.timezoneOffset, 0);
     //
     disableCore0WDT();
 
@@ -213,7 +217,7 @@ void Application::update()
                 contextPtr->varioState.altitudeGPS = NMEA.getAltitude();
                 contextPtr->varioState.speedGround = NMEA.getSpeed();
                 contextPtr->varioState.heading = NMEA.getTrack();
-                contextPtr->varioState.timeCurrent = NMEA.getDateTime() + contextPtr->deviceDefault.timezone * 3600;
+                contextPtr->varioState.timeCurrent = NMEA.getDateTime() + contextPtr->deviceDefault.timezoneOffset;
                 contextPtr->varioState.altitudeGround = AGL.getGroundLevel(contextPtr->varioState.latitude, contextPtr->varioState.longitude);
                 contextPtr->varioState.altitudeAGL = contextPtr->varioState.altitudeGPS - contextPtr->varioState.altitudeGround;
                 contextPtr->varioState.altitudeRef1 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef1;
@@ -234,14 +238,14 @@ void Application::update()
                     if (IGC.isLogging())
                     {
                         igcSentence.begin(
-                            contextPtr->varioState.timeCurrent - contextPtr->deviceDefault.timezone * 3600,
+                            contextPtr->varioState.timeCurrent - contextPtr->deviceDefault.timezoneOffset,
                             contextPtr->varioState.latitude,
                             contextPtr->varioState.longitude,
                             contextPtr->varioState.altitudeBaro,
                             contextPtr->varioState.altitudeGPS);
 
                         #if LOG_LEVEL >= LOG_LEVEL_VERBOSE
-                        igcSentence.dump(Serial);
+                        igcSentence.dump(DBG);
                         #endif
                     }
 
@@ -819,12 +823,12 @@ void Application::ScreenTask()
     {
         EPD.Clear(true);
 
-        #define LOGO_WIDTH  256
-        #define LOG_HEIGHT  256
+        #define LOGO_WIDTH  320
+        #define LOG_HEIGHT  320
         Display.clear();
         int x = (LCD_WIDTH - LOGO_WIDTH) / 2;
         int y = (LCD_HEIGHT - LOG_HEIGHT) / 2;
-        Display.pushImage(x, y, LOGO_WIDTH, LOG_HEIGHT, ImageResource_logo_wolf_large_256x256);
+        Display.pushImage(x, y, LOGO_WIDTH, LOG_HEIGHT, ImageResource_logo_eagle_320x320);
         Display.pushCanvas(0, 0, UPDATE_MODE_GLD16);
 
         delay(1000);
@@ -855,7 +859,7 @@ void Application::DeviceTask()
             {
                 // update battery voltage
                 float volt = BAT.getVoltage();
-                LOGv("Battery: %.2fv", volt);
+                LOGd("Battery: %.2fv", volt);
 
                 contextPtr->deviceState.batteryPower = volt;
 
@@ -877,7 +881,7 @@ void Application::DeviceTask()
 
                 contextPtr->deviceState.temperature = tem;
                 contextPtr->deviceState.humidity = hum;
-                LOGv("Temperature: %.2f*C, Humidity: %.2f%%", tem, hum);
+                LOGd("Temperature: %.2f*C, Humidity: %.2f%%", tem, hum);
 
                 // notify update
                 sendMessage(MSG_UPDATE_TH);

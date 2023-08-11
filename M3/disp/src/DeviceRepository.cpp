@@ -83,7 +83,9 @@ bool DeviceRepository::loadPref()
 		if (! error)
 			set(doc);
 
-		//dump();
+		#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+		dump();
+		#endif
 	}	
     return true;
     #else
@@ -160,6 +162,7 @@ void DeviceRepository::reset()
 	contextPtr->deviceDefault.enableNmeaLogging = 0;
 
     contextPtr->deviceDefault.timezone = VARIOMETER_TIME_ZONE; 			// GMT+9	
+	contextPtr->deviceDefault.timezoneOffset = (long)(VARIOMETER_TIME_ZONE * 3600);
 
 	strcpy(contextPtr->deviceDefault.btName, "M3-001");
 	strcpy(contextPtr->deviceDefault.wifiSSID, "");
@@ -325,45 +328,48 @@ void DeviceRepository::set(JsonDocument& doc)
 	if (! doc["wifi_password"].isNull())
 		strcpy(contextPtr->deviceDefault.wifiPassword, (const char *)doc["wifi_password"]); // "123456789"
 	if (! doc["timezone"].isNull())
+	{
 		contextPtr->deviceDefault.timezone = doc["wifi_password"]; // 9
+		contextPtr->deviceDefault.timezoneOffset = (long)(contextPtr->deviceDefault.timezone * 3600);
+	}
 }
 
 void DeviceRepository::dump()
 {
-	Serial.printf("DeviceDefault.enableBT = %d\n", contextPtr->deviceDefault.enableBT);
-	Serial.printf("DeviceDefault.enableSound = %d\n", contextPtr->deviceDefault.enableSound);
-	Serial.printf("DeviceDefault.enableSimulation = %d\n", contextPtr->deviceDefault.enableSimulation);
-	Serial.printf("DeviceDefault.enableNmeaLogging = %d\n", contextPtr->deviceDefault.enableNmeaLogging);
-	Serial.printf("DeviceDefault.btName = %s\n", contextPtr->deviceDefault.btName);
-	Serial.printf("DeviceDefault.wifiSSID = %s\n", contextPtr->deviceDefault.wifiSSID);
-	Serial.printf("DeviceDefault.wifiPassword = %s\n", contextPtr->deviceDefault.wifiPassword);
-	Serial.printf("DeviceDefault.timezone = %f\n", contextPtr->deviceDefault.timezone);
+	Serial.printf("DeviceDefault.enableBT = %d\r\n", contextPtr->deviceDefault.enableBT);
+	Serial.printf("DeviceDefault.enableSound = %d\r\n", contextPtr->deviceDefault.enableSound);
+	Serial.printf("DeviceDefault.enableSimulation = %d\r\n", contextPtr->deviceDefault.enableSimulation);
+	Serial.printf("DeviceDefault.enableNmeaLogging = %d\r\n", contextPtr->deviceDefault.enableNmeaLogging);
+	Serial.printf("DeviceDefault.btName = %s\r\n", contextPtr->deviceDefault.btName);
+	Serial.printf("DeviceDefault.wifiSSID = %s\r\n", contextPtr->deviceDefault.wifiSSID);
+	Serial.printf("DeviceDefault.wifiPassword = %s\r\n", contextPtr->deviceDefault.wifiPassword);
+	Serial.printf("DeviceDefault.timezone = %f\r\n", contextPtr->deviceDefault.timezone);
 
-	Serial.printf("VolumeSettings.vario = %d\n", contextPtr->volume.vario);
-	Serial.printf("VolumeSettings.effect = %d\n", contextPtr->volume.effect);
-	Serial.printf("VolumeSettings.autoTurnOn = %d\n", contextPtr->volume.autoTurnOn);
+	Serial.printf("VolumeSettings.vario = %d\r\n", contextPtr->volume.vario);
+	Serial.printf("VolumeSettings.effect = %d\r\n", contextPtr->volume.effect);
+	Serial.printf("VolumeSettings.autoTurnOn = %d\r\n", contextPtr->volume.autoTurnOn);
 
-	Serial.printf("VarioSettings.sinkThreshold = %f\n", contextPtr->varioSettings.sinkThreshold);
-	Serial.printf("VarioSettings.climbThreshold = %f\n", contextPtr->varioSettings.climbThreshold);
-	Serial.printf("VarioSettings.sensitivity = %f\n", contextPtr->varioSettings.sensitivity);
-	Serial.printf("VarioSettings.sentence = %d\n", contextPtr->varioSettings.sentence);
-	Serial.printf("VarioSettings.altitudeRef1 = %f\n", contextPtr->varioSettings.altitudeRef1);
-	Serial.printf("VarioSettings.altitudeRef2 = %f\n", contextPtr->varioSettings.altitudeRef2);
-	Serial.printf("VarioSettings.altitudeRef3 = %f\n", contextPtr->varioSettings.altitudeRef3);
-	Serial.printf("VarioSettings.dampingFactor = %f\n", contextPtr->varioSettings.dampingFactor);
+	Serial.printf("VarioSettings.sinkThreshold = %f\r\n", contextPtr->varioSettings.sinkThreshold);
+	Serial.printf("VarioSettings.climbThreshold = %f\r\n", contextPtr->varioSettings.climbThreshold);
+	Serial.printf("VarioSettings.sensitivity = %f\r\n", contextPtr->varioSettings.sensitivity);
+	Serial.printf("VarioSettings.sentence = %d\r\n", contextPtr->varioSettings.sentence);
+	Serial.printf("VarioSettings.altitudeRef1 = %f\r\n", contextPtr->varioSettings.altitudeRef1);
+	Serial.printf("VarioSettings.altitudeRef2 = %f\r\n", contextPtr->varioSettings.altitudeRef2);
+	Serial.printf("VarioSettings.altitudeRef3 = %f\r\n", contextPtr->varioSettings.altitudeRef3);
+	Serial.printf("VarioSettings.dampingFactor = %f\r\n", contextPtr->varioSettings.dampingFactor);
 
-	//Serial.printf("KalmanParameter.varZMeas = %f\n", contextPtr->kalman.varZMeas);
-	//Serial.printf("KalmanParameter.varZAccel = %f\n", contextPtr->kalman.varZAccel);
-	//Serial.printf("KalmanParameter.varAccelBias = %f\n", contextPtr->kalman.varAccelBias);
+	//Serial.printf("KalmanParameter.varZMeas = %f\r\n", contextPtr->kalman.varZMeas);
+	//Serial.printf("KalmanParameter.varZAccel = %f\r\n", contextPtr->kalman.varZAccel);
+	//Serial.printf("KalmanParameter.varAccelBias = %f\r\n", contextPtr->kalman.varAccelBias);
 
-	Serial.printf("GliderInfo.type = %d\n", contextPtr->gliderInfo.type);
-	Serial.printf("GliderInfo.manufacture = %s\n", contextPtr->gliderInfo.manufacture);
-	Serial.printf("GliderInfo.model = %s\n", contextPtr->gliderInfo.model);
+	Serial.printf("GliderInfo.type = %d\r\n", contextPtr->gliderInfo.type);
+	Serial.printf("GliderInfo.manufacture = %s\r\n", contextPtr->gliderInfo.manufacture);
+	Serial.printf("GliderInfo.model = %s\r\n", contextPtr->gliderInfo.model);
 
-	Serial.printf("IGCLogger.enable = %d\n", contextPtr->logger.enable);
-	Serial.printf("IGCLogger.takeoffSpeed = %d\n", contextPtr->logger.takeoffSpeed);
-	Serial.printf("IGCLogger.landingSpeed = %d\n", contextPtr->logger.landingSpeed);
-	Serial.printf("IGCLogger.landingTimeout = %d\n", contextPtr->logger.landingTimeout);
-	Serial.printf("IGCLogger.loggingInterval = %d\n", contextPtr->logger.loggingInterval);
-	Serial.printf("IGCLogger.pilot = %s\n", contextPtr->logger.pilot);
+	Serial.printf("IGCLogger.enable = %d\r\n", contextPtr->logger.enable);
+	Serial.printf("IGCLogger.takeoffSpeed = %d\r\n", contextPtr->logger.takeoffSpeed);
+	Serial.printf("IGCLogger.landingSpeed = %d\r\n", contextPtr->logger.landingSpeed);
+	Serial.printf("IGCLogger.landingTimeout = %d\r\n", contextPtr->logger.landingTimeout);
+	Serial.printf("IGCLogger.loggingInterval = %d\r\n", contextPtr->logger.loggingInterval);
+	Serial.printf("IGCLogger.pilot = %s\r\n", contextPtr->logger.pilot);
 }

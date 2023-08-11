@@ -121,6 +121,8 @@ Annunciator::Annunciator(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
 
 int Annunciator::update(DeviceContext* context, uint32_t updateHints)
 {
+    int isUpdated = 0;
+
     // 109876543210           
     // BBGGSSVVCCCC
     // BT
@@ -128,14 +130,14 @@ int Annunciator::update(DeviceContext* context, uint32_t updateHints)
     //     SD
     //       VOLUME
     //         BATTERY
-    mState = 0;
-    mState |= (uint32_t)context->deviceState.statusBT << 10;
-    mState |= (uint32_t)context->deviceState.statusGPS << 8;
-    mState |= (uint32_t)context->deviceState.statusSDCard << 6;
-    mState |= (uint32_t)(context->volume.vario > 0 ? 1 : 0) << 4;
+    uint32_t state = 0;
+    state |= (uint32_t)context->deviceState.statusBT << 10;
+    state |= (uint32_t)context->deviceState.statusGPS << 8;
+    state |= (uint32_t)context->deviceState.statusSDCard << 6;
+    state |= (uint32_t)(context->volume.vario > 0 ? 1 : 0) << 4;
     
     uint32_t bat = 4; // empty, 1/3, 1/2, full, charging
-    if (context->deviceState.batteryPower < 4.3)
+    if (context->deviceState.batteryPower < 4.28)
     {
         bat = 3;
         if (context->deviceState.batteryPower < 3.6)
@@ -151,10 +153,28 @@ int Annunciator::update(DeviceContext* context, uint32_t updateHints)
             }
         }
     }
-    mState |= bat;
-    mVoltage = context->deviceState.batteryPower;
 
-    return 1;
+    state |= bat;
+    if (state != mState)
+    {
+        mState = state;
+        isUpdated = 1;
+    }
+
+    if ((int)(mVoltage * 100) != (int)(context->deviceState.batteryPower * 100))
+    {
+        mVoltage = context->deviceState.batteryPower;
+        isUpdated = 1;
+    }
+
+    time_t now = time(NULL);
+    if (now != mLastTime)
+    {
+        mLastTime = now;
+        isUpdated = 1;
+    }
+
+    return isUpdated;
 }
 
 void Annunciator::onDraw()
@@ -232,7 +252,7 @@ void Annunciator::onDraw()
     // time
     {
         char sz[32];
-        getTimeString(sz, time(NULL), true);
+        getTimeString(sz, mLastTime, true);
 
         m_pRefCanvas->setTextSize(32);
         m_pRefCanvas->setTextColor(M5EPD_Canvas::G15);
@@ -486,20 +506,50 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
     case ValueBox::VType::ALTITUDE_BARO:
         m_pValueProvider->setValue(context->varioState.altitudeBaro);
         break;
+    case ValueBox::VType::ALTITUDE_AGL:
+        m_pValueProvider->setValue(context->varioState.altitudeAGL);
+        break;
     case ValueBox::VType::SPEED_GROUND:
         m_pValueProvider->setValue(context->varioState.speedGround);
         break;
+    case ValueBox::VType::SPEED_AIR:
+        return 0;
     case ValueBox::VType::SPEED_VERTICAL:
         m_pValueProvider->setValue(context->varioState.speedVertActive);
         break;
-    case ValueBox::VType::SENSOR_TEMPERATURE:
-        m_pValueProvider->setValue(context->varioState.temperature);
+    case ValueBox::VType::SPEED_VERTICAL_LAZY:
+        m_pValueProvider->setValue(context->varioState.speedVertLazy);
+        break;
+    case ValueBox::VType::TRACK_HEADING:
+        m_pValueProvider->setValue(context->varioState.heading);
+        break;
+    case ValueBox::VType::TARCK_BEARING:
+        return 0;
+    case ValueBox::VType::TIME_FLIGHT:
+        m_pValueProvider->setValue((time_t)context->flightState.flightTime);
+        return 0;
+    case ValueBox::VType::TIME_CURRENT:
+        m_pValueProvider->setValue(context->varioState.timeCurrent);
+        break;
+    case ValueBox::VType::TIME_TO_NEXT_WAYPOINT:
+        return 0;
+    case ValueBox::VType::TIME_REMAIN:
+    case ValueBox::VType::DISTANCE_TAKEOFF:
+    case ValueBox::VType::DISTANCE_LANDING:
+    case ValueBox::VType::DISTANCE_NEXT_WAYPOINT:
+    case ValueBox::VType::DISTANCE_FLIGHT:
+        return 0;
+    case ValueBox::VType::GLIDE_RATIO:
+        m_pValueProvider->setValue(context->flightState.glideRatio);
         break;
     case ValueBox::VType::SENSOR_PRESSURE:
         m_pValueProvider->setValue(context->varioState.pressure);
         break;
-    case ValueBox::VType::TRACK_HEADING:
-        m_pValueProvider->setValue(context->varioState.heading);
+    case ValueBox::VType::SENSOR_TEMPERATURE:
+        m_pValueProvider->setValue(context->deviceState.temperature);
+        break;
+    case ValueBox::VType::SENSOR_HUMIDITY:
+        m_pValueProvider->setValue(context->deviceState.humidity);
         break;
     default:
         return 0;
@@ -577,14 +627,14 @@ void ThermalAssist::onDraw()
 		{
 			if (context->flightState.trackPoints[i].vario < 0)
 			{
-				m_pRefCanvas->drawRect(x - 2, y - 2, 4, 4, M5EPD_Canvas::G15);
+				m_pRefCanvas->drawRect(x - 3, y - 3, 6, 6, M5EPD_Canvas::G15);
 			}
 			else
 			{
-				int16_t r = 2;
+				int16_t r = 4;
 
 				if (context->flightState.trackPoints[i].vario > 1)
-					r = (context->flightState.trackPoints[i].vario > 2) ? 4 : 3;
+					r = (context->flightState.trackPoints[i].vario > 2) ? 8 : 6;
 
 				m_pRefCanvas->drawCircle(x, y, r, M5EPD_Canvas::G15);
 			}
@@ -598,8 +648,8 @@ void ThermalAssist::onDraw()
 		int16_t cx = m_x + m_w / 2;
 		int16_t cy = m_y + m_h / 2;
 
-		m_pRefCanvas->drawLine(cx - 10, cy, cx, cy - 18, M5EPD_Canvas::G15);
-		m_pRefCanvas->drawLine(cx, cy - 18, cx + 10, cy, M5EPD_Canvas::G15);
+		m_pRefCanvas->drawLine(cx - 20, cy, cx, cy - 28, M5EPD_Canvas::G15);
+		m_pRefCanvas->drawLine(cx, cy - 28, cx + 20, cy, M5EPD_Canvas::G15);
 	}
 }
 

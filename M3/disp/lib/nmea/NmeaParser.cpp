@@ -98,7 +98,7 @@ int NmeaParser::update(int ch)
             switch (parserContext.statement)
             {
             case STAT_GGA:
-                LOGv("GGA: %d, %f, %f, %f", 
+                LOGd("GGA: %d, %f, %f, %f", 
                     parserContext.gga.time, 
                     parserContext.gga.latitude,
                     parserContext.gga.longitude,
@@ -114,7 +114,7 @@ int NmeaParser::update(int ch)
                     type = 1;
                 break;
             case STAT_RMC:
-                LOGv("RMC: %d, %.*f, %.*f, %d",
+                LOGd("RMC: %d, %.*f, %.*f, %d",
                     parserContext.rmc.time,
                     2,
                     parserContext.rmc.speed,
@@ -128,13 +128,13 @@ int NmeaParser::update(int ch)
                 speed = parserContext.rmc.speed;
                 track = parserContext.rmc.track;
                 date = parserContext.rmc.date;
-                if (parserContext.rmc.time == 0 || time != parserContext.rmc.time)
+                if (/*parserContext.rmc.time == 0 ||*/ time != parserContext.rmc.time)
                     time = parserContext.rmc.time;
                 else
                     type = 1;
                 break;
             case STAT_VAR:
-                LOGv("VAR: %f, %f, %f, %f, %d",
+                LOGd("VAR: %f, %f, %f, %f, %d",
                     parserContext.var.temperature,
                     parserContext.var.pressure,
                     parserContext.var.altitude,
@@ -149,7 +149,7 @@ int NmeaParser::update(int ch)
                 type = 2;
                 break;
             case STAT_KBD:
-                LOGv("KBD: %d, %d",
+                LOGd("KBD: %d, %d",
                     parserContext.kbd.key,
                     parserContext.kbd.state);
 
@@ -369,7 +369,7 @@ time_t NmeaParser::strToTime(const char* str)
     return h * 3600 + m * 60 + s;
 }
 
-time_t NmeaParser::strToDate(const char* str, time_t time)
+time_t NmeaParser::strToDate(const char* str, time_t timeOfDay)
 {
     // ddmmyy
     for (int i = 0; i < 6; i++)
@@ -379,17 +379,15 @@ time_t NmeaParser::strToDate(const char* str, time_t time)
     }
 
     struct tm _tm;
-    memset(&_tm, 0, sizeof(_tm));
+    memset(&_tm, 0, sizeof(_tm));    
     _tm.tm_mday = ((str[0] - '0') * 10) + (str[1] - '0');         // tm_mday : 1 ~ 31
     _tm.tm_mon = ((str[2] - '0') * 10) + (str[3] - '0') - 1;      // tm_mon: 0 ~ 11
-    //int y = ((str[4] - '0') * 10) + (str[5] - '0') + 2000;
-    //_tm.tm_year = y - 1900;
-    _tm.tm_year = ((str[4] - '0') * 10) + (str[5] - '0') + 100;   // tm_year : 0 -> 1900, nm_year : 0 -> 2000
+    _tm.tm_year = ((str[4] - '0') * 10) + (str[5] - '0') + 100;   // tm_year : 0 -> 1900, nm_year : 0 -> 2000, nmea + 2000 - 1900 -> nmea + 100
     _tm.tm_hour = 0;
     _tm.tm_min = 0;
-    _tm.tm_sec = 0;    
+    _tm.tm_sec = 0;
 
-    return mktime(&_tm) + time /*+ 619315200*/;
+    return mktime(&_tm) + timeOfDay /*+ 619315200*/;
 }
 
 float NmeaParser::nmeaToDecimal(float nmea)

@@ -4,7 +4,7 @@
 #ifndef __IGC_SENTENCE_H__
 #define __IGC_SENTENCE_H__
 
-#define MAX_IGC_SENTENCE						(38)	// B-sentence max size
+#define MAX_IGC_SENTENCE						(37)	// B-sentence max size
 														// ex: B1602405407121N00249342WA0028000421rn
 														//     0123456789012345678901234567890123456789
 														//     BHHMMSSDDMMmmmNDDDMMmmmWAPPPPPGGGGGCL
@@ -55,7 +55,7 @@ protected:
     int             d2n(float decimal);
 
 protected:
-    char            mSentence[MAX_IGC_SENTENCE];
+    char            mSentence[MAX_IGC_SENTENCE+1];
     int             mPos;
 };
 

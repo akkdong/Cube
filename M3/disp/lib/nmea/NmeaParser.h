@@ -105,7 +105,7 @@ protected:
     bool checkCRC();
 
     time_t strToTime(const char* str);
-    time_t strToDate(const char* str, time_t time);
+    time_t strToDate(const char* str, time_t timeOfDay);
 
     float nmeaToDecimal(float nmea);
 	long floatToCoordi(float value);

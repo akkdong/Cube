@@ -88,6 +88,7 @@ protected:
     // BBGGSSVVCCCC
     uint32_t mState;
     float mVoltage;
+    time_t mLastTime;
 };
 
 
