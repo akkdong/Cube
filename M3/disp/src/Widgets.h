@@ -45,10 +45,8 @@ public:
 
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
-    virtual void draw() {}
+    virtual void draw();
 
-    //
-    virtual void onDraw();
     //
     virtual void onTouchDown(int x, int y);
     virtual void onTouchMove(int x, int y);
@@ -79,7 +77,7 @@ public:
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
     //
-    virtual void onDraw();
+    virtual void draw();
 
 
 protected:
@@ -166,7 +164,7 @@ public:
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
     //
-    virtual void onDraw();
+    virtual void draw();
 
 protected:
     const char *m_title;
@@ -192,7 +190,7 @@ public:
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
     //
-    virtual void onDraw();
+    virtual void draw();
 };
 
 
@@ -210,7 +208,7 @@ public:
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
     //
-    virtual void onDraw();
+    virtual void draw();
 };
 
 
@@ -230,7 +228,32 @@ public:
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
     //
-    virtual void onDraw();
+    virtual void draw();
+};
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////
+// class MessageBox
+
+class MessageBox : public Widget
+{
+public:
+    //
+    MessageBox(M5EPD_Canvas* pRefCanvas);
+    MessageBox(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
+
+    void setMessage(const char* msg);
+
+    //
+    virtual int update(DeviceContext* context, uint32_t updateHints);
+    //
+    virtual void draw();
+
+protected:
+    String m_msg;
 };
 
 

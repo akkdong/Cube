@@ -47,7 +47,7 @@ void Widget::setPosition(int x, int y)
     m_x = x;
     m_y = y;
 
-    m_flag = m_flag | WSTATE_UPDATED;
+    //m_flag = m_flag | WSTATE_UPDATED;
 }
 
 void Widget::move(int x, int y, int w, int h)
@@ -57,7 +57,7 @@ void Widget::move(int x, int y, int w, int h)
     m_w = w;
     m_h = h;
 
-    m_flag = m_flag | WSTATE_UPDATED;
+    //m_flag = m_flag | WSTATE_UPDATED;
 }
 
 void Widget::show(bool show)
@@ -73,7 +73,7 @@ int Widget::update(DeviceContext *context, uint32_t updateHints)
     return 0;
 }
 
-void Widget::onDraw()
+void Widget::draw()
 {
 }
 
@@ -177,7 +177,7 @@ int Annunciator::update(DeviceContext* context, uint32_t updateHints)
     return isUpdated;
 }
 
-void Annunciator::onDraw()
+void Annunciator::draw()
 {
     #define ICON_W      48
     #define ICON_H      48
@@ -558,7 +558,7 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
     return 1;
 }
 
-void ValueBox::onDraw()
+void ValueBox::draw()
 {
     m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
     m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
@@ -600,7 +600,7 @@ int ThermalAssist::update(DeviceContext* context, uint32_t updateHints)
 
 #define ZOOM_FACTOR				(1.0)
 
-void ThermalAssist::onDraw()
+void ThermalAssist::draw()
 {
     DeviceContext *context = DeviceRepository::instance().getContext();
 
@@ -677,7 +677,7 @@ int Compass::update(DeviceContext* context, uint32_t updateHints)
     return 0;
 }
 
-void Compass::onDraw()
+void Compass::draw()
 {
 
 }
@@ -706,8 +706,47 @@ int VarioMeter::update(DeviceContext* context, uint32_t updateHints)
     return 0;
 }
 
-void VarioMeter::onDraw()
+void VarioMeter::draw()
 {
 
 }
 
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////
+// class MessageBox
+
+MessageBox::MessageBox(M5EPD_Canvas* pRefCanvas)
+    : Widget(pRefCanvas)
+{
+
+}
+
+MessageBox::MessageBox(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
+    : Widget(pRefCanvas, x, y, w, h)
+{
+}
+
+void MessageBox::setMessage(const char* msg)
+{
+    m_msg = msg;
+}
+
+int MessageBox::update(DeviceContext* context, uint32_t updateHints)
+{
+    return 0;
+}
+
+void MessageBox::draw()
+{
+    m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
+    m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
+
+    m_pRefCanvas->setTextDatum(CC_DATUM);
+    m_pRefCanvas->setTextSize(48);
+    m_pRefCanvas->setTextColor(M5EPD_Canvas::G15);
+    m_pRefCanvas->drawString(m_msg, m_x + m_w / 2, m_y + m_h / 2);
+}

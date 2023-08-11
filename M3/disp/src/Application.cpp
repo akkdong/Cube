@@ -116,6 +116,7 @@ void Application::begin()
     Display.loadFont(binaryttf, sizeof(binaryttf));
     Display.createCanvas(M5EPD_PANEL_W, M5EPD_PANEL_H);
     Display.createRender(32);
+    Display.createRender(48);
     Display.createRender(70);
     Display.createRender(80);
 
@@ -192,7 +193,18 @@ void Application::update()
     //   update canvas(screen)
     // 
 
-    bool engMode = true;
+    if (prepareShutdown)
+    {
+        if (deviceMode != MODE_GROUND)
+        {
+            LOGv("Stop flight if it's not ground");
+            stopFlight();
+        }
+
+        return;
+    }
+
+    bool engMode = false;
     Stream& input = engMode ? Serial : Serial1;
     while (input.available())
     {
@@ -375,15 +387,6 @@ void Application::update()
             IGC.write(igcSentence.read());
     }
 
-    /*
-    uint32_t tick = millis();
-    if (tick - tick_updateTime > 1000)
-    {
-        sendMessage(MSG_REDRAW, 0);
-        tick_updateTime = tick;
-    }
-    */
-
     //delay(1);
 }
 
@@ -398,8 +401,8 @@ void Application::startVario()
     deviceMode = MODE_GROUND;
     tick_silentBase = millis();
     tick_updateDisp = tick_silentBase - 1000;
-    dispNeedUpdate = true;
     gpsFixed = false;
+    prepareShutdown = false;
 
     vTaskResume(taskScreen);
     vTaskResume(taskDevice);
@@ -696,6 +699,9 @@ void Application::onLongPressed(uint8_t key)
 {
     if (key == KEY_PUSH)
     {
+        // prepare shutdown
+        prepareShutdown = true;
+
         LOGi("Send SHUTDOWN message");
         sendMessage(MSG_SHUTDOWN);
     }
@@ -747,14 +753,13 @@ void Application::ScreenTask()
     active->update(contextPtr, 0);
     active->draw(/*true*/);
 
-    const TickType_t xDelay = pdMS_TO_TICKS(200); // 500 / portTICK_PERIOD_MS;
-    TickType_t lastTick = 0;
-    int isUpdated = 0;
+    //
+    uint32_t tickCount = 0;
 
     while (true)
     {
         Message msg;
-        if (xQueueReceive(msgQueue, &msg, 10))
+        if (xQueueReceive(msgQueue, &msg, 100))
         {
             LOGd("MSG: code(%d), data(%d)", msg.code, msg.data);
             if (msg.code == MSG_SHUTDOWN)
@@ -762,77 +767,63 @@ void Application::ScreenTask()
 
             //
             active = Scrn.getActiveWindow();
-
-            switch (msg.code)
-            {
-            case MSG_UPDATE_ANNUNCIATOR:
-            case MSG_UPDATE_GPS:
-            case MSG_UPDATE_VARIO:
-            case MSG_UPDATE_BAT:
-            case MSG_UPDATE_TH:
-                isUpdated = active->update(contextPtr, /*updateHints*/ 0);
-                break;
-
-            case MSG_GPS_FIXED:
-                // update annunciator
-                //isUpdated = active->update(contextPtr, /*updateHints*/ 0);
-                // & show alert
-                //active->notify("GPS Fixed!"); or 
-                break;
-
-            case MSG_START_VARIO:
-                // nop
-                break;
-            case MSG_TAKEOFF:
-                //active->notify("Takeoff...");
-                break;
-            case MSG_LANDING:
-                //active->notify("Landing...");
-                break;
-
-            case MSG_KEY_PRESSED:
-            case MSG_KEY_LONG_PRESSED:
-            case MSG_KEY_RELEASED:
-
-            case MSG_TOUCH_PRESSED:
-            case MSG_TOUCH_LONG_PRESSED:
-            case MSG_TOUCH_RELEASED:
-                break;
-            }
+            if (active != nullptr)
+                active->onMessage(msg.code, msg.data);           
         }
         else
         {
-            //
-            lastTick += 10;
-
-            //
-            if (lastTick >= xDelay) // redraw every 200ms
-            {
-                if (isUpdated)
-                {
-                    active->draw();                    
-                    isUpdated = 0;
-                }
-
-                lastTick = 0;
-            }
+            active = Scrn.getActiveWindow();
+            if (active != nullptr)
+                active->onTimer(tickCount++);
         }
     }
 
     //
     {
-        EPD.Clear(true);
+        // notify shutdown
+        if (0)
+        {
+            #define NOTI_WIDTH  420
+            #define NOTI_HEIGHT 80
 
-        #define LOGO_WIDTH  320
-        #define LOG_HEIGHT  320
-        Display.clear();
-        int x = (LCD_WIDTH - LOGO_WIDTH) / 2;
-        int y = (LCD_HEIGHT - LOG_HEIGHT) / 2;
-        Display.pushImage(x, y, LOGO_WIDTH, LOG_HEIGHT, ImageResource_logo_eagle_320x320);
-        Display.pushCanvas(0, 0, UPDATE_MODE_GLD16);
+            int x = (LCD_WIDTH - NOTI_WIDTH) / 2;
+            int y = (LCD_HEIGHT - NOTI_HEIGHT) / 2;
 
-        delay(1000);
+            Display.fillRect(x, y, NOTI_WIDTH, NOTI_HEIGHT, M5EPD_Canvas::G0);
+            Display.drawRect(x, y, NOTI_WIDTH, NOTI_HEIGHT, M5EPD_Canvas::G15);
 
+            Display.setTextDatum(CC_DATUM);
+            Display.setTextSize(48);
+            Display.setTextColor(M5EPD_Canvas::G15);
+            Display.drawString("Shutdown Deivce", x + NOTI_WIDTH / 2, y + NOTI_HEIGHT / 2);
+            Display.pushCanvas(0, 0, UPDATE_MODE_DU4);
+
+            LOGi("Wait device shutdown");
+            vTaskDelay(pdMS_TO_TICKS(2000));
+        }
+
+        // draw shutdown image
+        {
+            LOGv("Draw shutdown image");
+
+            // clar & draw power-off screen
+            EPD.Clear(true);
+
+            #define LOGO_WIDTH  320
+            #define LOG_HEIGHT  320
+
+            int x = (LCD_WIDTH - LOGO_WIDTH) / 2;
+            int y = (LCD_HEIGHT - LOG_HEIGHT) / 2;
+
+            Display.clear();
+
+            Display.pushImage(x, y, LOGO_WIDTH, LOG_HEIGHT, ImageResource_logo_eagle_320x320);
+            Display.pushCanvas(0, 0, UPDATE_MODE_GLD16);
+
+            delay(1000);
+        }
+
+        // power-off
         digitalWrite(KEY_POWER_EXT, 0);
         digitalWrite(KEY_POWER_EPD, 0);        
         delay(100);
@@ -852,6 +843,9 @@ void Application::DeviceTask()
 
     while (1)
     {
+        if (prepareShutdown)
+            break;
+
         // BAT
         if (++BAT_delayCount > CHECK_INTERVAL(200))
         {

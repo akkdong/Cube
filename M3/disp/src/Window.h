@@ -56,6 +56,9 @@ public:
     virtual void onClose() {}
     virtual void onFallback(FallbackResult result, Window *from) {}
 
+    virtual void onMessage(uint16_t code, uint16_t data) {}
+    virtual void onTimer(uint32_t tickCount) {}
+
 protected:
 };
 

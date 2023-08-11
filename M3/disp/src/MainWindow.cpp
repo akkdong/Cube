@@ -5,9 +5,10 @@
 #include <M5EPD_Canvas.h>
 #include "board.h"
 #include "MainWindow.h"
+#include "Message.h"
 #include "DeviceContext.h"
-
-
+#include "DeviceRepository.h"
+#include "logger.h"
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -20,13 +21,15 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
     , m_compass(pRefCanvas)
     , m_vmeter(pRefCanvas)
     , m_vbox { pRefCanvas, pRefCanvas, pRefCanvas, pRefCanvas, pRefCanvas, pRefCanvas }
+    , m_mbox (pRefCanvas)
     , m_widgets {
         &m_ann,
         &m_thermal,
         &m_compass,
         &m_vmeter,
-        &m_vbox[0], &m_vbox[1], &m_vbox[2], &m_vbox[3], &m_vbox[4], &m_vbox[5]
-    }
+        &m_vbox[0], &m_vbox[1], &m_vbox[2], &m_vbox[3], &m_vbox[4], &m_vbox[5] }
+    , m_tickLast(0)
+    , m_tickShowMessage(0)
 {
 }
 
@@ -49,7 +52,14 @@ void MainWindow::draw()
 
     // draw each widgets 
     for (size_t i = 0; i < WID_COUNT; i++)
-        m_widgets[i]->onDraw();
+    {
+        if (m_widgets[i]->isVisible())
+            m_widgets[i]->draw();
+    }
+
+    // draw notify mesage
+    if (m_mbox.isVisible())
+        m_mbox.draw();
 
     // update full or fast(?)
     static uint32_t refreshCount = -1;
@@ -106,6 +116,11 @@ void MainWindow::onActive()
         }
     }
 
+    #define MBOX_WIDTH      420
+    #define MBOX_HEIGHT     80
+    m_mbox.move((LCD_WIDTH - MBOX_WIDTH) / 2, (LCD_HEIGHT - MBOX_HEIGHT) / 2, MBOX_WIDTH, MBOX_HEIGHT);
+    m_mbox.show(false);
+
     // initilize number-boxes
     uint16_t types[] = {
         ValueBox::VType::ALTITUDE_GROUND,
@@ -115,34 +130,79 @@ void MainWindow::onActive()
         ValueBox::VType::ALTITUDE_AGL,
         ValueBox::VType::TRACK_HEADING
     };
+
     for (size_t i = 0; i < sizeof(m_vbox) / sizeof(m_vbox[0]); i++)
         m_vbox[i].init(types[i]);
 
-    /*
-    m_vbox[0].setTitle("Altitude");
-    m_vbox[0].setDescription("m");
-    m_vbox[0].setValue(0, 0);
+}
 
-    m_vbox[1].setTitle("Speed H");
-    m_vbox[1].setDescription("km/h");
-    m_vbox[1].setValue(0, 0);
+void MainWindow::onMessage(uint16_t code, uint16_t data)
+{
+    DeviceContext *contextPtr = DeviceRepository::instance().getContext();
 
-    m_vbox[2].setTitle("Speed V");
-    m_vbox[2].setDescription("m/s");
-    m_vbox[2].setValue(0, 2);
+    switch (code)
+    {
+    case MSG_UPDATE_ANNUNCIATOR:
+    case MSG_UPDATE_GPS:
+    case MSG_UPDATE_VARIO:
+    case MSG_UPDATE_BAT:
+    case MSG_UPDATE_TH:
+        this->update(contextPtr, /*updateHints*/ 0);
+        break;
 
-    //m_vbox[3].setTitle("Temp");
-    //m_vbox[3].setDescription("Celsius");
-    m_vbox[3].setTitle("Alt Baro");
-    m_vbox[3].setDescription("m");
-    m_vbox[3].setValue(0, 0);
+    case MSG_GPS_FIXED:
+        // update annunciator
+        //isUpdated = active->update(contextPtr, /*updateHints*/ 0);
+        // & show message
+        this->showMessage(data > 0 ? "GPS Fixed!" : "GPS Unfixed!");
+        break;
 
-    m_vbox[4].setTitle("Pressure");
-    m_vbox[4].setDescription("hPa");
-    m_vbox[4].setValue(0, 0);
+    case MSG_TAKEOFF:
+        this->showMessage("Takeoff...");
+        break;
+    case MSG_LANDING:
+        this->showMessage("Landing...");
+        break;
 
-    m_vbox[5].setTitle("Track");
-    m_vbox[5].setDescription("deg");
-    m_vbox[5].setValue(0, 0);
-    */
+    case MSG_KEY_PRESSED:
+    case MSG_KEY_LONG_PRESSED:
+    case MSG_KEY_RELEASED:
+        break;
+
+    case MSG_TOUCH_PRESSED:
+    case MSG_TOUCH_LONG_PRESSED:
+    case MSG_TOUCH_RELEASED:
+        break;
+    }
+}
+
+void MainWindow::onTimer(uint32_t tickCount)
+{    
+    if (this->isDirty())
+    {
+        this->draw(); 
+        this->setDirty(false);
+    }
+
+    if (m_mbox.isVisible() && (millis() - m_tickShowMessage) > 2000)
+    {
+        LOGv("Hide message box!");
+        m_mbox.show(false);
+
+        this->setDirty(true);
+    }
+
+    // 
+    m_tickLast = tickCount;
+}
+
+
+void MainWindow::showMessage(const char *msg)
+{
+    LOGv("Show message box: %s", msg);
+    m_mbox.setMessage(msg);
+    m_mbox.show(true);
+    m_tickShowMessage = millis();
+    
+    this->setDirty(true);
 }

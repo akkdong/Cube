@@ -49,6 +49,11 @@ public:
     //
     virtual void onActive();
     
+    virtual void onMessage(uint16_t code, uint16_t data);
+    virtual void onTimer(uint32_t tickCount);
+
+protected:
+    void showMessage(const char *msg);
 
 protected:
     Annunciator m_ann;
@@ -56,8 +61,11 @@ protected:
     Compass m_compass;
     VarioMeter m_vmeter;
     ValueBox m_vbox[6];
+    MessageBox m_mbox;
 
     Widget *m_widgets[WID_COUNT];
+    uint32_t m_tickLast;
+    uint32_t m_tickShowMessage;
 };
 
 
