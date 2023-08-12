@@ -9,7 +9,9 @@
 #include "CubeSentence.h"
 #include "HostCommand.h"
 
+#ifndef DEBUG_MODE
 #define DEBUG_MODE               0
+#endif // DEBUG_MODE
 
 #define VFILTER_HARINAIR_KF2     1
 #define VFILTER_HARINAIR_KF3     2
@@ -61,6 +63,11 @@ uint8_t mute = 1;
 CubeSentence cubeNmea;
 HostCommand hostCommand;
 HostCommand debugCommand;
+
+static float altitude = 0.0f, vSpeed = 0.0f;
+static float dampingFactor = 1.0f;
+static int addCount = 0;
+
 
 
 void KeypadHandler::onPressed(uint8_t key) 
@@ -195,25 +202,25 @@ void loop()
   keyPad.update();
   beeper.update();
 
-  static float altitude = 0.0f, vspeed = 0.0f;
-  static float dampingFactor = 1.0f;
-
   if (vario.update() > 0)
   {
     // update vertical-speed, barometric-altitude, temperature
     float alt = vario.getAltitudeFiltered();
     float vel = vario.getVelocity();
 
-    altitude = altitude + (alt - altitude) * dampingFactor;
-    vspeed = vspeed + (vel - vspeed) * dampingFactor;
+    //altitude = altitude + (alt - altitude) * dampingFactor;
+    //vSpeed = vSpeed + (vel - vSpeed) * dampingFactor;
+    altitude += alt;
+    vSpeed += vel;
+    addCount += 1;
 
     // update beep, vario-nmea, ...
     if (mute == 0)
-      beeper.setVelocity(vspeed);
+      beeper.setVelocity(vel);
   }
 
   static uint32_t lastTick = millis();
-  if (millis() - lastTick > 500)
+  if (millis() - lastTick > 200 && addCount > 0)
   {
     //
     lastTick = millis();
@@ -221,15 +228,21 @@ void loop()
     //
     float temp = vario.getTemperature();
     float prs = vario.getPressure();
-    LOGv("Altitude: %f, VSpeed: %f", altitude, vspeed);
+    altitude /= addCount;
+    vSpeed /= addCount;
+    LOGv("Accum: %d, Altitude: %f, VSpeed: %f", addCount, altitude, vSpeed);
 
     cubeNmea.start("M3VAR");
-    cubeNmea.append(temp, 1);
+    cubeNmea.append(temp, 2);
     cubeNmea.append(prs, 0);
     cubeNmea.append(altitude, 0);
-    cubeNmea.append(vspeed, 1);
+    cubeNmea.append(vSpeed, 2);
     cubeNmea.append(mute ? 1 : 0);
     cubeNmea.finish();
+
+    altitude = 0;
+    vSpeed = 0;
+    addCount= 0;
   }
 }
 

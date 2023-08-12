@@ -17,7 +17,7 @@ static Bme280Settings varioSettings()
 		.temperatureOversampling = Bme280Oversampling::X2,
 		.pressureOversampling = Bme280Oversampling::X16,
 		.humidityOversampling = Bme280Oversampling::Off,
-		.filter = Bme280Filter::X2,
+		.filter = Bme280Filter::Off,
 		.standbyTime = Bme280StandbyTime::Ms0_5			
 	};
 }
