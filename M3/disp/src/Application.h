@@ -57,8 +57,12 @@ public:
     void begin();
     void update();
 
+    void sendMessage(uint32_t code, uint32_t data = 0);
+
+
     //
     static void initBoard();
+    static Application* getApp();
 
 protected:
     //
@@ -73,8 +77,6 @@ protected:
     void stopCircling();
     void startGliding();
     void stopGliding();
-
-    void sendMessage(uint16_t code, uint16_t data = 0);
 
     // IKeypadCallback
     virtual void onPressed(uint8_t key);

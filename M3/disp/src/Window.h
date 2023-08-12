@@ -15,51 +15,51 @@ enum FallbackResult {
     RES_RETRY,
 };
 
+class Application;
+class Screen;
 
 /////////////////////////////////////////////////////////////////////////////////
 // class Window
 
 class Window : public Widget
 {
+    friend class Application;
+    friend class Screen;
 public:
     // constructor & destructor
     //Window();
     Window(M5EPD_Canvas* pRefCanvas);
     Window(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
- 
 
-    //
-    #if OBSOLETE
-    void setWindowPos(int x, int y);
-    void move(int x, int y, int w, int h);
-    void show(bool show);
-    #endif
+    // operations
+    bool setTimer(uint32_t id, uint32_t interval);
+    void killTimer(uint32_t id);
 
-    //
-    #if OBSOLETE
-    virtual int update(DeviceContext *context) {}
-    virtual void draw() {}
-    //
-    virtual void onDraw() {}    
-    //
-    virtual void onTouchDown(int x, int y) {}
-    virtual void onTouchMove(int x, int y) {}
-    virtual void onTouchUp(int x, int y) {}
-    //
-    virtual void onKeyPress(unsigned short key) {}
-    virtual void onKeyLongPress(unsigned short key) {}
-    virtual void onKeyRelease(unsigned short key) {}
-    #endif
-
+protected:
     //
     virtual void onActive() {}
     virtual void onClose() {}
     virtual void onFallback(FallbackResult result, Window *from) {}
 
-    virtual void onMessage(uint16_t code, uint16_t data) {}
-    virtual void onTimer(uint32_t tickCount) {}
+    virtual void onMessage(uint32_t code, uint32_t data) {}
+    virtual void onTimer(uint32_t id) {}
+
+    virtual void onIdle();
 
 protected:
+    struct TimerInfo {
+        TimerInfo() {
+            id = (uint32_t)-1;
+            interval = 0;
+            lastTick = 0;
+        }
+
+        uint32_t id;
+        uint32_t interval;
+        uint32_t lastTick;
+    };
+
+    TimerInfo m_timer[5];
 };
 
 

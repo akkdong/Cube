@@ -6,9 +6,13 @@
 #include "board.h"
 #include "MainWindow.h"
 #include "Message.h"
+#include "Application.h"
 #include "DeviceContext.h"
 #include "DeviceRepository.h"
 #include "logger.h"
+
+#define TIMERID_HIDE_MESSAGEBOX     (1)
+
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -23,13 +27,58 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
     , m_vbox { pRefCanvas, pRefCanvas, pRefCanvas, pRefCanvas, pRefCanvas, pRefCanvas }
     , m_mbox (pRefCanvas)
     , m_widgets {
-        &m_ann,
-        &m_thermal,
-        &m_compass,
-        &m_vmeter,
-        &m_vbox[0], &m_vbox[1], &m_vbox[2], &m_vbox[3], &m_vbox[4], &m_vbox[5] }
-    , m_tickLast(0)
-    , m_tickShowMessage(0)
+        &m_ann, &m_thermal, &m_compass, &m_vmeter,
+        &m_vbox[0], &m_vbox[1], &m_vbox[2], &m_vbox[3], &m_vbox[4], &m_vbox[5] 
+    }
+    , m_layout {
+        {   { 
+                { 0, 0, 960, 60, true, 0 }, // WID_ANNUNCIATOR
+                { 0, 60, 640, 360, true, 0 }, // WID_THERMALASSIST
+                { 0, 0, 0, 0, false, 0 }, // WID_COMPASS
+                { 0, 0, 0, 0, false, 0 }, // WID_VARIOMETER
+                { 640, 60, 320, 120, true, ValueBox::VType::ALTITUDE_GROUND }, // WID_VALUEBOX_1
+                { 640, 180, 320, 120, true, ValueBox::VType::SPEED_GROUND }, // WID_VALUEBOX_2
+                { 640, 300, 320, 120, true, ValueBox::VType::SPEED_VERTICAL }, // WID_VALUEBOX_3
+                { 0, 420, 320, 120, true, ValueBox::VType::ALTITUDE_BARO }, // WID_VALUEBOX_4
+                { 320, 420, 320, 120, true, ValueBox::VType::ALTITUDE_AGL }, // WID_VALUEBOX_5
+                { 640, 420, 320, 120, true, ValueBox::VType::TRACK_HEADING }, // WID_VALUEBOX_6
+            },
+            32, 76
+        },
+        {
+            {
+                { 0, 0, 960, 60, true, 0 }, // WID_ANNUNCIATOR
+                { 0, 0, 0, 0, false, 0 }, // WID_THERMALASSIST
+                { 380, 60, 200, 200, true, 0 }, // WID_COMPASS
+                { 400, 260, 160, 240, true, 0 }, // WID_VARIOMETER
+                { 0, 60, 380, 160, true, ValueBox::VType::ALTITUDE_GROUND }, // WID_VALUEBOX_1
+                { 0, 220, 380, 160, true, ValueBox::VType::SPEED_GROUND }, // WID_VALUEBOX_2
+                { 0, 380, 380, 160, true, ValueBox::VType::TRACK_HEADING }, // WID_VALUEBOX_3
+                { 580, 60, 380, 160, true, ValueBox::VType::SPEED_VERTICAL }, // WID_VALUEBOX_4
+                { 580, 220, 380, 160, true, ValueBox::VType::GLIDE_RATIO }, // WID_VALUEBOX_5
+                { 580, 380, 380, 160, true, ValueBox::VType::DISTANCE_TAKEOFF }, // WID_VALUEBOX_6
+            },
+            32, 92
+        },
+        {
+            {
+                { 0, 0, 960, 60, true, 0 }, // WID_ANNUNCIATOR
+                { 0, 60, 960, 480, true, 0 }, // WID_THERMALASSIST
+                { 0, 0, 0, 0, false, 0 }, // WID_COMPASS
+                { 0, 0, 0, 0, false, 0 }, // WID_VARIOMETER
+                { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_1
+                { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_2
+                { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_3
+                { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_4
+                { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_5
+                { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_6
+            },
+            32, 76
+        },
+    }
+    , m_activeLayout(-1)
+    , m_lastKey(0)
+    , m_refreshCount(-1)
 {
 }
 
@@ -45,7 +94,7 @@ int MainWindow::update(DeviceContext *context, uint32_t updateHints)
     return isDirty() ? 1 : 0;
 }
 
-void MainWindow::draw()
+void MainWindow::onDraw()
 {
     // erase bkgnd
     m_pRefCanvas->fillRect(0, 0, LCD_WIDTH, LCD_HEIGHT, M5EPD_Canvas::G0);
@@ -62,81 +111,20 @@ void MainWindow::draw()
         m_mbox.draw();
 
     // update full or fast(?)
-    static uint32_t refreshCount = -1;
-    m_pRefCanvas->pushCanvas(0, 0, ((++refreshCount) % 60) == 0 ? UPDATE_MODE_GC16 : UPDATE_MODE_DU);
+    m_pRefCanvas->pushCanvas(0, 0, ((++m_refreshCount) % 60) == 0 ? UPDATE_MODE_GC16 : UPDATE_MODE_DU);
 }
 
 void MainWindow::onActive()
 {
-    // layout widgets
-    for (size_t i = 0; i < WID_COUNT; i++)
-    {
-        switch (i)
-        {
-        case WID_ANNUNCIATOR:
-            m_widgets[i]->move(0, 0, LCD_WIDTH, 60);
-            m_widgets[i]->show(true);
-            break;
-        case WID_THERMALASSIST:
-            m_widgets[i]->move(0, 60, 640, 360);
-            m_widgets[i]->show(true);
-            break;
-        case WID_COMPASS:
-            m_widgets[i]->move(0, 0, 0, 0);
-            m_widgets[i]->show(false);
-            break;
-        case WID_VARIOMETER:
-            m_widgets[i]->move(0, 0, 0, 0);
-            m_widgets[i]->show(false);
-            break;
-        case WID_VALUEBOX_1:
-            m_widgets[i]->move(640, 60, 320, 120);            
-            m_widgets[i]->show(true);
-            break;
-        case WID_VALUEBOX_2:
-            m_widgets[i]->move(640, 180, 320, 120);
-            m_widgets[i]->show(true);
-            break;
-        case WID_VALUEBOX_3:
-            m_widgets[i]->move(640, 300, 320, 120);
-            m_widgets[i]->show(true);
-            break;
-        case WID_VALUEBOX_4:
-            m_widgets[i]->move(0, 420, 320, 120);
-            m_widgets[i]->show(true);
-            break;
-        case WID_VALUEBOX_5:
-            m_widgets[i]->move(320, 420, 320, 120);
-            m_widgets[i]->show(true);
-            break;
-        case WID_VALUEBOX_6:
-            m_widgets[i]->move(640, 420, 320, 120);
-            m_widgets[i]->show(true);
-            break;
-        }
-    }
+    layoutWidgets(1);
 
     #define MBOX_WIDTH      420
     #define MBOX_HEIGHT     80
     m_mbox.move((LCD_WIDTH - MBOX_WIDTH) / 2, (LCD_HEIGHT - MBOX_HEIGHT) / 2, MBOX_WIDTH, MBOX_HEIGHT);
     m_mbox.show(false);
-
-    // initilize number-boxes
-    uint16_t types[] = {
-        ValueBox::VType::ALTITUDE_GROUND,
-        ValueBox::VType::SPEED_GROUND,
-        ValueBox::VType::SPEED_VERTICAL,
-        ValueBox::VType::ALTITUDE_BARO,
-        ValueBox::VType::ALTITUDE_AGL,
-        ValueBox::VType::TRACK_HEADING
-    };
-
-    for (size_t i = 0; i < sizeof(m_vbox) / sizeof(m_vbox[0]); i++)
-        m_vbox[i].init(types[i]);
-
 }
 
-void MainWindow::onMessage(uint16_t code, uint16_t data)
+void MainWindow::onMessage(uint32_t code, uint32_t data)
 {
     DeviceContext *contextPtr = DeviceRepository::instance().getContext();
 
@@ -164,36 +152,98 @@ void MainWindow::onMessage(uint16_t code, uint16_t data)
         this->showMessage("Landing...");
         break;
 
+    /*
     case MSG_KEY_PRESSED:
+        onKeyPressed(data);
+        break;
     case MSG_KEY_LONG_PRESSED:
+        onKeyLongPressed(data);
+        break;
     case MSG_KEY_RELEASED:
+        onKeyReleased(data);
         break;
 
-    case MSG_TOUCH_PRESSED:
-    case MSG_TOUCH_LONG_PRESSED:
-    case MSG_TOUCH_RELEASED:
+    case MSG_TOUCH_DOWN:
+        onTouchDown(data >> 16, data & 0x00FF);
         break;
+    case MSG_TOUCH_MOVE:
+        onTouchMove(data >> 16, data & 0x00FF);
+        break;
+    case MSG_TOUCH_UP:
+        onTouchUp(data >> 16, data & 0x00FF);
+        break;
+    */
     }
 }
 
-void MainWindow::onTimer(uint32_t tickCount)
-{    
-    if (this->isDirty())
-    {
-        this->draw(); 
-        this->setDirty(false);
-    }
-
-    if (m_mbox.isVisible() && (millis() - m_tickShowMessage) > 2000)
+void MainWindow::onTimer(uint32_t id)
+{
+    LOGv("MainWindow::onTimer(%u)", id);
+    if (id == TIMERID_HIDE_MESSAGEBOX)
     {
         LOGv("Hide message box!");
         m_mbox.show(false);
-
         this->setDirty(true);
-    }
 
-    // 
-    m_tickLast = tickCount;
+        killTimer(id);
+    }
+}
+
+void MainWindow::onTouchDown(int x, int y)
+{
+}
+
+void MainWindow::onTouchMove(int x, int y)
+{
+}
+
+void MainWindow::onTouchUp(int x, int y)
+{
+}
+
+void MainWindow::onKeyPressed(uint32_t key)
+{
+    m_lastKey = key;
+}
+
+void MainWindow::onKeyLongPressed(uint32_t key)
+{
+    if (key == KEY_LEFT)
+    {
+        Application::getApp()->sendMessage(MSG_SHOW_SETTINGS, 0);
+        m_lastKey = 0; // ignore key-up
+    }
+    else if (key == KEY_RIGHT)
+    {
+        Application::getApp()->sendMessage(MSG_SHOW_FILEMANAGER, 0);
+        m_lastKey = 0; // ignore key-up
+    }
+}
+
+void MainWindow::onKeyReleased(uint32_t key)
+{
+    if (m_lastKey != key)
+        return;
+
+    switch (key)
+    {
+    case KEY_LEFT:
+        layoutWidgets(m_activeLayout - 1);
+        break;
+    case KEY_PUSH:
+        break;
+    case KEY_RIGHT:
+        layoutWidgets(m_activeLayout + 1);
+        break;
+    case EXT_KEY_LEFT:
+        break;
+    case EXT_KEY_RIGHT:
+        break;
+    case EXT_KEY_UP:
+        break;
+    case EXT_KEY_DOWN:
+        break;
+    }
 }
 
 
@@ -202,7 +252,41 @@ void MainWindow::showMessage(const char *msg)
     LOGv("Show message box: %s", msg);
     m_mbox.setMessage(msg);
     m_mbox.show(true);
-    m_tickShowMessage = millis();
-    
     this->setDirty(true);
+
+    // hide after 2 seconds
+    setTimer(TIMERID_HIDE_MESSAGEBOX, 2000);
+}
+
+void MainWindow::layoutWidgets(int pageNum)
+{
+    if (pageNum < 0)
+        pageNum = PID_COUNT - 1;
+    else if (pageNum >= PID_COUNT)
+        pageNum = 0;
+
+    if (m_activeLayout == pageNum)
+        return;
+    m_activeLayout = pageNum;
+
+    // layout each widget
+    Layout *layout = &m_layout[pageNum];
+    LOGv("Layout Page #%d", pageNum);
+    for (size_t i = 0; i < WID_COUNT; i++)
+    {
+        LayoutInfo *widget = &layout->widget[i];
+        LOGv(" Widget[%d]: %d, %d, %d, %d, %d, %d",
+            i, widget->x, widget->y, widget->w, widget->h, widget->visible, widget->userData);
+
+        m_widgets[i]->move(widget->x, widget->y, widget->w, widget->h);
+        m_widgets[i]->show(widget->visible);
+        m_widgets[i]->init(widget->userData);
+    }
+    // change ValueBox font size
+    ValueBox::setFontSize(layout->vbTitleSize, layout->vbValueSize);
+
+    // redraw all    
+    this->setDirty(true);
+    // refresh with no ghost
+    m_refreshCount = -1;
 }

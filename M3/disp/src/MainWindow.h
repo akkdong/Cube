@@ -33,6 +33,13 @@ public:
         WID_COUNT
     };
 
+    enum PageType {
+        PID_DEFAULT,
+        PID_THERMAL,
+        PID_COMPETITION,
+        PID_COUNT
+    };
+
     enum ValueType {
         VT_ALTITUDE,
         VT_GROUND_SPEED,
@@ -41,19 +48,42 @@ public:
         VT_LD,
         VT_TRACK
     };
+    
+    struct LayoutInfo {
+        int x, y, w, h;
+        bool visible;
+        uint16_t userData;
+    };
+
+    struct Layout {
+        LayoutInfo widget[WID_COUNT];
+        int vbTitleSize;
+        int vbValueSize;
+    };
+
 
     //
     virtual int update(DeviceContext *context, uint32_t updateHints);
-    virtual void draw();
+
+protected:
+    //
+    void showMessage(const char *msg);
+
+    void layoutWidgets(int pageNum);
 
     //
     virtual void onActive();
-    
-    virtual void onMessage(uint16_t code, uint16_t data);
-    virtual void onTimer(uint32_t tickCount);
+    virtual void onDraw();   
+    virtual void onMessage(uint32_t code, uint32_t data);
+    virtual void onTimer(uint32_t id);
 
-protected:
-    void showMessage(const char *msg);
+    virtual void onTouchDown(int x, int y);
+    virtual void onTouchMove(int x, int y);
+    virtual void onTouchUp(int x, int y);
+
+    virtual void onKeyPressed(uint32_t key);
+    virtual void onKeyLongPressed(uint32_t key);
+    virtual void onKeyReleased(uint32_t key);
 
 protected:
     Annunciator m_ann;
@@ -64,8 +94,11 @@ protected:
     MessageBox m_mbox;
 
     Widget *m_widgets[WID_COUNT];
-    uint32_t m_tickLast;
-    uint32_t m_tickShowMessage;
+    Layout m_layout[PID_COUNT];
+    int m_activeLayout;
+
+    uint32_t m_lastKey;
+    int m_refreshCount;
 };
 
 

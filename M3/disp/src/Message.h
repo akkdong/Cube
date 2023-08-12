@@ -22,21 +22,25 @@ enum MessageCode {
     MSG_TAKEOFF,
     MSG_LANDING,
 
-    MSG_KEY_PRESSED,
+    MSG_KEY_PRESSED,        // data: key
     MSG_KEY_LONG_PRESSED,
     MSG_KEY_RELEASED,
 
-    MSG_TOUCH_PRESSED,
-    MSG_TOUCH_LONG_PRESSED,
-    MSG_TOUCH_RELEASED,
+    MSG_TOUCH_DOWN,      // data: x << 16 | y
+    MSG_TOUCH_MOVE,
+    MSG_TOUCH_UP,
+
+    // system message
+    MSG_SHOW_SETTINGS,
+    MSG_SHOW_FILEMANAGER,
 
     MSG_SHUTDOWN,
 };
 
 struct Message
 {
-    uint16_t    code;
-    uint16_t    data;
+    uint32_t    code;
+    uint32_t    data;
 };
 
 

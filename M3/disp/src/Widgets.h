@@ -18,12 +18,22 @@ class M5EPD_Canvas;
 class DeviceContext;
 class ValueProvider;
 
+class Application;
+
+class Annunciator;
+class ValueBox;
+class ThermalAssist;
+class Compass;
+class VarioMeter;
+class MessageBox;
+
 
 /////////////////////////////////////////////////////////////////////////////////
 // class Widget
 
 class Widget
 {
+    friend class Application;
 public:
     // constructor & destructor
     //Widget();
@@ -34,29 +44,32 @@ public:
     //
     void setDirty(bool dirty);
     void setPosition(int x, int y);
-    void move(int x, int y, int w, int h);
-    void show(bool show);
+    void setUserData(uint16_t data) { m_flag = (m_flag & (~WSTATE_USER_MASK)) | data; }
+
+    uint16_t getUserData() { return (uint16_t)(m_flag & WSTATE_USER_MASK); }
 
     bool isDirty() { return m_flag & WSTATE_UPDATED ? true : false; }
     bool isVisible() { return m_flag & WSTATE_VISIBLE ? true : false; }
 
-    void setUserData(uint16_t data) { m_flag = (m_flag & (~WSTATE_USER_MASK)) | data; }
-    uint16_t getUserData() { return (uint16_t)(m_flag & WSTATE_USER_MASK); }
-
     //
-    virtual int update(DeviceContext* context, uint32_t updateHints);
-    virtual void draw();
-
-    //
-    virtual void onTouchDown(int x, int y);
-    virtual void onTouchMove(int x, int y);
-    virtual void onTouchUp(int x, int y);
-    //
-    virtual void onKeyPress(unsigned short key);
-    virtual void onKeyLongPress(unsigned short key);
-    virtual void onKeyRelease(unsigned short key);
+    virtual void init(uint16_t userData) {}
+    virtual void move(int x, int y, int w, int h);
+    virtual void show(bool show);
+    virtual void draw() { onDraw(); }
+    virtual int update(DeviceContext* context, uint32_t updateHints) { return 0; }
 
 protected:
+    //
+    virtual void onDraw() {}
+
+    //
+    virtual void onTouchDown(int x, int y) {}
+    virtual void onTouchMove(int x, int y) {}
+    virtual void onTouchUp(int x, int y) {}
+    //
+    virtual void onKeyPressed(uint32_t key) {}
+    virtual void onKeyLongPressed(uint32_t key) {}
+    virtual void onKeyReleased(uint32_t key) {}
 
 protected:
     M5EPD_Canvas *m_pRefCanvas;
@@ -76,9 +89,10 @@ public:
 
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
-    //
-    virtual void draw();
 
+protected:
+    //
+    virtual void onDraw();
 
 protected:
     const char * getTimeString(char* str, time_t t, bool includeSecond);
@@ -153,8 +167,6 @@ public:
     virtual ~ValueBox();
 
     //
-    void init(uint16_t vType);
-
     void setTitle(const char* title) { m_title = title; }
     void setDescription(const char* desc) { m_desc = desc; }
 
@@ -162,9 +174,13 @@ public:
     static void setFontSize(int titleSize, int valueSize);
 
     //
+    virtual void init(uint16_t userData);
     virtual int update(DeviceContext* context, uint32_t updateHints);
+
+
+protected:
     //
-    virtual void draw();
+    virtual void onDraw();
 
 protected:
     const char *m_title;
@@ -186,11 +202,22 @@ public:
     //
     ThermalAssist(M5EPD_Canvas* pRefCanvas);
     ThermalAssist(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
+    ~ThermalAssist();
 
     //
-    virtual int update(DeviceContext* context, uint32_t updateHints);
-    //
+    virtual void init(uint16_t userData);
+    virtual void move(int x, int y, int w, int h);
+    virtual void show(bool show);
     virtual void draw();
+    
+    virtual int update(DeviceContext* context, uint32_t updateHints);
+
+protected:
+    //
+    virtual void onDraw();
+
+protected:
+    Compass * m_compassPtr;
 };
 
 
@@ -205,10 +232,24 @@ public:
     Compass(M5EPD_Canvas* pRefCanvas);
     Compass(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
 
+    struct Point {
+        int x, y;
+    };
+
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
+
+protected:
     //
-    virtual void draw();
+    void drawArrow(int cx, int cy, int radius, int angle);
+    void drawArrow2(int cx, int cy, int radius, int angle);
+
+    //
+    virtual void onDraw();
+
+protected:
+    int m_heading, m_bearing;
+    int m_method; // up is north(method:0), heading(method:1), bearing(method:2)
 };
 
 
@@ -227,8 +268,13 @@ public:
 
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
+
+protected:
     //
-    virtual void draw();
+    virtual void onDraw();
+
+protected:
+    float m_vario;
 };
 
 
@@ -249,8 +295,10 @@ public:
 
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
+
+protected:
     //
-    virtual void draw();
+    virtual void onDraw();
 
 protected:
     String m_msg;

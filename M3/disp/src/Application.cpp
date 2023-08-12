@@ -117,8 +117,8 @@ void Application::begin()
     Display.createCanvas(M5EPD_PANEL_W, M5EPD_PANEL_H);
     Display.createRender(32);
     Display.createRender(48);
-    Display.createRender(70);
-    Display.createRender(80);
+    Display.createRender(76);
+    Display.createRender(92);
 
     // activate main-window
     MainWindow* pMainWnd = new MainWindow(&Display);
@@ -345,7 +345,7 @@ void Application::update()
         {
             uint8_t key, state;
             key = NMEA.getLastKey(&state);
-            uint16_t msg = state == 0 ? MSG_KEY_RELEASED : (state == 1 ? MSG_KEY_PRESSED : MSG_KEY_LONG_PRESSED);
+            uint32_t msg = state == 0 ? MSG_KEY_RELEASED : (state == 1 ? MSG_KEY_PRESSED : MSG_KEY_LONG_PRESSED);
             LOGv("KEY: %d(%s)", key, state == 0 ? "OFF" : (state == 1 ? "ON" : "LONG"));
 
             switch (key)
@@ -677,7 +677,7 @@ void Application::stopGliding()
 	contextPtr->flightState.glideRatio = -1;
 }
 
-void Application::sendMessage(uint16_t code, uint16_t data)
+void Application::sendMessage(uint32_t code, uint32_t data)
 {
     Message msg = { code, data };
     xQueueSend(msgQueue, &msg, 5);
@@ -751,7 +751,7 @@ void Application::ScreenTask()
     //
     Window* active = Scrn.getActiveWindow();
     active->update(contextPtr, 0);
-    active->draw(/*true*/);
+    //active->onDraw();
 
     //
     uint32_t tickCount = 0;
@@ -768,13 +768,38 @@ void Application::ScreenTask()
             //
             active = Scrn.getActiveWindow();
             if (active != nullptr)
-                active->onMessage(msg.code, msg.data);           
+            {
+                switch (msg.code)
+                {
+                case MSG_KEY_PRESSED:
+                    active->onKeyPressed(msg.data);
+                    break;
+                case MSG_KEY_LONG_PRESSED:
+                    active->onKeyLongPressed(msg.data);
+                    break;
+                case MSG_KEY_RELEASED:
+                    active->onKeyReleased(msg.data);
+                    break;
+                case MSG_TOUCH_DOWN:
+                    active->onTouchDown(msg.data >> 16, msg.data & 0x00FF);
+                    break;
+                case MSG_TOUCH_MOVE:
+                    active->onTouchMove(msg.data >> 16, msg.data & 0x00FF);
+                    break;
+                case MSG_TOUCH_UP:
+                    active->onTouchUp(msg.data >> 16, msg.data & 0x00FF);
+                    break;
+                default:
+                    active->onMessage(msg.code, msg.data);
+                    break;
+                }
+            }
         }
         else
         {
             active = Scrn.getActiveWindow();
             if (active != nullptr)
-                active->onTimer(tickCount++);
+                active->onIdle();
         }
     }
 

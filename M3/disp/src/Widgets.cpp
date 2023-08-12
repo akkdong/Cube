@@ -21,9 +21,7 @@
 //}
 
 Widget::Widget(M5EPD_Canvas *pRefCanvas)
-    : m_pRefCanvas(pRefCanvas)
-    , m_x(0), m_y(0), m_w(0), m_h(0)
-    , m_flag(0)
+    : Widget(pRefCanvas, 0, 0, 0, 0)
 {
 }
 
@@ -68,40 +66,6 @@ void Widget::show(bool show)
         m_flag = m_flag & (~WSTATE_VISIBLE);
 }
 
-int Widget::update(DeviceContext *context, uint32_t updateHints)
-{
-    return 0;
-}
-
-void Widget::draw()
-{
-}
-
-void Widget::onTouchDown(int x, int y)
-{
-}
-
-void Widget::onTouchMove(int x, int y)
-{
-}
-
-void Widget::onTouchUp(int x, int y)
-{
-}
-
-void Widget::onKeyPress(unsigned short key)
-{
-}
-
-void Widget::onKeyLongPress(unsigned short key)
-{
-}
-
-void Widget::onKeyRelease(unsigned short key)
-{
-}
-
-
 
 
 
@@ -109,7 +73,7 @@ void Widget::onKeyRelease(unsigned short key)
 // class Annunciator
 
 Annunciator::Annunciator(M5EPD_Canvas* pRefCanvas)
-    : Widget(pRefCanvas)
+    : Annunciator(pRefCanvas, 0, 0, 0, 0)
 {
 
 }
@@ -177,7 +141,7 @@ int Annunciator::update(DeviceContext* context, uint32_t updateHints)
     return isUpdated;
 }
 
-void Annunciator::draw()
+void Annunciator::onDraw()
 {
     #define ICON_W      48
     #define ICON_H      48
@@ -243,7 +207,7 @@ void Annunciator::draw()
         y = m_y + m_h / 2;
 
         char sz[32];
-        sprintf(sz, "%.2f", mVoltage);
+        sprintf(sz, "%.2fv", mVoltage);
         m_pRefCanvas->setTextSize(32);
         m_pRefCanvas->setTextDatum(CL_DATUM);
         m_pRefCanvas->drawString(sz, x, y);
@@ -336,10 +300,7 @@ int ValueBox::m_titleFontSize = 32;
 int ValueBox::m_valueFontSize = 70;
 
 ValueBox::ValueBox(M5EPD_Canvas* pRefCanvas)
-    : Widget(pRefCanvas, 0, 0, 0, 0)
-    , m_title("")
-    , m_desc("")
-    , m_pValueProvider(nullptr)
+    : ValueBox(pRefCanvas, 0, 0, 0, 0)
 {
 
 }
@@ -359,16 +320,16 @@ ValueBox::~ValueBox()
         delete m_pValueProvider;
 }
 
-void ValueBox::init(uint16_t vType)
+void ValueBox::init(uint16_t userData)
 {
     // set value-box type as user-data
-    setUserData(vType);
+    setUserData(userData);
 
     // set title & description
     const char *title, *desc;
     unsigned int decimalPlaces = 0;
 
-    switch (vType)
+    switch (userData)
     {
     case ALTITUDE_GROUND:
         title = "Alt Ground";
@@ -470,7 +431,7 @@ void ValueBox::init(uint16_t vType)
     setDescription(desc);
 
     // set value-provider
-    switch (vType)
+    switch (userData)
     {
     case TIME_FLIGHT:
     case TIME_CURRENT:
@@ -558,7 +519,7 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
     return 1;
 }
 
-void ValueBox::draw()
+void ValueBox::onDraw()
 {
     m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
     m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
@@ -582,25 +543,62 @@ void ValueBox::draw()
 // class ThermalAssist
 
 ThermalAssist::ThermalAssist(M5EPD_Canvas* pRefCanvas)
-    : Widget(pRefCanvas)
+    : ThermalAssist(pRefCanvas, 0, 0, 0, 0)
 {
 
 }
 
 ThermalAssist::ThermalAssist(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
     : Widget(pRefCanvas, x, y, w, h)
+    , m_compassPtr(nullptr)
 {
+}
+
+ThermalAssist::~ThermalAssist()
+{
+    if (m_compassPtr)
+        delete m_compassPtr;
 }
 
 int ThermalAssist::update(DeviceContext* context, uint32_t updateHints)
 {
+    if(m_compassPtr)
+        m_compassPtr->update(context, updateHints);
+
     return 0;
 }
 
+void ThermalAssist::init(uint16_t userData)
+{
+    if (!m_compassPtr)
+        m_compassPtr = new Compass(m_pRefCanvas, 0, 0, 160, 160);
+}
+
+void ThermalAssist::move(int x, int y, int w, int h)
+{
+    Widget::move(x, y, w, h);
+
+    if (m_compassPtr)
+        m_compassPtr->move(m_x + 4, m_y + 4, 160, 160);
+}
+
+void ThermalAssist::show(bool show)
+{
+    Widget::show(show);
+}
+
+void ThermalAssist::draw()
+{
+    Widget::draw();
+
+    // draw compass
+    if (m_compassPtr)
+        m_compassPtr->draw();
+}
 
 #define ZOOM_FACTOR				(1.0)
 
-void ThermalAssist::draw()
+void ThermalAssist::onDraw()
 {
     DeviceContext *context = DeviceRepository::instance().getContext();
 
@@ -648,8 +646,12 @@ void ThermalAssist::draw()
 		int16_t cx = m_x + m_w / 2;
 		int16_t cy = m_y + m_h / 2;
 
-		m_pRefCanvas->drawLine(cx - 20, cy, cx, cy - 28, M5EPD_Canvas::G15);
-		m_pRefCanvas->drawLine(cx, cy - 28, cx + 20, cy, M5EPD_Canvas::G15);
+        #if METHOD_1
+		m_pRefCanvas->drawLine(cx - 18, cy, cx, cy - 28, M5EPD_Canvas::G15);
+		m_pRefCanvas->drawLine(cx, cy - 28, cx + 18, cy, M5EPD_Canvas::G15);
+        #else
+        m_pRefCanvas->fillTriangle(cx - 18, cy + 16, cx, cy - 16, cx + 18, cy + 16, M5EPD_Canvas::G15);
+        #endif
 	}
 }
 
@@ -662,53 +664,204 @@ void ThermalAssist::draw()
 // class Compass
 
 Compass::Compass(M5EPD_Canvas* pRefCanvas)
-    : Widget(pRefCanvas)
+    : Compass(pRefCanvas, 0, 0, 0, 0)
 {
 
 }
 
 Compass::Compass(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
     : Widget(pRefCanvas, x, y, w, h)
+    , m_heading(0)
+    , m_bearing(-1)
+    , m_method(1)
 {
 }
 
 int Compass::update(DeviceContext* context, uint32_t updateHints)
 {
+    m_heading = context->varioState.heading;
+//  m_bearing = context->flightState.bearingNextPoint;
+    m_bearing = context->flightState.bearingTakeoff;
+
     return 0;
 }
 
-void Compass::draw()
+void Compass::onDraw()
 {
+    int base_x = this->m_w / 2 + m_x;
+    int base_y = this->m_h / 2 + m_y;
+    int angle, up = 0;
+    int radius = this->m_w / 2 - 4;
 
+    if (m_method == 2 && m_bearing < 0) // bearing < 0 : n/a
+        m_method = 1;
+
+    if (m_method == 1)
+        up = m_heading;
+    else if (m_method == 2) 
+        up = m_bearing;
+    // else up = 0
+
+    // draw north-letter
+    angle = 0 - up; // real-north = rotate counterclockwise
+
+    int point_x = base_x + (int)((radius - 10) * sin(angle * DEG_TO_RAD));
+    int point_y = base_y - (int)((radius - 10) * cos(angle * DEG_TO_RAD));
+
+    //int offset_x = letter_n_16.header.w / 2;
+    //int offset_y = letter_n_16.header.h / 2;
+
+    m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
+    m_pRefCanvas->drawCircle(m_x + m_w / 2, m_y + m_h / 2, radius - 10, M5EPD_Canvas::G15);
+
+    m_pRefCanvas->setTextDatum(CC_DATUM);
+    m_pRefCanvas->setTextColor(M5EPD_Canvas::G15);
+    m_pRefCanvas->setTextSize(32);
+    m_pRefCanvas->drawString("N", point_x, point_y);
+
+    // draw heading
+    angle = m_heading - up; // rotate counterclockwise
+    drawArrow(base_x, base_y, radius - 40, angle);
+
+    // draw bearing
+    if (m_bearing >= 0)
+    {
+        angle = m_bearing - up; // rotate counterclockwise
+        drawArrow2(base_x, base_y, radius - 20, angle);
+    }
 }
 
+void Compass::drawArrow(int cx, int cy, int radius, int angle)
+{
+    Point points[4];
 
+    points[0].x = cx + (int)(radius * sin(angle * DEG_TO_RAD));
+    points[0].y = cy - (int)(radius * cos(angle * DEG_TO_RAD));
+    points[1].x = cx + (int)(radius / 3 * sin((angle + 180) * DEG_TO_RAD));
+    points[1].y = cy - (int)(radius / 3 * cos((angle + 180) * DEG_TO_RAD));
+    points[2].x = cx + (int)(radius * sin((angle - 140) * DEG_TO_RAD));
+    points[2].y = cy - (int)(radius * cos((angle - 140) * DEG_TO_RAD));
+    points[3].x = cx + (int)(radius * sin((angle + 140) * DEG_TO_RAD));
+    points[3].y = cy - (int)(radius * cos((angle + 140) * DEG_TO_RAD));
 
+    #if METHOD_1
+    m_pRefCanvas->drawTriangle(
+        points[0].x, points[0].y,
+        points[1].x, points[1].y,
+        points[2].x, points[2].y,
+        M5EPD_Canvas::G15);
 
+    m_pRefCanvas->drawTriangle(
+        points[0].x, points[0].y,
+        points[1].x, points[1].y,
+        points[2].x, points[2].y,
+        M5EPD_Canvas::G15);
+    #else
+    m_pRefCanvas->drawLine(points[0].x, points[0].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawLine(points[2].x, points[2].y, points[1].x, points[1].y, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawLine(points[1].x, points[1].y, points[3].x, points[3].y, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawLine(points[3].x, points[3].y, points[0].x, points[0].y, M5EPD_Canvas::G15);
+    #endif
+}
+
+void Compass::drawArrow2(int cx, int cy, int radius, int angle)
+{
+    Point points[4];
+
+    points[0].x = cx + (int)(radius * sin(angle * DEG_TO_RAD));
+    points[0].y = cy - (int)(radius * cos(angle * DEG_TO_RAD));
+    points[1].x = cx + (int)((radius - 16) * sin((angle + 12) * DEG_TO_RAD));
+    points[1].y = cy - (int)((radius - 16) * cos((angle + 12) * DEG_TO_RAD));
+    points[2].x = cx + (int)((radius - 16) * sin((angle - 12) * DEG_TO_RAD));
+    points[2].y = cy - (int)((radius - 16) * cos((angle - 12) * DEG_TO_RAD));
+    points[3].x = cx + (int)((radius - 6) * sin((angle + 180) * DEG_TO_RAD));
+    points[3].y = cy - (int)((radius - 6) * cos((angle + 180) * DEG_TO_RAD));
+
+    #if METHOD_1
+    m_pRefCanvas->drawLine(points[0].x, points[0].y, points[1].x, points[1].y, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawLine(points[0].x, points[0].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawLine(points[0].x, points[0].y, points[3].x, points[3].y, M5EPD_Canvas::G15);
+
+    m_pRefCanvas->drawCircle(points[3].x, points[3].y, 6, M5EPD_Canvas::G15);
+    #else
+    //m_pRefCanvas->drawLine(points[0].x, points[0].y, points[1].x, points[1].y, M5EPD_Canvas::G15);
+    //m_pRefCanvas->drawLine(points[1].x, points[1].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
+    //m_pRefCanvas->drawLine(points[2].x, points[2].y, points[0].x, points[0].y, M5EPD_Canvas::G15);
+    m_pRefCanvas->fillTriangle(points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
+    #endif
+}
 
 
 /////////////////////////////////////////////////////////////////////////////////
 // class VarioMeter
 
 VarioMeter::VarioMeter(M5EPD_Canvas* pRefCanvas)
-    : Widget(pRefCanvas)
+    : VarioMeter(pRefCanvas, 0, 0, 0, 0)
 {
 
 }
 
 VarioMeter::VarioMeter(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
     : Widget(pRefCanvas, x, y, w, h)
+    , m_vario(0)
 {
 }
 
 int VarioMeter::update(DeviceContext* context, uint32_t updateHints)
 {
+    m_vario = context->varioState.speedVertActive;
+
     return 0;
 }
 
-void VarioMeter::draw()
+void VarioMeter::onDraw()
 {
+	#define BAR_H	(20)
+	#define BAR_G	(6)
+	int16_t h = (m_h - 8) / 2;
+	int16_t w = m_w - 40;
+	int16_t x = m_x + 20;
+	int16_t y = m_y + m_h / 2;
+	int16_t sign = 1;
 
+	float vario = m_vario;
+	if (vario > 0) 
+	{
+		sign = 1;
+		vario = (vario > 5.0) ? 5.0 : vario;
+	}
+	else
+	{
+		sign = -1;
+		vario = (vario < -5.0) ? 5.0 : -vario;
+	}
+
+	// vario --> height
+	// vario : 5.0 = y : h, y = vario / 5.0 * h;
+	int16_t v_offset = (int16_t)(vario / 5.0 * h);
+
+    //m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
+    //m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawFastHLine(x, y, w, M5EPD_Canvas::G15);
+
+	for (int16_t yy = 0; yy <= h; yy += (BAR_H + BAR_G))
+	{
+		if (v_offset <= yy)
+			break;
+
+		if (sign > 0)
+		{
+			m_pRefCanvas->fillRect(x, y - (yy + BAR_H), w, BAR_H, M5EPD_Canvas::G15);
+
+		}
+		else
+		{
+			m_pRefCanvas->drawRect(x, y + yy, w, BAR_H, M5EPD_Canvas::G15);
+		}
+		
+		w -= 30;
+        x += 15;
+	}
 }
 
 
@@ -720,7 +873,7 @@ void VarioMeter::draw()
 // class MessageBox
 
 MessageBox::MessageBox(M5EPD_Canvas* pRefCanvas)
-    : Widget(pRefCanvas)
+    : MessageBox(pRefCanvas, 0, 0, 0, 0)
 {
 
 }
@@ -740,7 +893,7 @@ int MessageBox::update(DeviceContext* context, uint32_t updateHints)
     return 0;
 }
 
-void MessageBox::draw()
+void MessageBox::onDraw()
 {
     m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
     m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);

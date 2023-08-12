@@ -22,6 +22,12 @@
 Application App;
 
 
+Application* Application::getApp()
+{
+    return &App;
+}
+
+
 void setup()
 {
     //
