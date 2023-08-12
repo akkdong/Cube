@@ -859,8 +859,8 @@ void VarioMeter::onDraw()
 			m_pRefCanvas->drawRect(x, y + yy, w, BAR_H, M5EPD_Canvas::G15);
 		}
 		
-		w -= 30;
-        x += 15;
+		w -= 16;
+        x += 8;
 	}
 }
 
