@@ -160,7 +160,7 @@ void Application::begin()
     //
     msgQueue = xQueueCreate(10, sizeof(Message));
 
-    xTaskCreate(ScreenTask, "SCR", 4096, this, 2, &taskScreen);    
+    xTaskCreate(ScreenTask, "SCR", 4096, this, 0, &taskScreen);    
     xTaskCreate(DeviceTask, "DEV", 2048, this, 0, &taskDevice); 
 
 
@@ -206,6 +206,8 @@ void Application::update()
 
     bool engMode = false;
     Stream& input = engMode ? Serial : Serial1;
+    uint32_t now = millis();
+
     while (input.available())
     {
         int ch = input.read();
@@ -281,11 +283,13 @@ void Application::update()
                 }
                 else
                 {
+                    #if 0
                     contextPtr->varioState.altitudeGPS = 0;
                     contextPtr->varioState.speedGround = 0;
                     contextPtr->varioState.heading = 0;
 
                     sendMessage(MSG_UPDATE_GPS, 0);
+                    #endif
                 }
 
                 // notify gps-fixed
@@ -307,12 +311,18 @@ void Application::update()
 
             //contextPtr->varioState.altitudeBaro = calculateAltitude(contextPtr->varioState.pressure);
             //contextPtr->varioState.altitudeCalibrated = contextPtr->varioState.altitudeBaro - contextPtr->varioState.altitudeDrift;
-            contextPtr->varioState.pressureLazy += (contextPtr->varioState.pressure - contextPtr->varioState.pressureLazy) * 0.6;
-            contextPtr->varioState.speedVertLazy += (contextPtr->varioState.speedVertActive - contextPtr->varioState.speedVertLazy) * 0.6;
+            //contextPtr->varioState.pressureLazy += (contextPtr->varioState.pressure - contextPtr->varioState.pressureLazy) * 1.0;
+            //contextPtr->varioState.speedVertLazy += (contextPtr->varioState.speedVertActive - contextPtr->varioState.speedVertLazy) * 1.0;
+            contextPtr->varioState.pressureLazy = contextPtr->varioState.pressure;
+            contextPtr->varioState.speedVertLazy = contextPtr->varioState.speedVertActive;
             // UNLOCK
 
             // update VARIO relative widgets
-            sendMessage(MSG_UPDATE_VARIO);
+            if (!gpsFixed && (now - tick_updateTime) >= 500)
+            {
+                sendMessage(MSG_UPDATE_VARIO);
+                tick_updateTime = now;
+            }
 
             //if (/* busy? interval? */ varioNmea.checkInterval())
             {
@@ -328,7 +338,7 @@ void Application::update()
                 //
                 if (Application::deviceMode != MODE_GROUND && contextPtr->deviceState.statusGPS == 0)
                 {
-                    uint32_t curTick = millis();
+                    uint32_t curTick = now; // millis()
 
                     if (velocity < STABLE_SINKING_THRESHOLD || STABLE_SINKING_THRESHOLD < velocity)
                         tick_silentBase = curTick;

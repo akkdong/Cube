@@ -29,6 +29,7 @@
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // 
 
+#if OBSOLETE
 const VarioTone DeviceRepository::defaultTone[] =
 {
 	// y = exp((x + 320) / 180) x 0.8 + 800
@@ -46,7 +47,7 @@ const VarioTone DeviceRepository::defaultTone[] =
 	{    8.00,   988, 225,   68 },	// B5
 	{   10.00,  1047, 200,   70 },	// C6
 };
-
+#endif // OBSOLETE
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -138,7 +139,9 @@ void DeviceRepository::reset()
 	contextPtr->varioSettings.dampingFactor	= VARIOMETER_DEFAULT_DAMPING_FACTOR; // 0.1
 
 	// vario_tone_table 
+#if OBSOLETE
 	memcpy(&contextPtr->toneTable[0], &defaultTone[0], sizeof(defaultTone));
+#endif
 	
 	//
 	contextPtr->volume.varioDefault = contextPtr->volume.vario = VARIOMETER_BEEP_VOLUME;
@@ -151,9 +154,11 @@ void DeviceRepository::reset()
 	contextPtr->threshold.autoShutdownVario = AUTO_SHUTDOWN_THRESHOLD;
 	
 	//
+#if OBSOLETE
 	contextPtr->kalman.varZMeas = KF_ZMEAS_VARIANCE;
 	contextPtr->kalman.varZAccel = KF_ZACCEL_VARIANCE;
 	contextPtr->kalman.varAccelBias = KF_ACCELBIAS_VARIANCE;
+#endif // OBSOLETE
 
 	//
 	contextPtr->deviceDefault.enableBT = 1;
@@ -221,6 +226,7 @@ size_t DeviceRepository::updateTrackHistory(float lat, float lon, float speedVer
 	return (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
 }
 
+#if OBSOLETE
 size_t DeviceRepository::updateTrackHistory()
 {
 	FlightState& state = contextPtr->flightState;
@@ -238,6 +244,7 @@ size_t DeviceRepository::updateTrackHistory()
 	LOGv("track-history size: %d", size);
 	return size;
 }
+#endif
 
 size_t DeviceRepository::getVSpeedCount()
 {
@@ -307,12 +314,14 @@ void DeviceRepository::set(JsonDocument& doc)
 		contextPtr->threshold.lowBattery = doc["threshold_low_battery"]; // 2.9
 	if (! doc["threshold_auto_shutdown"].isNull())
 		contextPtr->threshold.autoShutdownVario = doc["threshold_auto_shutdown"]; // 600000
+#if OBSOLETE
 	if (! doc["kalman_var_zmeas"].isNull())
 		contextPtr->kalman.varZMeas = doc["kalman_var_zmeas"]; // 400
 	if (! doc["kalman_var_zaccel"].isNull())
 		contextPtr->kalman.varZAccel = doc["kalman_var_zaccel"]; // 1000
 	if (! doc["kalman_var_abias"].isNull())
 		contextPtr->kalman.varAccelBias = doc["kalman_var_abias"]; // 1
+#endif
 	if (! doc["device_enable_bt"].isNull())
 		contextPtr->deviceDefault.enableBT = doc["device_enable_bt"]; // false
 	if (! doc["device_enable_sound"].isNull())

@@ -130,11 +130,11 @@ void MainWindow::onMessage(uint32_t code, uint32_t data)
 
     switch (code)
     {
-    case MSG_UPDATE_ANNUNCIATOR:
+    //case MSG_UPDATE_ANNUNCIATOR:
     case MSG_UPDATE_GPS:
     case MSG_UPDATE_VARIO:
-    case MSG_UPDATE_BAT:
-    case MSG_UPDATE_TH:
+    //case MSG_UPDATE_BAT:
+    //case MSG_UPDATE_TH:
         this->update(contextPtr, /*updateHints*/ 0);
         break;
 
@@ -217,6 +217,14 @@ void MainWindow::onKeyLongPressed(uint32_t key)
     {
         Application::getApp()->sendMessage(MSG_SHOW_FILEMANAGER, 0);
         m_lastKey = 0; // ignore key-up
+    }
+    else if (key == EXT_KEY_UP)
+    {
+        DeviceContext *contextPtr = DeviceRepository::instance().getContext();
+        if (contextPtr->volume.vario > 0)
+            Serial1.println("MUTE 1");
+        else
+            Serial1.println("MUTE 0");
     }
 }
 

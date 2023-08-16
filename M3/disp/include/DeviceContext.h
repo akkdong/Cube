@@ -13,6 +13,8 @@
 #define MAX_TRACK_HISTORY				(64)
 
 
+
+
 ////////////////////////////////////////////////////////////////////////////////////////////////
 // 
 
@@ -74,7 +76,7 @@ struct VarioState // VarioDeviceState
 	float			pressure;
 	float			pressureLazy;
 	float			temperature;		// by barometer
-	float			temperatureAlt;		// by thermometer
+//	float			temperatureAlt;		// by thermometer
 
 	//
 	time_t			timeCurrent;
@@ -155,6 +157,8 @@ struct KalmanParameters
 struct DeviceState
 {
 	float			batteryPower;
+	float			temperature;
+	float			humidity;
 	
 	uint8_t			statusGPS;		// 0: no-signal, 1: 
 	uint8_t			statusBT;		// 0: disabled, 1: on-wait-client, 2: connected
@@ -175,6 +179,7 @@ struct DeviceDefault
 	char			wifiPassword[MAX_STRING_SIZE];
 
 	float			timezone;
+	long			timezoneOffset;
 };
 
 struct FlightStats
@@ -184,6 +189,10 @@ struct FlightStats
 
 	float			varioMax;
 	float			varioMin;
+
+    float           avgSink;
+    float           avgClimb;
+
 
 	int16_t			totalThermaling;
 	int16_t			thermalingMaxGain;
@@ -258,7 +267,7 @@ struct FlightState
 	//
 	TrackPoint		trackPoints[MAX_TRACK_HISTORY];
 	TrackDistance	trackDistance[MAX_TRACK_HISTORY];
-	TrackHistory	trackHistory[MAX_TRACK_HISTORY];
+//	TrackHistory	trackHistory[MAX_TRACK_HISTORY];
 	int16_t			frontPoint;
 	int16_t			rearPoint;
 
@@ -302,12 +311,12 @@ struct DeviceContext
     GliderInfo          gliderInfo;
     IGCLoggerData       logger;
 
-    VarioTone           toneTable[MAX_VARIO_TONE];
+//  VarioTone           toneTable[MAX_VARIO_TONE];
 
     VolumeSettings      volume;
     ThresholdSettings   threshold;
 
-    KalmanParameters    kalman;
+//  KalmanParameters    kalman;
 
     DeviceDefault       deviceDefault;
 
@@ -320,10 +329,6 @@ struct DeviceContext
 
 
 
-//
-//
-//
-
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -332,6 +337,5 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
 
 #endif // __DEVICE_CONTEXT_H__

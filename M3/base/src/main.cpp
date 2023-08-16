@@ -66,6 +66,7 @@ HostCommand debugCommand;
 
 static float altitude = 0.0f, vSpeed = 0.0f;
 static float dampingFactor = 1.0f;
+static uint32_t varioInterval = 1000;
 static int addCount = 0;
 
 
@@ -220,7 +221,7 @@ void loop()
   }
 
   static uint32_t lastTick = millis();
-  if (millis() - lastTick > 200 && addCount > 0)
+  if (millis() - lastTick >= varioInterval && addCount > 0)
   {
     //
     lastTick = millis();
