@@ -17,6 +17,13 @@ NmeaParser::NmeaParser()
 
 int NmeaParser::begin()
 {
+    reset();
+
+    return 0;
+}
+
+void NmeaParser::reset()
+{
     //
     valid = 0;
     fixQuality = 0;
@@ -43,8 +50,6 @@ int NmeaParser::begin()
     memset(&parserContext, 0, sizeof(parserContext));
     //
     dataQueue.reset();
-
-    return 0;
 }
 
 int NmeaParser::update(int ch)

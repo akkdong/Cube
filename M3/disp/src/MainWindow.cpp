@@ -76,7 +76,7 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
             32, 76
         },
     }
-    , m_activeLayout(-1)
+    , m_activePage(-1)
     , m_lastKey(0)
     , m_refreshCount(-1)
 {
@@ -116,7 +116,7 @@ void MainWindow::onDraw()
 
 void MainWindow::onActive()
 {
-    layoutWidgets(1);
+    changePage(1);
 
     #define MBOX_WIDTH      420
     #define MBOX_HEIGHT     80
@@ -217,14 +217,32 @@ void MainWindow::onKeyLongPressed(uint32_t key)
     {
         Application::getApp()->sendMessage(MSG_SHOW_FILEMANAGER, 0);
         m_lastKey = 0; // ignore key-up
-    }
+    } 
     else if (key == EXT_KEY_UP)
     {
         DeviceContext *contextPtr = DeviceRepository::instance().getContext();
+        String muteCmd("MUTE x");
+
         if (contextPtr->volume.vario > 0)
-            Serial1.println("MUTE 1");
+            muteCmd[5] = '1'; // Serial1.println("MUTE 1");
         else
-            Serial1.println("MUTE 0");
+            muteCmd[5] = '0'; //Serial1.println("MUTE 0");
+
+        // send mute-command
+        Serial1.println(muteCmd.c_str());
+        // show command
+        this->showMessage(muteCmd.c_str());
+    }
+    else if (key == EXT_KEY_DOWN)
+    {
+        // toggle simulation mode
+        bool enable = Application::getApp()->isEngineerMode() ? false : true;
+        Application::getApp()->enableEngineerMode(enable);
+
+        // show command
+        String str("EngMode x");
+        str[8] = enable ? '1' : '0';
+        this->showMessage(str.c_str());
     }
 }
 
@@ -236,12 +254,12 @@ void MainWindow::onKeyReleased(uint32_t key)
     switch (key)
     {
     case KEY_LEFT:
-        layoutWidgets(m_activeLayout - 1);
+        changePage(m_activePage - 1);
         break;
     case KEY_PUSH:
         break;
     case KEY_RIGHT:
-        layoutWidgets(m_activeLayout + 1);
+        changePage(m_activePage + 1);
         break;
     case EXT_KEY_LEFT:
         break;
@@ -266,16 +284,16 @@ void MainWindow::showMessage(const char *msg)
     setTimer(TIMERID_HIDE_MESSAGEBOX, 2000);
 }
 
-void MainWindow::layoutWidgets(int pageNum)
+void MainWindow::changePage(int pageNum)
 {
     if (pageNum < 0)
         pageNum = PID_COUNT - 1;
     else if (pageNum >= PID_COUNT)
         pageNum = 0;
 
-    if (m_activeLayout == pageNum)
+    if (m_activePage == pageNum)
         return;
-    m_activeLayout = pageNum;
+    m_activePage = pageNum;
 
     // layout each widget
     Layout *layout = &m_layout[pageNum];

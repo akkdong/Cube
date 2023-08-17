@@ -27,6 +27,8 @@ public:
 class LK8Sentence : public IVarioSentence
 {
 public:
+	LK8Sentence();
+
 	virtual void		begin(float height, float vel, float temp, float bat);
 	virtual void		begin(float height, float vel, float temp, float prs, float bat);
 	
@@ -55,6 +57,8 @@ private:
 class LxNavSentence : public IVarioSentence
 {
 public:
+	LxNavSentence();
+	
 	virtual void		begin(float height, float vel, float temp, float bat);
 	virtual void		begin(float height, float vel, float temp, float prs, float bat);
 	

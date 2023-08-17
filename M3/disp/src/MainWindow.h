@@ -69,7 +69,7 @@ protected:
     //
     void showMessage(const char *msg);
 
-    void layoutWidgets(int pageNum);
+    void changePage(int pageNum);
 
     //
     virtual void onActive();
@@ -95,7 +95,7 @@ protected:
 
     Widget *m_widgets[WID_COUNT];
     Layout m_layout[PID_COUNT];
-    int m_activeLayout;
+    int m_activePage;
 
     uint32_t m_lastKey;
     int m_refreshCount;

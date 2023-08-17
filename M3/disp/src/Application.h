@@ -59,6 +59,8 @@ public:
 
     void sendMessage(uint32_t code, uint32_t data = 0);
 
+    bool isEngineerMode() { return engMode; }
+    void enableEngineerMode(bool enable);
 
     //
     static void initBoard();
@@ -126,6 +128,7 @@ protected:
 
     bool gpsFixed;
     bool prepareShutdown;
+    bool engMode;
 
     //
     TaskHandle_t taskScreen;

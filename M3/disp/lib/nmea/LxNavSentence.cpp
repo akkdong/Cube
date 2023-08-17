@@ -32,6 +32,10 @@
 
 const char * LxNavSentence::LxNavTag = LXNAV_SENTENCE_TAG;
 
+LxNavSentence::LxNavSentence()
+{
+	tagPos = LXNAV_SENTENCE_TAG_SIZE;
+}
 
 void LxNavSentence::begin(float height, float vel, float temp, float bat)
 {

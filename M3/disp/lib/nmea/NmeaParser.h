@@ -71,6 +71,7 @@ public:
 
 public:
     int begin();
+    void reset();    
     int update(int ch);
 
     bool isFixed() { return valid != 0; }

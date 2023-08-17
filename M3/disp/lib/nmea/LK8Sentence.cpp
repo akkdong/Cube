@@ -38,6 +38,10 @@
 
 const char * LK8Sentence::LK8Tag = LK8_SENTENCE_TAG;
 
+LK8Sentence::LK8Sentence()
+{
+	tagPos = LK8_SENTENCE_TAG_SIZE;
+}
 
 void LK8Sentence::begin(float height, float vel, float temp, float bat)
 {

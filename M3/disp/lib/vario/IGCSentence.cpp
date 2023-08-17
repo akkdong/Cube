@@ -12,6 +12,7 @@
 
 IGCSentence::IGCSentence()
 {
+    mPos = MAX_IGC_SENTENCE;
 }
 
 void IGCSentence::begin(long stime, float lat, float lon, float altB, float altG)

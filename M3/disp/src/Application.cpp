@@ -34,8 +34,11 @@ Application::Application()
     , DBG(Serial)
     , Display(&EPD)
     , contextPtr(nullptr)
-    , deviceMode(MODE_INIT)
     , varioNmea(VARIOMETER_DEFAULT_NMEA_SENTENCE)
+    , deviceMode(MODE_INIT)
+    , gpsFixed(false)
+    , prepareShutdown(false)
+    , engMode(false)
 {
 }
 
@@ -160,8 +163,8 @@ void Application::begin()
     //
     msgQueue = xQueueCreate(10, sizeof(Message));
 
-    xTaskCreate(ScreenTask, "SCR", 4096, this, 0, &taskScreen);    
-    xTaskCreate(DeviceTask, "DEV", 2048, this, 0, &taskDevice); 
+    xTaskCreate(ScreenTask, "SCR", 4096, this, 1, &taskScreen);    
+    xTaskCreate(DeviceTask, "DEV", 2048, this, 1, &taskDevice); 
 
 
     //
@@ -204,7 +207,7 @@ void Application::update()
         return;
     }
 
-    bool engMode = false;
+    //bool engMode = false;
     Stream& input = engMode ? Serial : Serial1;
     uint32_t now = millis();
 
@@ -318,10 +321,10 @@ void Application::update()
             // UNLOCK
 
             // update VARIO relative widgets
-            if (!gpsFixed && (now - tick_updateTime) >= 500)
+            if (!gpsFixed /*&& (now - tick_updateTime) >= 500*/)
             {
                 sendMessage(MSG_UPDATE_VARIO);
-                tick_updateTime = now;
+                //tick_updateTime = now;
             }
 
             //if (/* busy? interval? */ varioNmea.checkInterval())
@@ -397,7 +400,8 @@ void Application::update()
             IGC.write(igcSentence.read());
     }
 
-    //delay(1);
+    // delay(1): switch task
+    vTaskDelay(pdMS_TO_TICKS(1));
 }
 
 void Application::startVario()
@@ -691,6 +695,20 @@ void Application::sendMessage(uint32_t code, uint32_t data)
 {
     Message msg = { code, data };
     xQueueSend(msgQueue, &msg, 5);
+}
+
+void Application::enableEngineerMode(bool enable)
+{
+    engMode = enable;
+
+    //
+    // reset parser, buffer, ... ????
+    // 
+    //NMEA.reset();
+    //varioNmea.reset();
+    //igcSentence.reset();
+    //
+    //????
 }
 
 
