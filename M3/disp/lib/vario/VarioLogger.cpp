@@ -166,7 +166,7 @@ void VarioLogger::end(time_t date)
 	file.close();
 }
 
-int VarioLogger::write(uint8_t ch)
+size_t VarioLogger::write(uint8_t ch)
 {
 	if (! IS_SET(LOGGER_WORKING))
 		return 0;
@@ -195,6 +195,11 @@ int VarioLogger::write(uint8_t ch)
 	#endif
 	
 	return 1;
+}
+
+size_t VarioLogger::write(void* buf, size_t bufLen)
+{
+	return file.write((const uint8_t *)buf, bufLen);
 }
 
 void VarioLogger::updateBaroAltitude(float varioAlt)

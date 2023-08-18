@@ -23,7 +23,8 @@ public:
 	bool				begin(time_t date); // date = seconds since 1900
 	void				end(time_t date);
 	
-	int					write(uint8_t ch);
+	size_t				write(uint8_t ch);
+	size_t				write(void* buf, size_t bufLen);
 
 	void				updateBaroAltitude(float varioAlt);
 	

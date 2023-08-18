@@ -163,8 +163,8 @@ void Application::begin()
     //
     msgQueue = xQueueCreate(10, sizeof(Message));
 
-    xTaskCreate(ScreenTask, "SCR", 4096, this, 1, &taskScreen);    
-    xTaskCreate(DeviceTask, "DEV", 2048, this, 1, &taskDevice); 
+    xTaskCreatePinnedToCore(ScreenTask, "SCR", 4096, this, 1, &taskScreen, 0);
+    xTaskCreatePinnedToCore(DeviceTask, "DEV", 2048, this, 1, &taskDevice, 0); 
 
 
     //
@@ -252,7 +252,7 @@ void Application::update()
                 }
                 else // MODE_FLYING/CIRCLING/GLIDING/SETTING
                 {
-                    if (IGC.isLogging())
+                    if (IGC.isLogging() && igcSentence.available() == 0)
                     {
                         igcSentence.begin(
                             contextPtr->varioState.timeCurrent - contextPtr->deviceDefault.timezoneOffset,
@@ -396,8 +396,13 @@ void Application::update()
         //float altitude = NMEA.getAltitude();
         //IGC.updateBaroAltitude(altitude);
 
+        #if 0 // write character by character
         while (igcSentence.available())
             IGC.write(igcSentence.read());
+        #else // write buffer
+        IGC.write(igcSentence.getData(), igcSentence.getDataLen());
+        igcSentence.end();
+        #endif
     }
 
     // delay(1): switch task

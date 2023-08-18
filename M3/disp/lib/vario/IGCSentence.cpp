@@ -62,6 +62,11 @@ void IGCSentence::begin(long stime, float lat, float lon, float altB, float altG
     mPos = 0;
 }
 
+void IGCSentence::end()
+{
+    mPos = MAX_IGC_SENTENCE;
+}
+
 int IGCSentence::available()
 {
     if (mPos < MAX_IGC_SENTENCE)
@@ -76,6 +81,21 @@ int IGCSentence::read()
         return mSentence[mPos++];
 
     return -1;
+}
+
+char * IGCSentence::getData()
+{
+    if (mPos < MAX_IGC_SENTENCE)
+        return &mSentence[mPos];
+
+    return NULL;
+}
+size_t IGCSentence::getDataLen()
+{
+    if (mPos < MAX_IGC_SENTENCE)
+        return MAX_IGC_SENTENCE - mPos;
+
+    return 0;
 }
 
 void IGCSentence::dump(Stream& stm)

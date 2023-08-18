@@ -167,7 +167,7 @@ void DeviceRepository::reset()
 	contextPtr->deviceDefault.enableNmeaLogging = 0;
 
     contextPtr->deviceDefault.timezone = VARIOMETER_TIME_ZONE; 			// GMT+9	
-	contextPtr->deviceDefault.timezoneOffset = (long)(VARIOMETER_TIME_ZONE * 3600);
+	contextPtr->deviceDefault.timezoneOffset = (time_t)(VARIOMETER_TIME_ZONE * 3600.0f);
 
 	strcpy(contextPtr->deviceDefault.btName, "M3-001");
 	strcpy(contextPtr->deviceDefault.wifiSSID, "");
@@ -339,7 +339,7 @@ void DeviceRepository::set(JsonDocument& doc)
 	if (! doc["timezone"].isNull())
 	{
 		contextPtr->deviceDefault.timezone = doc["wifi_password"]; // 9
-		contextPtr->deviceDefault.timezoneOffset = (long)(contextPtr->deviceDefault.timezone * 3600);
+		contextPtr->deviceDefault.timezoneOffset = (time_t)(contextPtr->deviceDefault.timezone * 3600.0f);
 	}
 }
 

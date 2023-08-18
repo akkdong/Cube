@@ -44,9 +44,13 @@ public:
 
 public:
     void            begin(long stime, float lat, float lon, float altB, float altG);
+    void            end();
     
 	int				available();	
 	int				read();
+
+    char *          getData();
+    size_t          getDataLen();
 
     void            dump(Stream& stm);
 

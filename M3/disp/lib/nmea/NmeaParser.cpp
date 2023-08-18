@@ -392,7 +392,7 @@ time_t NmeaParser::strToDate(const char* str, time_t timeOfDay)
     _tm.tm_min = 0;
     _tm.tm_sec = 0;
 
-    return mktime(&_tm) + timeOfDay /*+ 619315200*/;
+    return mktime(&_tm) + timeOfDay + 619315200; // add 619315200 to compensate Old GPS error
 }
 
 float NmeaParser::nmeaToDecimal(float nmea)

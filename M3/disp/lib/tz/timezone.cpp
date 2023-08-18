@@ -40,5 +40,7 @@ void setDeviceTime(time_t time)
     settimeofday(&now, NULL);
 
     struct tm * _tm = localtime(&time);
-    LOGv("set device-time: %d:%d:%d", _tm->tm_hour, _tm->tm_min,_tm->tm_sec);
+    LOGv("Set device time: %04d-%02d-%02d %02d:%02d:%02d", 
+        _tm->tm_year + 1900, _tm->tm_mon + 1, _tm->tm_mday,
+        _tm->tm_hour, _tm->tm_min,_tm->tm_sec);
 }
