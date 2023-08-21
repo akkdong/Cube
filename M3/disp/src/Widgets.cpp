@@ -209,6 +209,7 @@ void Annunciator::onDraw()
         char sz[32];
         sprintf(sz, "%.2fv", mVoltage);
         m_pRefCanvas->setTextSize(32);
+        m_pRefCanvas->setTextColor(M5EPD_Canvas::G15);
         m_pRefCanvas->setTextDatum(CL_DATUM);
         m_pRefCanvas->drawString(sz, x, y);
     }
@@ -526,6 +527,7 @@ void ValueBox::onDraw()
 
     m_pRefCanvas->setTextDatum(TL_DATUM);
     m_pRefCanvas->setTextSize(m_titleFontSize);
+    m_pRefCanvas->setTextColor(M5EPD_Canvas::G15);
     m_pRefCanvas->drawString(m_title, m_x + 8, m_y + 4);
     m_pRefCanvas->setTextDatum(TR_DATUM);
     m_pRefCanvas->drawString(m_desc, m_x + m_w - 8, m_y + 4);
@@ -895,11 +897,11 @@ int MessageBox::update(DeviceContext* context, uint32_t updateHints)
 
 void MessageBox::onDraw()
 {
-    m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
-    m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
+    m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
+    //m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
 
     m_pRefCanvas->setTextDatum(CC_DATUM);
     m_pRefCanvas->setTextSize(48);
-    m_pRefCanvas->setTextColor(M5EPD_Canvas::G15);
+    m_pRefCanvas->setTextColor(M5EPD_Canvas::G0);
     m_pRefCanvas->drawString(m_msg, m_x + m_w / 2, m_y + m_h / 2);
 }

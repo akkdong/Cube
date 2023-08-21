@@ -61,6 +61,7 @@ void Application::initBoard()
 
     // Communications
     Serial.begin(115200);
+    Serial1.setRxBufferSize(1024);
     Serial1.begin(115200, SERIAL_8N1, UART_DEVICE_RX, UART_DEVICE_TX);
     Wire.begin(TOUCH_SDA, TOUCH_SCL, (uint32_t) 400000U);
     SPI.begin(SPI_SCLK, SPI_MISO, SPI_MOSI, SPI_CS_SD);
@@ -68,7 +69,7 @@ void Application::initBoard()
     // mount SPIFFS
     SPIFFS.begin();
     // check SD-Card and ready to use
-    SD.begin(4, SPI, 20000000);
+    SD.begin(4, SPI, 25000000); // hz: EPD limits it to 10MHz
 
     if (SD.cardType() != CARD_NONE)
     {
@@ -235,7 +236,7 @@ void Application::update()
                 contextPtr->varioState.speedGround = NMEA.getSpeed();
                 contextPtr->varioState.heading = NMEA.getTrack();
                 contextPtr->varioState.timeCurrent = NMEA.getDateTime() + contextPtr->deviceDefault.timezoneOffset;
-                contextPtr->varioState.altitudeGround = AGL.getGroundLevel(contextPtr->varioState.latitude, contextPtr->varioState.longitude);
+                contextPtr->varioState.altitudeGround = getGroundLevel(contextPtr->varioState.latitude, contextPtr->varioState.longitude);
                 contextPtr->varioState.altitudeAGL = contextPtr->varioState.altitudeGPS - contextPtr->varioState.altitudeGround;
                 contextPtr->varioState.altitudeRef1 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef1;
                 contextPtr->varioState.altitudeRef2 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef2;
@@ -400,7 +401,9 @@ void Application::update()
         while (igcSentence.available())
             IGC.write(igcSentence.read());
         #else // write buffer
+        this->contextLock.enter();
         IGC.write(igcSentence.getData(), igcSentence.getDataLen());
+        this->contextLock.leave();
         igcSentence.end();
         #endif
     }
@@ -717,6 +720,18 @@ void Application::enableEngineerMode(bool enable)
 }
 
 
+float Application::getGroundLevel(float lat, float lon)
+{
+    this->contextLock.enter();
+    float level = (float)AGL.getGroundLevel(lat, lon);
+    this->contextLock.leave();
+
+    return level;
+}
+
+
+
+
 //
 // IKeypadCallback
 //
@@ -832,7 +847,11 @@ void Application::ScreenTask()
         {
             active = Scrn.getActiveWindow();
             if (active != nullptr)
+            {
+                this->contextLock.enter();
                 active->onIdle();
+                this->contextLock.leave();
+            }
         }
     }
 
@@ -898,6 +917,8 @@ void Application::DeviceTask()
     const TickType_t xDelay = LOOP_PERIOD / portTICK_PERIOD_MS;
     int BAT_delayCount = 0;
     int TH_delayCount = 0;
+    int point_x = -1, point_y = -1;
+    bool fingerUp = true;
 
     while (1)
     {
@@ -943,7 +964,43 @@ void Application::DeviceTask()
         }
 
         // TP
-        // ...
+        if (TP.available())
+        {
+            TP.update();
+
+            if (!TP.isFingerUp())
+            {
+                int x = TP.readFingerX(0);
+                int y = TP.readFingerY(0);
+                
+                if (x != point_x || y != point_y)
+                {
+                    point_x = x;
+                    point_y = y;
+
+                    if (fingerUp)
+                    {
+                        sendMessage(MSG_TOUCH_DOWN, ((x & 0x00FF) << 16) + (y & 0x00FF));
+                        fingerUp = false;
+                    }
+                    else
+                    {
+                        sendMessage(MSG_TOUCH_MOVE, ((x & 0x00FF) << 16) + (y & 0x00FF));
+                    }
+                }
+            }
+            else
+            {
+                if (!fingerUp)
+                {
+                    sendMessage(MSG_TOUCH_UP, ((point_x & 0x00FF) << 16) + (point_y & 0x00FF));
+
+                    fingerUp = true;
+                    point_x = -1;
+                    point_y = -1;
+                }
+            }
+        }
 
         // KEY
         KEY.update();

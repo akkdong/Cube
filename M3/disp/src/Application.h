@@ -80,6 +80,8 @@ protected:
     void startGliding();
     void stopGliding();
 
+    float getGroundLevel(float lat, float lon);
+
     // IKeypadCallback
     virtual void onPressed(uint8_t key);
     virtual void onLongPressed(uint8_t key);

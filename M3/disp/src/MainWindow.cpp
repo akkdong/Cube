@@ -191,14 +191,17 @@ void MainWindow::onTimer(uint32_t id)
 
 void MainWindow::onTouchDown(int x, int y)
 {
+    LOGv("Touch down: %d, %d", x, y);
 }
 
 void MainWindow::onTouchMove(int x, int y)
 {
+    LOGv("Touch move: %d, %d", x, y);
 }
 
 void MainWindow::onTouchUp(int x, int y)
 {
+    LOGv("Touch up: %d, %d", x, y);
 }
 
 void MainWindow::onKeyPressed(uint32_t key)
