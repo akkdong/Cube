@@ -205,6 +205,7 @@ void Application::update()
             stopFlight();
         }
 
+        sendMessage(MSG_SHUTDOWN);
         return;
     }
 
@@ -750,8 +751,8 @@ void Application::onLongPressed(uint8_t key)
         // prepare shutdown
         prepareShutdown = true;
 
-        LOGi("Send SHUTDOWN message");
-        sendMessage(MSG_SHUTDOWN);
+        //LOGi("Send PRE_SHUTDOWN message");
+        //sendMessage(MSG_PRE_SHUTDOWN);
     }
     else
     {
@@ -810,6 +811,12 @@ void Application::ScreenTask()
         if (xQueueReceive(msgQueue, &msg, 100))
         {
             LOGd("MSG: code(%d), data(%d)", msg.code, msg.data);
+            //if (msg.code == MSG_PRE_SHUTDOWN)
+            //{
+            //    this->prepareShutdown = true;
+            //    continue;
+            //}
+
             if (msg.code == MSG_SHUTDOWN)
                 break; // exit loop
 

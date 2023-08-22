@@ -34,6 +34,7 @@ enum MessageCode {
     MSG_SHOW_SETTINGS,
     MSG_SHOW_FILEMANAGER,
 
+    MSG_PRE_SHUTDOWN,
     MSG_SHUTDOWN,
 };
 
