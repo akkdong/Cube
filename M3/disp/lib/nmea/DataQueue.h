@@ -4,7 +4,7 @@
 #ifndef __DATA_QUEUE_H__
 #define __DATA_QUEUE_H__
 
-#define MAX_NMEA_PARSER_BUFFER      (512)
+#define MAX_NMEA_PARSER_BUFFER      (1024)
 
 
 /////////////////////////////////////////////////////////////////////////////

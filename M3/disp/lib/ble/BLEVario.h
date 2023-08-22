@@ -229,11 +229,11 @@ protected:
 	BLECharacteristic*  pTxCharacteristic;
 	BLECharacteristic*  pRxCharacteristic;
 
-	uint8_t				bufRecv[128];
+	uint8_t				bufRecv[512];
 	uint16_t			bufFront;
 	uint16_t			bufRear;
 
-	uint8_t				bufSend[128];
+	uint8_t				bufSend[512];
 	uint16_t			sendLen;
 
 	//

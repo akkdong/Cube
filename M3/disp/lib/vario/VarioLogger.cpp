@@ -39,15 +39,15 @@
 
 
 // 
-#define CLEAR_STATE()		logState = 0
-#define SET_STATE(bit)		logState |= (bit)
-#define UNSET_STATE(bit)	logState &= ~(bit)
+#define CLEAR_STATE()							logState = 0
+#define SET_STATE(bit)							logState |= (bit)
+#define UNSET_STATE(bit)						logState &= ~(bit)
 
-#define IS_SET(bit)			(logState & (bit)) == (bit)
+#define IS_SET(bit)								(logState & (bit)) == (bit)
 
 
-#define LOGGER_INIT_FAILED		(1 << 0)
-#define LOGGER_WORKING			(1 << 1)
+#define LOGGER_INIT_FAILED						(1 << 0)
+#define LOGGER_WORKING							(1 << 1)
 
 
 //

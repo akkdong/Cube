@@ -17,6 +17,10 @@
 #include "VarioLogger.h"
 #include "Application.h"
 #include "BLEVario.h"
+#include "Update.h"
+#include "WiFi.h"
+#include "WebServer.h"
+#include "AutoConnect.h"
 
 
 Application App;

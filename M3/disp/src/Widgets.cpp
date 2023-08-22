@@ -598,7 +598,7 @@ void ThermalAssist::draw()
         m_compassPtr->draw();
 }
 
-#define ZOOM_FACTOR				(1.0)
+#define ZOOM_FACTOR				(1.8)
 
 void ThermalAssist::onDraw()
 {
