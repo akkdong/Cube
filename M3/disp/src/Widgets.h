@@ -4,10 +4,10 @@
 #ifndef __WIDGETS_H__
 #define __WIDGETS_H__
 
-#define WSTATE_VISIBLE      (0x8000)
-#define WSTATE_UPDATED      (0x4000)
-
-#define WSTATE_USER_MASK    (0x00FF)
+#define WSTATE_WIDGET_MASK      (0xFFFF0000)
+#define WSTATE_VISIBLE          (0x00008000)
+#define WSTATE_UPDATED          (0x00004000)
+#define WSTATE_USER_MASK        (0x000000FF)
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -44,15 +44,15 @@ public:
     //
     void setDirty(bool dirty);
     void setPosition(int x, int y);
-    void setUserData(uint16_t data) { m_flag = (m_flag & (~WSTATE_USER_MASK)) | data; }
+    void setUserData(uint32_t data) { m_flag = (m_flag & (~WSTATE_USER_MASK)) | (data & WSTATE_USER_MASK); }
 
-    uint16_t getUserData() { return (uint16_t)(m_flag & WSTATE_USER_MASK); }
+    uint32_t getUserData() { return (uint32_t)(m_flag & WSTATE_USER_MASK); }
 
     bool isDirty() { return m_flag & WSTATE_UPDATED ? true : false; }
     bool isVisible() { return m_flag & WSTATE_VISIBLE ? true : false; }
 
     //
-    virtual void init(uint16_t userData) {}
+    virtual void init(uint32_t flag) {}
     virtual void move(int x, int y, int w, int h);
     virtual void show(bool show);
     virtual void draw() { onDraw(); }
@@ -74,7 +74,13 @@ protected:
 protected:
     M5EPD_Canvas *m_pRefCanvas;
     int m_x, m_y, m_w, m_h;
-    uint32_t m_flag; // visible, dirty, ...
+
+    // flag: XXXX-XXXX
+    //  FLAG_VISIBLE                8000-0000
+    //  FLAG_UPDATE                 4000-0000
+    //  FLAG_WIDGET                 0FFF-0000
+    //  FLAG_USER                   0000-FFFF
+    uint32_t m_flag;
 };
 
 
@@ -123,6 +129,15 @@ public:
 /////////////////////////////////////////////////////////////////////////////////
 // class ValueBox
 
+
+#define LABEL_STATE_MASK        (0x0F000000)
+#define UNIT_STATE_MASK         (0x00F00000)
+#define VALUE_STATE_MASK        (0x000F0000)
+#define LABEL_STATE_OFFSET      (24)
+#define UNIT_STATE_OFFSET       (20)
+#define VALUE_STATE_OFFSET      (16)
+
+
 class ValueBox : public Widget
 {
 public:
@@ -156,14 +171,77 @@ public:
     };
 
     enum BType {
-        BORDER_NONE = 0,
-        BORDER_LEFT = (1 << 0),
-        BORDER_RIGHT = (1 << 1),
-        BORDER_TOP = (1 << 2),
-        BORDER_BOTTOM = (1 << 3),
-        BORDER_ALL = BORDER_LEFT | BORDER_RIGHT | BORDER_TOP | BORDER_BOTTOM,
+        // WIDGET_FLAG_MASK = 0x0FFF0000
+        BORDER_MASK         = 0xF0000000,
+        BORDER_LEFT         = 0x10000000,
+        BORDER_TOP          = 0x20000000,
+        BORDER_RIGHT        = 0x40000000,
+        BORDER_BOTTOM       = 0x80000000,
+        BORDER_ALL          = 0xF0000000,
+
+        //
+        // alignment position
+        //
+        // +--------------------------------------------+
+        // |X1                   X2                   X3|
+        // |                                            |
+        // |                                            |
+        // |X4                   X5                   X6|
+        // |                                            |
+        // |                                            |
+        // |X7                   X8                   X9|
+        // +--------------------------------------------+
+        //
+        // X0 : EMPTY               : 0
+        // X1 : TOP | LEFT          : 1
+        // X2 : TOP | CENTER        : 2
+        // X3 : TOP | RIGHT         : 3
+        // X4 : MIDDLE | LEFT       : 4
+        // X5 : MIDDLE | CENTER     : 5
+        // X6 : MIDDLE | RIGHT      : 6
+        // X7 : BOTTOM | LEFT       : 7
+        // X8 : BOTTOM | CENTER     : 8
+        // X9 : BOTTOM | RIGHT      : 9
+        //
+
+        //LABEL_STATE_MASK    = 0x0F000000,
+        //UNIT_STATE_MASK     = 0x00F00000,
+        //VALUE_STATE_MASK    = 0x000F0000,
+        //LABEL_STATE_OFFSET  = 48,
+        //UNIT_STATE_OFFSET   = 40,
+        //VALUE_STATE_OFFSET  = 32,
+
+        ALIGN_LABEL_TL      = 0x01000000, // TOP_LEFT, TL_DAUM(0)
+        ALIGN_LABEL_TC      = 0x02000000, // TOP_CENTER, TC_DATUM(1)
+        ALIGN_LABEL_TR      = 0x03000000, // TOP_RIGHT, TR_DATUM(2)
+        ALIGN_LABEL_ML      = 0x04000000, // MIDDLE_LEFT, ML_DATUM(3)
+        ALIGN_LABEL_MC      = 0x05000000, // MIDDLE_CENTER, MC_DATUM(4)
+        ALIGN_LABEL_MR      = 0x06000000, // MIDDLE_RIGHT, MR_DATUM(5)
+        ALIGN_LABEL_BL      = 0x07000000, // BOTTOM_LEFT, BL_DATUM(6)
+        ALIGN_LABEL_BC      = 0x08000000, // BOTTOM_CENTER, BC_DATUM(7)
+        ALIGN_LABEL_BR      = 0x09000000, // BOTTOM_RIGHT, BR_DATUM(8)
+
+        ALIGN_UNIT_TL       = 0x00100000, // TOP_LEFT, TL_DAUM(0)
+        ALIGN_UNIT_TC       = 0x00200000, // TOP_CENTER, TC_DATUM(1)
+        ALIGN_UNIT_TR       = 0x00300000, // TOP_RIGHT, TR_DATUM(2)
+        ALIGN_UNIT_ML       = 0x00400000, // MIDDLE_LEFT, ML_DATUM(3)
+        ALIGN_UNIT_MC       = 0x00500000, // MIDDLE_CENTER, MC_DATUM(4)
+        ALIGN_UNIT_MR       = 0x00600000, // MIDDLE_RIGHT, MR_DATUM(5)
+        ALIGN_UNIT_BL       = 0x00700000, // BOTTOM_LEFT, BL_DATUM(6)
+        ALIGN_UNIT_BC       = 0x00800000, // BOTTOM_CENTER, BC_DATUM(7)
+        ALIGN_UNIT_BR       = 0x00900000, // BOTTOM_RIGHT, BR_DATUM(8)
+
+        ALIGN_VALUE_TL      = 0x00010000, // TOP_LEFT, TL_DAUM(0)
+        ALIGN_VALUE_TC      = 0x00020000, // TOP_CENTER, TC_DATUM(1)
+        ALIGN_VALUE_TR      = 0x00030000, // TOP_RIGHT, TR_DATUM(2)
+        ALIGN_VALUE_ML      = 0x00040000, // MIDDLE_LEFT, ML_DATUM(3)
+        ALIGN_VALUE_MC      = 0x00050000, // MIDDLE_CENTER, MC_DATUM(4)
+        ALIGN_VALUE_MR      = 0x00060000, // MIDDLE_RIGHT, MR_DATUM(5)
+        ALIGN_VALUE_BL      = 0x00070000, // BOTTOM_LEFT, BL_DATUM(6)
+        ALIGN_VALUE_BC      = 0x00080000, // BOTTOM_CENTER, BC_DATUM(7)
+        ALIGN_VALUE_BR      = 0x00090000, // BOTTOM_RIGHT, BR_DATUM(8)
     };
-        
+
 public:
     //
     ValueBox(M5EPD_Canvas* pRefCanvas);
@@ -173,16 +251,20 @@ public:
     //
     void setTitle(const char* title) { m_title = title; }
     void setDescription(const char* desc) { m_desc = desc; }
+    void setBoxType(uint32_t data) { m_flag = (m_flag & (~WSTATE_WIDGET_MASK)) | (data & WSTATE_WIDGET_MASK); }
 
     //
     static void setFontSize(int titleSize, int valueSize);
 
     //
-    virtual void init(uint16_t userData);
+    virtual void init(uint32_t flag);
     virtual int update(DeviceContext* context, uint32_t updateHints);
 
 
 protected:
+    //
+    void calcDrawPosition(uint8_t datum, int &x, int &y);
+
     //
     virtual void onDraw();
 
@@ -209,7 +291,7 @@ public:
     ~ThermalAssist();
 
     //
-    virtual void init(uint16_t userData);
+    virtual void init(uint32_t flag);
     virtual void move(int x, int y, int w, int h);
     virtual void show(bool show);
     virtual void draw();

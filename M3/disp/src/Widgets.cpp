@@ -8,6 +8,7 @@
 #include "DeviceRepository.h"
 #include "ImageResource.h"
 #include "utils.h"
+#include "logger.h"
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -149,8 +150,13 @@ void Annunciator::onDraw()
     #define ICON_MARGIN  8
     #define ICON_SPACE   0
 
-    //m_pRefCanvas->drawRect(m_x, m_y, M5EPD_PANEL_W, STATUS_H, M5EPD_Canvas::G15);
+    #if 0
     m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
+    #else
+    m_pRefCanvas->drawFastHLine(m_x, m_y + m_h - 1, m_w, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawFastHLine(m_x, m_y + m_h - 2, m_w, M5EPD_Canvas::G15);
+    #endif
+
     int x = m_x + 8;
     int y = m_y + (m_h - ICON_H) / 2;
     // WOLF
@@ -214,7 +220,7 @@ void Annunciator::onDraw()
         m_pRefCanvas->drawString(sz, x, y);
     }
 
-    // time
+    // Current & Flight Time
     {
         char sz[32];
         getTimeString(sz, mLastTime, true);
@@ -358,7 +364,7 @@ ValueBox::ValueBox(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
     , m_desc("")
     , m_pValueProvider(nullptr)
 {
-
+    setBoxType(BORDER_ALL | ALIGN_LABEL_TL | ALIGN_UNIT_TR | ALIGN_VALUE_BC);
 }
 
 ValueBox::~ValueBox()
@@ -367,14 +373,16 @@ ValueBox::~ValueBox()
         delete m_pValueProvider;
 }
 
-void ValueBox::init(uint16_t userData)
+void ValueBox::init(uint32_t flag)
 {
     // set value-box type as user-data
-    setUserData(userData);
+    setUserData(flag);
+    setBoxType(flag);
 
     // set title & description
     const char *title, *desc;
     unsigned int decimalPlaces = 0;
+    uint32_t userData = getUserData();
 
     switch (userData)
     {
@@ -399,7 +407,7 @@ void ValueBox::init(uint16_t userData)
 //      desc = "km/s";
 //      break;
     case SPEED_VERTICAL:
-        title = "Spd Vert";
+        title = "Avg Vario";
         desc = "m/s";
         decimalPlaces = 2;
         break;
@@ -601,23 +609,114 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
     return 1;
 }
 
+#define TO_DATUM(x, m, o)       (((((x) & (m)) >> (o)) & 0x0F) - 1)
+#define PADDING_LR              (8)
+#define PADDING_TB              (4)
+
+void ValueBox::calcDrawPosition(uint8_t datum, int &x, int &y)
+{
+    switch (datum)
+    {
+    case TL_DATUM:
+        x = m_x + PADDING_LR;
+        y = m_y + PADDING_TB;
+        break;
+    case TC_DATUM:
+        x = m_x + (m_w / 2);
+        y = m_y + PADDING_TB;
+        break;
+    case TR_DATUM:
+        x = m_x + m_w - PADDING_LR;
+        y = m_y + PADDING_TB;
+        break;
+    case ML_DATUM:
+        x = m_x + PADDING_LR;
+        y = m_y + (m_h / 2);
+        break;
+    case MC_DATUM:
+        x = m_x + (m_w / 2);
+        y = m_y + (m_h / 2);
+        break;
+    case MR_DATUM:
+        x = m_x + m_w - PADDING_LR;
+        y = m_y + (m_h / 2);
+        break;
+    case BL_DATUM:
+        x = m_x + PADDING_LR;
+        y = m_y + m_h - PADDING_TB;
+        break;
+    case BC_DATUM:
+        x = m_x + (m_w / 2);
+        y = m_y + m_h - PADDING_TB;
+        break;
+    case BR_DATUM:
+    default:
+        x = m_x + m_w - PADDING_LR;
+        y = m_y + m_h - PADDING_TB;
+        break;
+    }
+}
+
 void ValueBox::onDraw()
 {
+    // erase background
     m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
-    m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
 
-    m_pRefCanvas->setTextDatum(TL_DATUM);
-    m_pRefCanvas->setTextSize(m_titleFontSize);
+    // draw box-border
+    if (m_flag & BORDER_TOP)
+        m_pRefCanvas->drawFastHLine(m_x, m_y, m_w, M5EPD_Canvas::G15);
+    if (m_flag & BORDER_BOTTOM)
+        m_pRefCanvas->drawFastHLine(m_x, m_y + m_h - 1, m_w, M5EPD_Canvas::G15);
+    if (m_flag & BORDER_LEFT)
+        m_pRefCanvas->drawFastVLine(m_x, m_y, m_h, M5EPD_Canvas::G15);
+    if (m_flag & BORDER_RIGHT)
+        m_pRefCanvas->drawFastVLine(m_x + m_w - 1, m_y, m_h, M5EPD_Canvas::G15);
+    //
+    //m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
+
+    // set text color: default text-color
     m_pRefCanvas->setTextColor(M5EPD_Canvas::G15);
-    m_pRefCanvas->drawString(m_title, m_x + 8, m_y + 4);
-    m_pRefCanvas->setTextDatum(TR_DATUM);
-    m_pRefCanvas->drawString(m_desc, m_x + m_w - 8, m_y + 4);
-    m_pRefCanvas->setTextDatum(BR_DATUM);
-    m_pRefCanvas->setTextSize(m_valueFontSize);
 
-    char sz[32];
-    m_pValueProvider->getValue(sz, sizeof(sz));
-    m_pRefCanvas->drawString(sz, m_x + m_w - 8, m_y + m_h);
+    // draw label
+    if (m_flag & LABEL_STATE_MASK)
+    {
+        uint8_t datum = (uint8_t)TO_DATUM(m_flag, LABEL_STATE_MASK, LABEL_STATE_OFFSET);
+        int x, y;
+        calcDrawPosition(datum, x, y);
+        LOGv("Box(%d) Label(%d) Pos(%d, %d)", getUserData(), datum, x, y);
+
+        m_pRefCanvas->setTextDatum(datum);
+        m_pRefCanvas->setTextSize(m_titleFontSize);
+        m_pRefCanvas->drawString(m_title, x, y);
+    }
+
+    // draw unit
+    if (m_flag & UNIT_STATE_MASK)
+    {
+        uint8_t datum = (uint8_t)TO_DATUM(m_flag, UNIT_STATE_MASK, UNIT_STATE_OFFSET);
+        int x, y;
+        calcDrawPosition(datum, x, y);
+        LOGv("Box(%d) Unit(%d) Pos(%d, %d)", getUserData(), datum, x, y);
+
+        m_pRefCanvas->setTextDatum(datum);
+        m_pRefCanvas->setTextSize(m_titleFontSize);
+        m_pRefCanvas->drawString(m_desc, x, y);
+    }
+
+    // draw text
+    {
+        uint8_t datum = (uint8_t)TO_DATUM(m_flag, VALUE_STATE_MASK, VALUE_STATE_OFFSET);
+        int x, y;
+        calcDrawPosition(datum, x, y);
+        LOGv("Box(%d) Value(%d) Pos(%d, %d)", getUserData(), datum, x, y);
+
+        char sz[32];
+        m_pValueProvider->getValue(sz, sizeof(sz));
+
+        m_pRefCanvas->setTextDatum(datum);
+        m_pRefCanvas->setTextSize(m_valueFontSize);
+        m_pRefCanvas->drawString(sz, x, y);
+    }
 }
 
 
@@ -651,7 +750,7 @@ int ThermalAssist::update(DeviceContext* context, uint32_t updateHints)
     return 0;
 }
 
-void ThermalAssist::init(uint16_t userData)
+void ThermalAssist::init(uint32_t flag)
 {
     if (!m_compassPtr)
         m_compassPtr = new Compass(m_pRefCanvas, 0, 0, 160, 160);
@@ -794,7 +893,7 @@ void Compass::onDraw()
     //int offset_x = letter_n_16.header.w / 2;
     //int offset_y = letter_n_16.header.h / 2;
 
-    m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
+    //m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
     m_pRefCanvas->drawCircle(m_x + m_w / 2, m_y + m_h / 2, radius - 10, M5EPD_Canvas::G15);
 
     m_pRefCanvas->setTextDatum(CC_DATUM);

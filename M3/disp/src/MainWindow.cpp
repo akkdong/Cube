@@ -36,12 +36,12 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
                 { 0, 60, 640, 360, true, 0 }, // WID_THERMALASSIST
                 { 0, 0, 0, 0, false, 0 }, // WID_COMPASS
                 { 0, 0, 0, 0, false, 0 }, // WID_VARIOMETER
-                { 640, 60, 320, 120, true, ValueBox::VType::ALTITUDE_GROUND }, // WID_VALUEBOX_1
-                { 640, 180, 320, 120, true, ValueBox::VType::SPEED_GROUND }, // WID_VALUEBOX_2
-                { 640, 300, 320, 120, true, ValueBox::VType::SPEED_VERTICAL }, // WID_VALUEBOX_3
-                { 0, 420, 320, 120, true, ValueBox::VType::ALTITUDE_BARO }, // WID_VALUEBOX_4
-                { 320, 420, 320, 120, true, ValueBox::VType::ALTITUDE_AGL }, // WID_VALUEBOX_5
-                { 640, 420, 320, 120, true, ValueBox::VType::TRACK_HEADING }, // WID_VALUEBOX_6
+                { 640, 60, 320, 120, true, ValueBox::ALTITUDE_GROUND | ValueBox::BORDER_LEFT|ValueBox::BORDER_BOTTOM|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_1
+                { 640, 180, 320, 120, true, ValueBox::SPEED_GROUND | ValueBox::BORDER_LEFT|ValueBox::BORDER_BOTTOM|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_2
+                { 640, 300, 320, 120, true, ValueBox::SPEED_VERTICAL | ValueBox::BORDER_LEFT|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_3
+                { 0, 420, 320, 120, true, ValueBox::ALTITUDE_BARO | ValueBox::BORDER_RIGHT|ValueBox::BORDER_TOP|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_4
+                { 320, 420, 320, 120, true, ValueBox::ALTITUDE_AGL | ValueBox::BORDER_RIGHT|ValueBox::BORDER_TOP|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_5
+                { 640, 420, 320, 120, true, ValueBox::TRACK_HEADING | ValueBox::BORDER_TOP|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_6
             },
             32, 76
         },
@@ -51,12 +51,12 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
                 { 0, 0, 0, 0, false, 0 }, // WID_THERMALASSIST
                 { 380, 60, 200, 200, true, 0 }, // WID_COMPASS
                 { 400, 260, 160, 240, true, 0 }, // WID_VARIOMETER
-                { 0, 60, 380, 160, true, ValueBox::VType::ALTITUDE_GROUND }, // WID_VALUEBOX_1
-                { 0, 220, 380, 160, true, ValueBox::VType::SPEED_GROUND }, // WID_VALUEBOX_2
-                { 0, 380, 380, 160, true, ValueBox::VType::TRACK_HEADING }, // WID_VALUEBOX_3
-                { 580, 60, 380, 160, true, ValueBox::VType::SPEED_VERTICAL }, // WID_VALUEBOX_4
-                { 580, 220, 380, 160, true, ValueBox::VType::GLIDE_RATIO }, // WID_VALUEBOX_5
-                { 580, 380, 380, 160, true, ValueBox::VType::DISTANCE_TAKEOFF }, // WID_VALUEBOX_6
+                { 0, 60, 380, 160, true, ValueBox::ALTITUDE_GROUND | ValueBox::BORDER_RIGHT|ValueBox::BORDER_BOTTOM|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_1
+                { 0, 220, 380, 160, true, ValueBox::SPEED_GROUND | ValueBox::BORDER_RIGHT|ValueBox::BORDER_BOTTOM|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_2
+                { 0, 380, 380, 160, true, ValueBox::TRACK_HEADING | ValueBox::BORDER_RIGHT|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_3
+                { 580, 60, 380, 160, true, ValueBox::SPEED_VERTICAL | ValueBox::BORDER_LEFT|ValueBox::BORDER_BOTTOM|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_4
+                { 580, 220, 380, 160, true, ValueBox::GLIDE_RATIO | ValueBox::BORDER_LEFT|ValueBox::BORDER_BOTTOM|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_5
+                { 580, 380, 380, 160, true, ValueBox::DISTANCE_TAKEOFF | ValueBox::BORDER_LEFT|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_6
             },
             32, 92
         },
@@ -66,9 +66,9 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
                 { 0, 60, 960, 480, true, 0 }, // WID_THERMALASSIST
                 { 0, 0, 0, 0, false, 0 }, // WID_COMPASS
                 { 0, 0, 0, 0, false, 0 }, // WID_VARIOMETER
-                { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_1
-                { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_2
-                { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_3
+                { 640, 60, 320, 120, true, ValueBox::ALTITUDE_GROUND |  ValueBox::ALIGN_UNIT_BR|ValueBox::ALIGN_VALUE_TR}, // WID_VALUEBOX_1
+                { 640, 180, 320, 120, true, ValueBox::SPEED_GROUND | ValueBox::ALIGN_UNIT_BR|ValueBox::ALIGN_VALUE_TR }, // WID_VALUEBOX_2
+                { 640, 420, 320, 120, true, ValueBox::SPEED_VERTICAL | ValueBox::ALIGN_UNIT_BR|ValueBox::ALIGN_VALUE_TR }, // WID_VALUEBOX_3
                 { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_4
                 { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_5
                 { 0, 0, 0, 0, false, 0 }, // WID_VALUEBOX_6
@@ -304,12 +304,12 @@ void MainWindow::changePage(int pageNum)
     for (size_t i = 0; i < WID_COUNT; i++)
     {
         LayoutInfo *widget = &layout->widget[i];
-        LOGv(" Widget[%d]: %d, %d, %d, %d, %d, %d",
-            i, widget->x, widget->y, widget->w, widget->h, widget->visible, widget->userData);
+        LOGv(" Widget[%d]: %d, %d, %d, %d, %d, %x",
+            i, widget->x, widget->y, widget->w, widget->h, widget->visible, widget->flag);
 
+        m_widgets[i]->init(widget->flag);
         m_widgets[i]->move(widget->x, widget->y, widget->w, widget->h);
         m_widgets[i]->show(widget->visible);
-        m_widgets[i]->init(widget->userData);
     }
     // change ValueBox font size
     ValueBox::setFontSize(layout->vbTitleSize, layout->vbValueSize);

@@ -52,7 +52,7 @@ public:
     struct LayoutInfo {
         int x, y, w, h;
         bool visible;
-        uint16_t userData;
+        uint32_t flag;
     };
 
     struct Layout {
