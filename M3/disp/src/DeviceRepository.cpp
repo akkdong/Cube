@@ -174,7 +174,7 @@ void DeviceRepository::reset()
 	strcpy(contextPtr->deviceDefault.wifiPassword, "");
 
 	//
-	contextPtr->deviceState.statusBT = contextPtr->deviceDefault.enableBT ? 1 : 0;
+	contextPtr->deviceState.statusBT = 0; // contextPtr->deviceDefault.enableBT ? 1 : 0;
 
 	//
 	contextPtr->flightState.bearingTakeoff = -1;
@@ -338,7 +338,7 @@ void DeviceRepository::set(JsonDocument& doc)
 		strcpy(contextPtr->deviceDefault.wifiPassword, (const char *)doc["wifi_password"]); // "123456789"
 	if (! doc["timezone"].isNull())
 	{
-		contextPtr->deviceDefault.timezone = doc["wifi_password"]; // 9
+		contextPtr->deviceDefault.timezone = doc["timezone"]; // 9
 		contextPtr->deviceDefault.timezoneOffset = (time_t)(contextPtr->deviceDefault.timezone * 3600.0f);
 	}
 }

@@ -114,6 +114,7 @@ public:
     virtual void setValue(float value) {};
     virtual void setValue(int16_t value) {};
     virtual void setValue(time_t value) {};
+    virtual void setValue(float value1, float value2) {};
 
     virtual const char * getValue(char * buf, int bufLen) = 0;
 };
@@ -131,11 +132,13 @@ public:
         ALTITUDE_BARO,
         ALTITUDE_AGL,       // Height Above Ground Level
         SPEED_GROUND,
-        SPEED_AIR,
+//      SPEED_AIR,
         SPEED_VERTICAL,
-        SPEED_VERTICAL_LAZY,
+//      SPEED_VERTICAL_LAZY,
         TRACK_HEADING,
-        TARCK_BEARING,
+        TARCK_BEARING_TAKEOFF,
+        TARCK_BEARING_NEXT,
+//      TARCK_BEARING_LANDING,
         TIME_FLIGHT,
         TIME_CURRENT,
         TIME_TO_NEXT_WAYPOINT,
@@ -148,6 +151,7 @@ public:
         SENSOR_PRESSURE,
         SENSOR_TEMPERATURE,
         SENSOR_HUMIDITY,
+        SENSOR_HT,
         VTYPE_COUNT,
     };
 

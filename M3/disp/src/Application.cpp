@@ -174,7 +174,10 @@ void Application::begin()
     deviceMode = MODE_INIT;
 
     if (contextPtr->deviceDefault.enableBT)
-        BT.begin(0x03, contextPtr->deviceDefault.btName);    
+    {
+        BT.begin(0x03, contextPtr->deviceDefault.btName);
+        contextPtr->deviceState.statusBT = 1;
+    }
 
     //
     uint32_t now = millis();
@@ -254,8 +257,9 @@ void Application::update()
                 }
                 else // MODE_FLYING/CIRCLING/GLIDING/SETTING
                 {
-                    if (IGC.isLogging() && igcSentence.available() == 0)
+                    if (IGC.isLogging() /*&& igcSentence.available() == 0*/)
                     {
+                        // prepare sentence
                         igcSentence.begin(
                             contextPtr->varioState.timeCurrent - contextPtr->deviceDefault.timezoneOffset,
                             contextPtr->varioState.latitude,
@@ -263,9 +267,16 @@ void Application::update()
                             contextPtr->varioState.altitudeBaro,
                             contextPtr->varioState.altitudeGPS);
 
-                        #if LOG_LEVEL >= LOG_LEVEL_VERBOSE
-                        igcSentence.dump(DBG);
-                        #endif
+                        // write to buffer
+                        while (igcSentence.available())
+                        {
+                            int ch = igcSentence.read();
+                            IGC.write(ch);
+                        }
+
+                        //#if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+                        //igcSentence.dump(DBG);
+                        //#endif
                     }
 
                     updateFlightState();
@@ -393,6 +404,7 @@ void Application::update()
     BT.update(varioNmea, NMEA);
 
     // flush igc-sentence
+    #if 0
     if (IGC.isLogging() && igcSentence.available()) 
     {
         //float altitude = NMEA.getAltitude();
@@ -408,6 +420,15 @@ void Application::update()
         igcSentence.end();
         #endif
     }
+    #else
+    if (IGC.isLogging())
+    {
+        // flush buffer
+        this->contextLock.enter();
+        IGC.flush();
+        this->contextLock.leave();
+    }
+    #endif
 
     // delay(1): switch task
     vTaskDelay(pdMS_TO_TICKS(1));
@@ -445,8 +466,14 @@ void Application::startFlight()
         BT.startLogging(contextPtr->varioState.timeCurrent);
 
     // start igc-logging & update device-state
-    if (contextPtr->logger.enable && IGC.begin(contextPtr->varioState.timeCurrent))
-        contextPtr->deviceState.statusSDCard = 2;
+    if (contextPtr->logger.enable)
+    {
+        // set pilot info
+        IGC.setPilotInfo(contextPtr->logger.pilot, contextPtr->gliderInfo.model, contextPtr->gliderInfo.manufacture);
+
+        if (IGC.begin(contextPtr->varioState.timeCurrent))
+            contextPtr->deviceState.statusSDCard = 2;
+    }
 
     // set altitude reference-1
     contextPtr->varioSettings.altitudeRef1 = contextPtr->varioState.altitudeGPS;

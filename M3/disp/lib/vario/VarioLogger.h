@@ -25,8 +25,11 @@ public:
 	
 	size_t				write(uint8_t ch);
 	size_t				write(void* buf, size_t bufLen);
+	int					flush();
 
-	void				updateBaroAltitude(float varioAlt);
+	void				setPilotInfo(const char* pilot, const char* g_model, const char* g_manu);
+
+//	void				updateBaroAltitude(float varioAlt);
 	
 	int					isInitialized();
 	int					isLogging();
@@ -46,13 +49,16 @@ private:
 	uint8_t				logState;
 	int					columnCount;
 	
-	float				varioAltitude;
-	FixedLenDigit		digit;
+//	float				varioAltitude;
+//	FixedLenDigit		digit;
 
     //
     char                pilot[32];
     char                glider_manufacture[32];
     char                glider_model[32];
+
+	uint8_t				buffer[1024];
+	int					front, rear;
 };
 
 

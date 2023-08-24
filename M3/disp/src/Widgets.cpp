@@ -292,6 +292,52 @@ protected:
     bool m_shortStr;
 };
 
+class LDStringData : public ValueProvider
+{
+public:
+    LDStringData() : m_value(0) {}
+
+public:
+    void setValue(float value) override {
+        m_value = value;
+    }
+
+    const char * getValue(char * buf, int bufLen) override {
+        if (m_value < 0.0f)
+            strcpy(buf, "-:-");
+        else if (m_value == 0)
+            strcpy(buf, "inf");
+        else
+            sprintf(buf, "%.1f", m_value);
+
+        return buf;
+    }
+
+protected:
+    float m_value;
+};
+
+class HTStringData : public ValueProvider
+{
+public:
+    HTStringData() : m_humidity(0), m_temperature(0) {}
+
+public:
+    void setValue(float value1, float value2) override {
+        m_humidity = value1;
+        m_temperature = value2;
+    }
+
+    const char * getValue(char * buf, int bufLen) override {
+        sprintf(buf, "%.0f%%, %.1f'C", m_humidity, m_temperature);
+
+        return buf;
+    }
+
+protected:
+    float m_humidity, m_temperature;
+};
+
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -333,7 +379,7 @@ void ValueBox::init(uint16_t userData)
     switch (userData)
     {
     case ALTITUDE_GROUND:
-        title = "Alt Ground";
+        title = "Alt GPS";
         desc = "m";
         break;
     case ALTITUDE_BARO:
@@ -345,31 +391,39 @@ void ValueBox::init(uint16_t userData)
         desc = "m";
         break;
     case SPEED_GROUND:
-        title = "Speed Ground";
+        title = "Spd Grnd";
         desc = "km/s";
         break;
-    case SPEED_AIR:
-        title = "Speed AIR";
-        desc = "km/s";
-        break;
+//  case SPEED_AIR:
+//      title = "Spd AIR";
+//      desc = "km/s";
+//      break;
     case SPEED_VERTICAL:
-        title = "Variometer";
+        title = "Spd Vert";
         desc = "m/s";
         decimalPlaces = 2;
         break;
-    case SPEED_VERTICAL_LAZY:
-        title = "Alt Ground";
-        desc = "m/s";
-        decimalPlaces = 2;
-        break;
+//  case SPEED_VERTICAL_LAZY:
+//      title = "Alt Ground";
+//      desc = "m/s";
+//      decimalPlaces = 2;
+//      break;
     case TRACK_HEADING:
         title = "Heading";
         desc = "Deg";
         break;
-    case TARCK_BEARING:
-        title = "Bearing";
+    case TARCK_BEARING_TAKEOFF:
+        title = "Bearing Takeoff";
         desc = "Deg";
         break;
+    case TARCK_BEARING_NEXT:
+        title = "Bearing Next";
+        desc = "Deg";
+        break;
+//  case TARCK_BEARING_LANDING:
+//      title = "Bearing Landing";
+//      desc = "Deg";
+//      break;
     case TIME_FLIGHT:
         title = "Time Flight";
         desc = "hh:mm:ss";
@@ -417,12 +471,16 @@ void ValueBox::init(uint16_t userData)
         break;
     case SENSOR_TEMPERATURE:
         title = "Temp";
-        desc = "Celsius";
+        desc = "'C";
         decimalPlaces = 1;
         break;
     case SENSOR_HUMIDITY:
         title = "Humidity";
         desc = "%";
+        break;
+    case SENSOR_HT:
+        title = "Hum, Temp";
+        desc = "";
         break;
     default:
         return;
@@ -441,6 +499,12 @@ void ValueBox::init(uint16_t userData)
     case TIME_TO_NEXT_WAYPOINT:
     case TIME_REMAIN:
         m_pValueProvider = new TimeStringData(true);
+        break;
+    case GLIDE_RATIO:
+        m_pValueProvider = new LDStringData;
+        break;
+    case SENSOR_HT:
+        m_pValueProvider = new HTStringData;
         break;
     default:
         m_pValueProvider = new NumberData(decimalPlaces);
@@ -474,19 +538,26 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
     case ValueBox::VType::SPEED_GROUND:
         m_pValueProvider->setValue(context->varioState.speedGround);
         break;
-    case ValueBox::VType::SPEED_AIR:
-        return 0;
+//  case ValueBox::VType::SPEED_AIR:
+//      return 0;
     case ValueBox::VType::SPEED_VERTICAL:
         m_pValueProvider->setValue(context->varioState.speedVertActive);
         break;
-    case ValueBox::VType::SPEED_VERTICAL_LAZY:
-        m_pValueProvider->setValue(context->varioState.speedVertLazy);
-        break;
+//  case ValueBox::VType::SPEED_VERTICAL_LAZY:
+//      m_pValueProvider->setValue(context->varioState.speedVertLazy);
+//      break;
     case ValueBox::VType::TRACK_HEADING:
         m_pValueProvider->setValue(context->varioState.heading);
         break;
-    case ValueBox::VType::TARCK_BEARING:
+    case ValueBox::VType::TARCK_BEARING_TAKEOFF:
+        m_pValueProvider->setValue(context->flightState.bearingTakeoff);
         return 0;
+    case ValueBox::VType::TARCK_BEARING_NEXT:
+        m_pValueProvider->setValue(context->flightState.bearingNextPoint);
+        return 0;
+//  case ValueBox::VType::TARCK_BEARING_LANDING:
+//      m_pValueProvider->setValue(context->flightState.beaaringLanding);
+//      return 0;
     case ValueBox::VType::TIME_FLIGHT:
         m_pValueProvider->setValue((time_t)context->flightState.flightTime);
         return 0;
@@ -496,11 +567,18 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
     case ValueBox::VType::TIME_TO_NEXT_WAYPOINT:
         return 0;
     case ValueBox::VType::TIME_REMAIN:
-    case ValueBox::VType::DISTANCE_TAKEOFF:
-    case ValueBox::VType::DISTANCE_LANDING:
-    case ValueBox::VType::DISTANCE_NEXT_WAYPOINT:
-    case ValueBox::VType::DISTANCE_FLIGHT:
         return 0;
+    case ValueBox::VType::DISTANCE_TAKEOFF:
+        m_pValueProvider->setValue(context->flightState.distTakeoff / 1000.0f);
+        break;
+    case ValueBox::VType::DISTANCE_LANDING:
+        return 0;
+    case ValueBox::VType::DISTANCE_NEXT_WAYPOINT:
+        m_pValueProvider->setValue(context->flightState.distNextPoint / 1000.0f);
+        break;
+    case ValueBox::VType::DISTANCE_FLIGHT:
+        m_pValueProvider->setValue(context->flightState.distFlightAccum / 1000.0f);
+        break;
     case ValueBox::VType::GLIDE_RATIO:
         m_pValueProvider->setValue(context->flightState.glideRatio);
         break;
@@ -512,6 +590,9 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
         break;
     case ValueBox::VType::SENSOR_HUMIDITY:
         m_pValueProvider->setValue(context->deviceState.humidity);
+        break;
+    case ValueBox::VType::SENSOR_HT:
+        m_pValueProvider->setValue(context->deviceState.humidity, context->deviceState.temperature);
         break;
     default:
         return 0;

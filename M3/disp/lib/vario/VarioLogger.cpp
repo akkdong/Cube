@@ -100,6 +100,11 @@ VarioLogger::VarioLogger()
 bool VarioLogger::begin(time_t date)
 {
 	LOGv("Start IGC Logging... : %u", date);
+
+	// 
+	reset();
+
+	// 
 	if (SD.cardType() == CARD_NONE)
 	{
 		SET_STATE(LOGGER_INIT_FAILED);
@@ -107,7 +112,6 @@ bool VarioLogger::begin(time_t date)
 		return false;
 	}
 
-	// 
 	if (! SD.exists(logsFolder))
 	{
 		if (! SD.mkdir(logsFolder))
@@ -170,7 +174,8 @@ size_t VarioLogger::write(uint8_t ch)
 {
 	if (! IS_SET(LOGGER_WORKING))
 		return 0;
-	
+
+	#if 0
 	#if 0	
 	if (columnCount < 0 && ch != 'B')
 		return 0;
@@ -193,20 +198,71 @@ size_t VarioLogger::write(uint8_t ch)
 	#else
 	file.write((const uint8_t *)&ch, 1);
 	#endif
+	#else
+	int next = (front + 1) % (sizeof(buffer) / sizeof(buffer[0]));
+	if (next != rear)
+	{
+		buffer[front] = ch;
+		front = next;
+		return 1;
+	}
+	#endif
 	
-	return 1;
+	return 0;
 }
 
 size_t VarioLogger::write(void* buf, size_t bufLen)
 {
+	#if 0
 	return file.write((const uint8_t *)buf, bufLen);
+	#else
+	uint8_t *_buf = (uint8_t *)buf;
+	size_t i;
+	for (i = 0; i < bufLen; i++)
+	{
+		int next = (front + 1) % (sizeof(buffer) / sizeof(buffer[0]));
+		if (next == rear)
+			break;
+
+		buffer[front] = _buf[i];
+		front = next;
+	}
+	return i;
+	#endif
 }
 
-void VarioLogger::updateBaroAltitude(float varioAlt)
+int VarioLogger::flush()
 {
-	varioAltitude = varioAlt;
-	//Serial.println(varioAltitude);
+	if (! IS_SET(LOGGER_WORKING))
+		return 0;
+
+	int count = 0;
+	while (front != rear)
+	{
+		file.write(&buffer[rear], 1);
+		rear = (rear + 1) % (sizeof(buffer) / sizeof(buffer[0]));
+		count += 1;
+	}
+
+	return count;
 }
+
+void VarioLogger::setPilotInfo(const char* name, const char* g_model, const char* g_manu)
+{
+	//memset(pilot, 0, sizeof(pilot));
+	//memset(glider_manufacture, 0, sizeof(glider_manufacture));
+	//memset(glider_model, 0, sizeof(glider_model));
+
+	strncpy(pilot, name, sizeof(pilot) - 1);
+	strncpy(glider_model, g_model, sizeof(glider_model) - 1);
+	strncpy(glider_manufacture, g_manu, sizeof(glider_manufacture) - 1);
+}
+
+//void VarioLogger::updateBaroAltitude(float varioAlt)
+//{
+//	varioAltitude = varioAlt;
+//	//Serial.println(varioAltitude);
+//}
 
 int VarioLogger::isInitialized()
 {
@@ -222,7 +278,14 @@ void VarioLogger::reset()
 {
 	logState		= 0;
 	columnCount 	= -1;
-	varioAltitude 	= 0.0;
+//	varioAltitude 	= 0.0;
+
+	memset(pilot, 0, sizeof(pilot));
+	memset(glider_manufacture, 0, sizeof(glider_manufacture));
+	memset(glider_model, 0, sizeof(glider_model));
+
+	// empty buffer
+	front = rear = 0;
 }
 
 int VarioLogger::validateName(int ch)
@@ -241,6 +304,7 @@ const char * VarioLogger::makeFileName(char * buf, time_t date)
 {
 	// name format : YYYY-MM-DD-NRC-XXX-nn.igc
 	// ...
+	FixedLenDigit digit;
 	int pos = 0;
 	int i, num;
 	const char * ptr;
@@ -308,6 +372,7 @@ void VarioLogger::writeHeader(time_t date)
 		{
 		case IGC_HEADER_DATE	 :
 			{
+				FixedLenDigit digit;
 				struct tm * _tm;
 				_tm = gmtime(&date);				
 				
