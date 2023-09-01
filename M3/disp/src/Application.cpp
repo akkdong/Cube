@@ -11,6 +11,7 @@
 #include "Widgets.h"
 #include "Window.h"
 #include "MainWindow.h"
+#include "TopMenuWindow.h"
 #include "font/binaryttf.h"
 #include "ImageResource.h"
 #include "KeypadInput.h"
@@ -100,7 +101,7 @@ void Application::begin()
     EPD.Clear(true);
     EPD.SetRotation(M5EPD_Driver::ROTATE_0);
 
-    EPD.WritePartGram4bpp((LCD_WIDTH - 256) / 2, (LCD_HEIGHT - 256) / 2, 256, 256, ImageResource_logo_wolf_large_256x256);
+    EPD.WritePartGram4bpp((LCD_WIDTH - 96) / 2, (LCD_HEIGHT - 96) / 2, 96, 96, ImageResource_logo_hourglass_small_96x96);
     EPD.UpdateFull(UPDATE_MODE_GC16);
 
     //
@@ -372,20 +373,19 @@ void Application::update()
             uint8_t key, state;
             key = NMEA.getLastKey(&state);
             uint32_t msg = state == 0 ? MSG_KEY_RELEASED : (state == 1 ? MSG_KEY_PRESSED : MSG_KEY_LONG_PRESSED);
-            LOGv("KEY: %d(%s)", key, state == 0 ? "OFF" : (state == 1 ? "ON" : "LONG"));
 
             switch (key)
             {
-            case 0xB0: // ^  UP
+            case 0xB0: // ^  ENTER
                 sendMessage(msg, EXT_KEY_UP);
                 break;
-            case 0xB1: // \/ DN
+            case 0xB1: // \/ ESC(BACK)
                 sendMessage(msg, EXT_KEY_DOWN);
                 break;
-            case 0xB2: // <  ESC
+            case 0xD8: // <  LEFT
                 sendMessage(msg, EXT_KEY_LEFT);
                 break;
-            case 0xB3: // >  ENTER
+            case 0xD7: // >  RIGHT
                 sendMessage(msg, EXT_KEY_RIGHT);
                 break;
             }          
@@ -775,11 +775,8 @@ void Application::onLongPressed(uint8_t key)
 {
     if (key == KEY_PUSH)
     {
-        // prepare shutdown
-        prepareShutdown = true;
-
-        //LOGi("Send PRE_SHUTDOWN message");
-        //sendMessage(MSG_PRE_SHUTDOWN);
+        LOGi("Send PRE_SHUTDOWN message");
+        sendMessage(MSG_PRE_SHUTDOWN);
     }
     else
     {
@@ -831,21 +828,49 @@ void Application::ScreenTask()
 
     //
     uint32_t tickCount = 0;
+    bool exitLoop = false;
 
-    while (true)
+    while (!exitLoop)
     {
         Message msg;
         if (xQueueReceive(msgQueue, &msg, 100))
         {
+            //
             LOGd("MSG: code(%d), data(%d)", msg.code, msg.data);
-            //if (msg.code == MSG_PRE_SHUTDOWN)
-            //{
-            //    this->prepareShutdown = true;
-            //    continue;
-            //}
-
-            if (msg.code == MSG_SHUTDOWN)
-                break; // exit loop
+            switch (msg.code)
+            {
+            case MSG_PRE_SHUTDOWN:
+                prepareShutdown = true;
+                continue;
+            case MSG_SHUTDOWN:
+                exitLoop = true;
+                continue;
+            case MSG_SHOW_TOPMENU:
+                Scrn.activateWindow(new TopMenuWindow(&Display));
+                continue;
+            case MSG_SHOW_STATISTIC:
+                LOGv("Activate window: Flight Statistic");
+                //Scrn.switchWindow(new FlightStatWindow(&Display));
+                continue;
+            case MSG_SHOW_WIFI:
+            LOGv("Activate window: WiFi Setting");
+                //Scrn.switchWindow(new WiFiSettingWindow(&Display));
+                Scrn.fallbackWindow(RES_OK);
+                continue;
+            case MSG_SHOW_ROUTE:
+                LOGv("Activate window: Route Setting");
+                //Scrn.switchWindow(new RouteSettingWindow(&Display));
+                Scrn.fallbackWindow(RES_OK);
+                continue;
+            case MSG_SHOW_SETTINGS:
+                LOGv("Activate window: Device Setting");
+                //Scrn.switchWindow(new DeviceSettingWindow(&Display));
+                Scrn.fallbackWindow(RES_OK);
+                continue;
+            case MSG_FALLBACK:
+                Scrn.fallbackWindow(RES_OK);
+                continue;
+            }
 
             //
             active = Scrn.getActiveWindow();
@@ -863,13 +888,13 @@ void Application::ScreenTask()
                     active->onKeyReleased(msg.data);
                     break;
                 case MSG_TOUCH_DOWN:
-                    active->onTouchDown(msg.data >> 16, msg.data & 0x00FF);
+                    active->onTouchDown(msg.data >> 16, msg.data & 0x00FFFF);
                     break;
                 case MSG_TOUCH_MOVE:
-                    active->onTouchMove(msg.data >> 16, msg.data & 0x00FF);
+                    active->onTouchMove(msg.data >> 16, msg.data & 0x00FFFF);
                     break;
                 case MSG_TOUCH_UP:
-                    active->onTouchUp(msg.data >> 16, msg.data & 0x00FF);
+                    active->onTouchUp(msg.data >> 16, msg.data & 0x00FFFF);
                     break;
                 default:
                     active->onMessage(msg.code, msg.data);
@@ -1014,12 +1039,12 @@ void Application::DeviceTask()
 
                     if (fingerUp)
                     {
-                        sendMessage(MSG_TOUCH_DOWN, ((x & 0x00FF) << 16) + (y & 0x00FF));
+                        sendMessage(MSG_TOUCH_DOWN, ((x & 0x00FFFF) << 16) + (y & 0x00FFFF));
                         fingerUp = false;
                     }
                     else
                     {
-                        sendMessage(MSG_TOUCH_MOVE, ((x & 0x00FF) << 16) + (y & 0x00FF));
+                        sendMessage(MSG_TOUCH_MOVE, ((x & 0x00FFFF) << 16) + (y & 0x00FFFF));
                     }
                 }
             }
@@ -1027,7 +1052,7 @@ void Application::DeviceTask()
             {
                 if (!fingerUp)
                 {
-                    sendMessage(MSG_TOUCH_UP, ((point_x & 0x00FF) << 16) + (point_y & 0x00FF));
+                    sendMessage(MSG_TOUCH_UP, ((point_x & 0x00FFFF) << 16) + (point_y & 0x00FFFF));
 
                     fingerUp = true;
                     point_x = -1;

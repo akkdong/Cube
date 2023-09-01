@@ -7,6 +7,7 @@
 #define WSTATE_WIDGET_MASK      (0xFFFF0000)
 #define WSTATE_VISIBLE          (0x00008000)
 #define WSTATE_UPDATED          (0x00004000)
+#define WSTATE_ACTIVE           (0x00002000)
 #define WSTATE_USER_MASK        (0x000000FF)
 
 
@@ -27,6 +28,10 @@ class Compass;
 class VarioMeter;
 class MessageBox;
 
+class ButtonClass;
+class PushButton;
+class SwitchButton;
+
 
 /////////////////////////////////////////////////////////////////////////////////
 // class Widget
@@ -43,6 +48,7 @@ public:
 
     //
     void setDirty(bool dirty);
+    void setActive(bool active);
     void setPosition(int x, int y);
     void setUserData(uint32_t data) { m_flag = (m_flag & (~WSTATE_USER_MASK)) | (data & WSTATE_USER_MASK); }
 
@@ -50,6 +56,20 @@ public:
 
     bool isDirty() { return m_flag & WSTATE_UPDATED ? true : false; }
     bool isVisible() { return m_flag & WSTATE_VISIBLE ? true : false; }
+    bool isActive() { return m_flag & WSTATE_ACTIVE ? true : false; }
+
+    bool pointInWidget(int x, int y) {
+        if (x < m_x)
+            return false;
+        if (y < m_y)
+            return false;
+        if (x > m_x + m_w)
+            return false;
+        if (y > m_y + m_h)
+            return false;
+
+        return true;
+    }
 
     //
     virtual void init(uint32_t flag) {}
@@ -388,6 +408,41 @@ protected:
 
 protected:
     String m_msg;
+};
+
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////
+// class ButtonClass
+
+class ButtonClass : public Widget
+{
+public:
+    ButtonClass(M5EPD_Canvas* pRefCanvas);
+    ButtonClass(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
+
+
+public:
+    virtual void setStyle(uint32_t style) { m_style = style; }
+    virtual void setImage(const uint8_t* image, int w, int h) { m_image = image; m_imageWidth = w; m_imageHeight = h; }
+    virtual void setLabel(const char* label) { m_label = label; }
+    virtual void setTextSize(uint16_t size) { m_textSize = size; }
+
+    //
+    virtual int update(DeviceContext* context, uint32_t updateHints) { return 0; }
+
+protected:
+    //
+    virtual void onDraw();
+
+protected:
+    uint32_t m_style;
+    uint16_t m_textSize;
+    const uint8_t* m_image;
+    int m_imageWidth, m_imageHeight;
+    String m_label;
 };
 
 

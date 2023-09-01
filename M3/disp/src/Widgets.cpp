@@ -41,6 +41,14 @@ void Widget::setDirty(bool dirty)
         m_flag = m_flag & (~WSTATE_UPDATED);
 }
 
+void Widget::setActive(bool active)
+{
+    if (active)
+        m_flag = m_flag | WSTATE_ACTIVE;
+    else
+        m_flag = m_flag & (~WSTATE_ACTIVE);
+}
+
 void Widget::setPosition(int x, int y)
 {
     m_x = x;
@@ -309,10 +317,15 @@ public:
     }
 
     const char * getValue(char * buf, int bufLen) override {
+        #if __METHOD_A__
         if (m_value < 0.0f)
             strcpy(buf, "-:-");
         else if (m_value == 0)
-            strcpy(buf, "inf");
+            strcpy(buf, "INF");
+        #else
+        if (m_value < 0)
+            strcpy(buf, "-:-");
+        #endif
         else
             sprintf(buf, "%.1f", m_value);
 
@@ -399,7 +412,7 @@ void ValueBox::init(uint32_t flag)
         desc = "m";
         break;
     case SPEED_GROUND:
-        title = "Spd Grnd";
+        title = "Spd Gnd";
         desc = "km/s";
         break;
 //  case SPEED_AIR:
@@ -418,19 +431,19 @@ void ValueBox::init(uint32_t flag)
 //      break;
     case TRACK_HEADING:
         title = "Heading";
-        desc = "Deg";
+        desc = "DEG";
         break;
     case TARCK_BEARING_TAKEOFF:
         title = "Bearing Takeoff";
-        desc = "Deg";
+        desc = "DEG";
         break;
     case TARCK_BEARING_NEXT:
         title = "Bearing Next";
-        desc = "Deg";
+        desc = "DEG";
         break;
 //  case TARCK_BEARING_LANDING:
 //      title = "Bearing Landing";
-//      desc = "Deg";
+//      desc = "DEG";
 //      break;
     case TIME_FLIGHT:
         title = "Time Flight";
@@ -488,7 +501,7 @@ void ValueBox::init(uint32_t flag)
         break;
     case SENSOR_HT:
         title = "Hum, Temp";
-        desc = "";
+        desc = "%,'C";
         break;
     default:
         return;
@@ -683,7 +696,6 @@ void ValueBox::onDraw()
         uint8_t datum = (uint8_t)TO_DATUM(m_flag, LABEL_STATE_MASK, LABEL_STATE_OFFSET);
         int x, y;
         calcDrawPosition(datum, x, y);
-        LOGv("Box(%d) Label(%d) Pos(%d, %d)", getUserData(), datum, x, y);
 
         m_pRefCanvas->setTextDatum(datum);
         m_pRefCanvas->setTextSize(m_titleFontSize);
@@ -696,7 +708,6 @@ void ValueBox::onDraw()
         uint8_t datum = (uint8_t)TO_DATUM(m_flag, UNIT_STATE_MASK, UNIT_STATE_OFFSET);
         int x, y;
         calcDrawPosition(datum, x, y);
-        LOGv("Box(%d) Unit(%d) Pos(%d, %d)", getUserData(), datum, x, y);
 
         m_pRefCanvas->setTextDatum(datum);
         m_pRefCanvas->setTextSize(m_titleFontSize);
@@ -708,7 +719,6 @@ void ValueBox::onDraw()
         uint8_t datum = (uint8_t)TO_DATUM(m_flag, VALUE_STATE_MASK, VALUE_STATE_OFFSET);
         int x, y;
         calcDrawPosition(datum, x, y);
-        LOGv("Box(%d) Value(%d) Pos(%d, %d)", getUserData(), datum, x, y);
 
         char sz[32];
         m_pValueProvider->getValue(sz, sizeof(sz));
@@ -1084,4 +1094,57 @@ void MessageBox::onDraw()
     m_pRefCanvas->setTextSize(48);
     m_pRefCanvas->setTextColor(M5EPD_Canvas::G0);
     m_pRefCanvas->drawString(m_msg, m_x + m_w / 2, m_y + m_h / 2);
+}
+
+
+
+
+/////////////////////////////////////////////////////////////////////////////////
+// class ButtonClass
+
+ButtonClass::ButtonClass(M5EPD_Canvas* pRefCanvas) 
+    : ButtonClass(pRefCanvas, 0, 0, 0, 0)
+{
+
+}
+
+ButtonClass::ButtonClass(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h) 
+    : Widget(pRefCanvas, x, y, w, h)
+    , m_style(0)
+    , m_textSize(48)
+    , m_image(nullptr)
+    , m_imageWidth(0)
+    , m_imageHeight(0)
+{
+
+}
+
+void ButtonClass::onDraw()
+{
+    m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
+
+    int cx = m_x + m_w / 2;
+    int cy = m_y + m_h / 2;
+
+    if (m_image != nullptr)
+    {
+        int x = cx - m_imageWidth / 2;
+        int y = cy - m_imageHeight / 2;
+        int offset = m_label.length() > 0 ? m_textSize / 2 + 8 : 0;
+
+        m_pRefCanvas->pushImage(x, y - offset, m_imageWidth, m_imageHeight, m_image);
+    }
+
+    if (m_label.length() > 0)
+    {
+        int offset = m_image != nullptr ? m_imageHeight / 2 + 8 : 0;
+
+        m_pRefCanvas->setTextDatum(CC_DATUM);
+        m_pRefCanvas->setTextSize(m_textSize);
+        m_pRefCanvas->setTextColor(this->isActive() ? M5EPD_Canvas::G0 : M5EPD_Canvas::G15, this->isActive() ? M5EPD_Canvas::G15 : M5EPD_Canvas::G0);
+        m_pRefCanvas->drawString(m_label, cx, cy + offset);
+    }
+
+    //if (this->isActive())
+    //    m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
 }

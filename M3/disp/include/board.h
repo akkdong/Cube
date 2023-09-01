@@ -7,11 +7,6 @@
 #define UART_DEVICE_RX          (18)
 #define UART_DEVICE_TX          (19)
 
-#define EXT_KEY_LEFT            (91)
-#define EXT_KEY_RIGHT           (92)
-#define EXT_KEY_UP              (93)
-#define EXT_KEY_DOWN            (94)
-
 #define KEY_POWER_MAIN          (2)
 #define KEY_POWER_EXT           (5)
 #define KEY_POWER_EPD           (23)
@@ -41,6 +36,16 @@
 
 #define LCD_WIDTH               (960)
 #define LCD_HEIGHT              (540)
+
+
+//
+//
+//
+
+#define EXT_KEY_LEFT            (91)
+#define EXT_KEY_RIGHT           (92)
+#define EXT_KEY_UP              (93)
+#define EXT_KEY_DOWN            (94)
 
 
 #endif // __BOARD_H__

@@ -191,53 +191,86 @@ void MainWindow::onTimer(uint32_t id)
 
 void MainWindow::onTouchDown(int x, int y)
 {
-    LOGv("Touch down: %d, %d", x, y);
+    LOGv("onTouchDown: %d, %d", x, y);
 }
 
 void MainWindow::onTouchMove(int x, int y)
 {
-    LOGv("Touch move: %d, %d", x, y);
+    LOGv("onTouchMove: %d, %d", x, y);
 }
 
 void MainWindow::onTouchUp(int x, int y)
 {
-    LOGv("Touch up: %d, %d", x, y);
+    LOGv("onTouchUp: %d, %d", x, y);
 }
 
 void MainWindow::onKeyPressed(uint32_t key)
 {
+    LOGv("onKeyPressed: %u", key);
+
+    // save latest key
     m_lastKey = key;
 }
 
 void MainWindow::onKeyLongPressed(uint32_t key)
 {
+    LOGv("onKeyLongPressed: %u", key);
+
     if (key == KEY_LEFT)
     {
-        Application::getApp()->sendMessage(MSG_SHOW_SETTINGS, 0);
-        m_lastKey = 0; // ignore key-up
-    }
-    else if (key == KEY_RIGHT)
-    {
-        Application::getApp()->sendMessage(MSG_SHOW_FILEMANAGER, 0);
-        m_lastKey = 0; // ignore key-up
-    } 
-    else if (key == EXT_KEY_UP)
-    {
+        // Toggle sound
+        //
+
+        // send mute-command
         DeviceContext *contextPtr = DeviceRepository::instance().getContext();
         String muteCmd("MUTE x");
 
         if (contextPtr->volume.vario > 0)
-            muteCmd[5] = '1'; // Serial1.println("MUTE 1");
+            muteCmd[5] = '1';
         else
-            muteCmd[5] = '0'; //Serial1.println("MUTE 0");
+            muteCmd[5] = '0';
 
-        // send mute-command
         Serial1.println(muteCmd.c_str());
+
         // show command
         this->showMessage(muteCmd.c_str());
+
+        // ignore key-left
+        m_lastKey = 0;
+    }
+    else if (key == KEY_RIGHT)
+    {
+        // Toggle BT
+        //
+        // ....
+    }
+    else if (key == EXT_KEY_LEFT)
+    {
+        // show top-menu
+        Application::getApp()->sendMessage(MSG_SHOW_TOPMENU, 0);
+
+        // ignore key-up
+        m_lastKey = 0;
+    }
+    else if (key == EXT_KEY_RIGHT)
+    {
+        // show statistic
+        Application::getApp()->sendMessage(MSG_SHOW_STATISTIC, 0);
+
+        // ignore key-up
+        m_lastKey = 0;
+    }
+    else if (key == EXT_KEY_UP)
+    {
+        // ENTER
+        // ...
     }
     else if (key == EXT_KEY_DOWN)
     {
+        // ESC (BACK)
+        // ...
+
+        /*
         // toggle simulation mode
         bool enable = Application::getApp()->isEngineerMode() ? false : true;
         Application::getApp()->enableEngineerMode(enable);
@@ -246,31 +279,35 @@ void MainWindow::onKeyLongPressed(uint32_t key)
         String str("EngMode x");
         str[8] = enable ? '1' : '0';
         this->showMessage(str.c_str());
+        */
     }
 }
 
 void MainWindow::onKeyReleased(uint32_t key)
 {
+    LOGv("onKeyReleased: %u", key);
     if (m_lastKey != key)
         return;
 
     switch (key)
     {
     case KEY_LEFT:
+    case EXT_KEY_LEFT:
+        // prev page
         changePage(m_activePage - 1);
         break;
     case KEY_PUSH:
         break;
+    case EXT_KEY_RIGHT:
     case KEY_RIGHT:
+        // next page
         changePage(m_activePage + 1);
         break;
-    case EXT_KEY_LEFT:
-        break;
-    case EXT_KEY_RIGHT:
-        break;
     case EXT_KEY_UP:
+        // prev/up item
         break;
     case EXT_KEY_DOWN:
+        // next/down item
         break;
     }
 }

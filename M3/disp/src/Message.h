@@ -31,8 +31,12 @@ enum MessageCode {
     MSG_TOUCH_UP,
 
     // system message
+    MSG_SHOW_TOPMENU,
+    MSG_SHOW_STATISTIC,
+    MSG_SHOW_WIFI,
+    MSG_SHOW_ROUTE,
     MSG_SHOW_SETTINGS,
-    MSG_SHOW_FILEMANAGER,
+    MSG_FALLBACK,
 
     MSG_PRE_SHUTDOWN,
     MSG_SHUTDOWN,

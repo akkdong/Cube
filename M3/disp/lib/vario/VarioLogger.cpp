@@ -51,7 +51,7 @@
 
 
 //
-const char * nameManufacture = "MIN";
+const char * nameManufacture = "CM3";
 const char * serialNumber = "XXX";
 const char * tailOfFileName = "01.igc";
 
@@ -68,7 +68,7 @@ char pathBuf[64];
 // HFDTM100GPSDATUM:WGS-84
 const char * igcHeader[] =
 {
-	"AXXX M3 Variometer & GPS Loggger v2", 
+	"AXXX CM3 Variometer & GPS Loggger v2", 
 	"\r\nHFDTE",					// ex) DDMMYY
 	NULL,
 	"\r\nHFPLTPILOT:",				// ex) akkdong
@@ -94,6 +94,12 @@ const char * igcHeader[] =
 
 VarioLogger::VarioLogger()
 {
+	// reset pilot-info
+	memset(pilot, 0, sizeof(pilot));
+	memset(glider_manufacture, 0, sizeof(glider_manufacture));
+	memset(glider_model, 0, sizeof(glider_model));
+
+	// reset state-variables
 	reset();
 }
 
@@ -279,10 +285,6 @@ void VarioLogger::reset()
 	logState		= 0;
 	columnCount 	= -1;
 //	varioAltitude 	= 0.0;
-
-	memset(pilot, 0, sizeof(pilot));
-	memset(glider_manufacture, 0, sizeof(glider_manufacture));
-	memset(glider_model, 0, sizeof(glider_model));
 
 	// empty buffer
 	front = rear = 0;

@@ -31,7 +31,20 @@ Window * Screen::activateWindow(Window *wnd)
 
 Window * Screen::switchWindow(Window *wnd)
 {
-    return nullptr;
+    if (m_topIndex < 1)
+        return nullptr;
+
+    // pop top-most window 
+    Window *top = popWindow();
+    // and notify close
+    top->onClose();
+
+    // activate new-window
+    activateWindow(wnd);
+    // remove fast top-most window
+    delete top;
+
+    return wnd;
 }
 
 Window * Screen::fallbackWindow(FallbackResult result)
@@ -52,7 +65,6 @@ Window * Screen::fallbackWindow(FallbackResult result)
     delete top;
 
     return active;
-;
 }
 
 
