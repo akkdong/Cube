@@ -28,9 +28,10 @@ struct VarioTone
 
 
 const VarioTone toneTable[] =
-// y = exp((x + 320) / 180) x 0.8 + 800
-//
 {
+#if 0    
+    // y = exp((x + 320) / 180) x 0.8 + 800
+    //
 	{  -10.00,   200, 200,  100 },
 	{   -3.00,   290, 200,  100 },
 	{   -2.00,   369, 200,  100 },
@@ -43,6 +44,35 @@ const VarioTone toneTable[] =
 	{    6.00,   880, 250,   66 },	// A5
 	{    8.00,   988, 225,   68 },	// B5
 	{   10.00,  1047, 200,   70 },	// C6
+#else
+    #if 0
+	{  -10.00,   200, 200,  100 },
+	{   -3.00,   290, 200,  100 },
+	{   -2.00,   369, 200,  100 },
+	{   -1.00,   440, 200,  100 },
+	{   -0.50,   470, 800,  100 },
+	{    0.00,   520, 800,   50 },
+	{    1.00,   590, 720,   54 },
+	{    2.00,   650, 640,   58 },
+	{    4.00,   790, 500,   62 },
+	{    6.00,   940, 380,   66 },
+	{    8.00,  1080, 280,   68 },
+	{   10.00,  1200, 200,   70 },
+    #else
+    {  -10.00,	 200,	100,	100 },
+	{  -3.00,	 280,	100,	100 },
+	{  -0.51,	 300,	500,	100 },
+	{  -0.50,	 200,	800,	  5 },
+	{   0.09,	 400,	600,	 10 },
+	{   0.10,	 400,	600,	 50 },
+	{   1.16,	 550,	552,	 52 },
+	{   2.67,	 764,	483,	 55 },
+	{   4.24,	 985,	412,	 58 },
+	{   6.00,	1234,	322,	 62 },
+	{   8.00,	1517,	241,	 66 },
+	{  10.00,	1800,	150,	 70 },
+    #endif
+#endif
 };
 
 
@@ -156,39 +186,44 @@ Tone Beeper::getTone(float vel)
     if ((vel < -3.0) || (vel > 0.2) || (vel > 0.0 && toneState == PLAY))
     {
         findTone(vel, freq, period, duty);
-        return Tone(freq, period * duty / 100, period);
+        int active = (int)(period * duty / 100.0f);
+        return Tone(freq, active, period);
     }
 
     return Tone(0, 1000, 1000);
 }
 
+#define _count_of(x)		(sizeof(x) / sizeof(x[0]))
 
 void Beeper::findTone(float velocity, int& freq, int& period, int& duty)
 {
 	int index;
 	
-	for (index = 0; index < (sizeof(toneTable) / sizeof(toneTable[0])); index++)
+	for (index = 0; index < _count_of(toneTable); index++)
 	{
 		if (velocity <= toneTable[index].velocity)
 			break;
 	}
 	
-	if (index == 0 || index == (sizeof(toneTable) / sizeof(toneTable[0])))
+	if (index == 0)
 	{
-		if (index != 0)
-			index -= 1;
-		
 		freq = toneTable[index].freq;
 		period = toneTable[index].period;
 		duty = toneTable[index].duty;
 	}
+    else if (index == _count_of(toneTable))
+    {
+		freq = toneTable[index-1].freq;
+		period = toneTable[index-1].period;
+		duty = toneTable[index-1].duty;
+    }
 	else
 	{
-		float ratio = toneTable[index].velocity / velocity;
+		float ratio = (velocity - toneTable[index-1].velocity) / (toneTable[index].velocity - toneTable[index-1].velocity);
 		
-		freq = (toneTable[index].freq - toneTable[index-1].freq) / (toneTable[index].velocity - toneTable[index-1].velocity) * (velocity - toneTable[index-1].velocity) + toneTable[index-1].freq;
-		period = (toneTable[index].period - toneTable[index-1].period) / (toneTable[index].velocity - toneTable[index-1].velocity) * (velocity - toneTable[index-1].velocity) + toneTable[index-1].period;
-		duty = (toneTable[index].duty - toneTable[index-1].duty) / (toneTable[index].velocity - toneTable[index-1].velocity) * (velocity - toneTable[index-1].velocity) + toneTable[index-1].duty;
+		freq = (toneTable[index].freq - toneTable[index-1].freq) * ratio + toneTable[index-1].freq;
+		period = (toneTable[index].period - toneTable[index-1].period) * ratio + toneTable[index-1].period;
+		duty = (toneTable[index].duty - toneTable[index-1].duty) * ratio + toneTable[index-1].duty;
 	}
 	
     //LOGv("findTone: %d, %d, %d\n", freq, period, duty);
