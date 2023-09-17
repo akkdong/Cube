@@ -10,6 +10,7 @@
 enum MessageCode {
     MSG_NONE,
 
+    // Variometer message
     MSG_UPDATE_GPS, // MSG_UPDATE_NMEA
     MSG_UPDATE_VARIO,
     MSG_UPDATE_ANNUNCIATOR,
@@ -22,6 +23,11 @@ enum MessageCode {
     MSG_TAKEOFF,
     MSG_LANDING,
 
+    // WiFi message
+    MSG_WIFI_START,
+    MSG_WIFI_STOP,
+
+    // common message: key & touch
     MSG_KEY_PRESSED,        // data: key
     MSG_KEY_LONG_PRESSED,
     MSG_KEY_RELEASED,
@@ -30,7 +36,7 @@ enum MessageCode {
     MSG_TOUCH_MOVE,
     MSG_TOUCH_UP,
 
-    // system message
+    // window message
     MSG_SHOW_TOPMENU,
     MSG_SHOW_STATISTIC,
     MSG_SHOW_WIFI,
@@ -38,6 +44,7 @@ enum MessageCode {
     MSG_SHOW_SETTINGS,
     MSG_FALLBACK,
 
+    // system message
     MSG_PRE_SHUTDOWN,
     MSG_SHUTDOWN,
 };

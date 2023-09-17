@@ -33,6 +33,14 @@ protected:
     virtual void onKeyPressed(uint32_t key);
     virtual void onKeyLongPressed(uint32_t key);
     virtual void onKeyReleased(uint32_t key);    
+
+    //
+    static void WiFiTask(void *param);
+    void WiFiTask();
+
+
+protected:
+    TaskHandle_t taskWiFi;
 };
 
 #endif // __WIFI_SETTING_WINDOW__

@@ -96,9 +96,6 @@ protected:
     Widget *m_widgets[WID_COUNT];
     Layout m_layout[PID_COUNT];
     int m_activePage;
-
-    uint32_t m_lastKey;
-    int m_refreshCount;
 };
 
 

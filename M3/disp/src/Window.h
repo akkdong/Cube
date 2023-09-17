@@ -47,6 +47,11 @@ protected:
     virtual void onIdle();
 
 protected:
+    //
+    uint32_t m_lastKey;
+    int m_refreshCount;
+
+    //
     struct TimerInfo {
         TimerInfo() {
             id = (uint32_t)-1;

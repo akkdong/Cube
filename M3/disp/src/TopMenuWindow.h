@@ -61,10 +61,8 @@ protected:
     ButtonClass m_btn[MENU_COUNT];
     LayoutInfo m_layout[MENU_COUNT];
 
-    uint32_t m_lastKey;
     int m_active;
     uint32_t m_lastTouch;
-    uint32_t m_drawCount;
 };
 
 

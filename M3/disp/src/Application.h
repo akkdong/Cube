@@ -131,6 +131,7 @@ protected:
     bool gpsFixed;
     bool prepareShutdown;
     bool engMode;
+    bool wifiEnabled;
 
     //
     TaskHandle_t taskScreen;

@@ -77,8 +77,6 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
         },
     }
     , m_activePage(-1)
-    , m_lastKey(0)
-    , m_refreshCount(-1)
 {
 }
 
@@ -96,6 +94,11 @@ int MainWindow::update(DeviceContext *context, uint32_t updateHints)
 
 void MainWindow::onDraw()
 {
+    #if LOG_LEVEL >= LOG_LEVEL_VERBOSE & 0
+    // measure drawing elapsed time
+    uint32_t tick = millis();
+    #endif
+
     // erase bkgnd
     m_pRefCanvas->fillRect(0, 0, LCD_WIDTH, LCD_HEIGHT, M5EPD_Canvas::G0);
 
@@ -110,12 +113,25 @@ void MainWindow::onDraw()
     if (m_mbox.isVisible())
         m_mbox.draw();
 
+    #if LOG_LEVEL >= LOG_LEVEL_VERBOSE & 0
+    // measure drawing elapsed time
+    LOGv("main-window drawing elapsed %u msec.", millis() - tick);
+    #endif
+
     // update full or fast(?)
     m_pRefCanvas->pushCanvas(0, 0, ((++m_refreshCount) % 60) == 0 ? UPDATE_MODE_GC16 : UPDATE_MODE_DU);
+    
+    #if LOG_LEVEL >= LOG_LEVEL_VERBOSE & 0
+    // measure drawing elapsed time
+    LOGv("main-window drawing(flush) elapsed %u msec.", millis() - tick);
+    #endif
 }
 
 void MainWindow::onActive()
 {
+    m_refreshCount = -1;
+    m_lastKey = 0;
+
     changePage(1);
 
     #define MBOX_WIDTH      420

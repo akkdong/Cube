@@ -22,7 +22,7 @@
 
 #define BUTTON_SPACE    (int)((LCD_WIDTH - (BUTTON_W * MAX_BUTTON)) / (MAX_BUTTON * 2 - 1))
 #define BUTTON_SX       (BUTTON_SPACE + BUTTON_SPACE)
-#define BUTTON_SY       (LCD_HEIGHT - (BUTTON_H + BUTTON_SPACE + BUTTON_SPACE + BUTTON_SPACE))
+#define BUTTON_SY       (LCD_HEIGHT - (BUTTON_H + BUTTON_SPACE * 4))
 
 
 
@@ -71,16 +71,17 @@ TopMenuWindow::TopMenuWindow(M5EPD_Canvas *pRefCanvas)
             " Power "
         },
     }
-    , m_lastKey(0)
     , m_active(-1)
     , m_lastTouch(0)
-    , m_drawCount(0)
 {
 }
 
 
 void TopMenuWindow::onActive()
 {
+    m_refreshCount = -1;
+    m_lastKey = 0;
+
     // select first button
     m_active = 0;
 
@@ -121,8 +122,7 @@ void TopMenuWindow::onDraw()
     m_pRefCanvas->drawString("Cube M3 Flight computer", x + 48 + 4, y + 48 / 2);    
 
     // update full or fast(?)
-    m_pRefCanvas->pushCanvas(0, 0, m_drawCount == 0 ? UPDATE_MODE_GC16 : UPDATE_MODE_DU);
-    m_drawCount += 1;
+    m_pRefCanvas->pushCanvas(0, 0, (++m_refreshCount % 60) == 0 ? UPDATE_MODE_GC16 : UPDATE_MODE_DU);
 }
 
 void TopMenuWindow::onMessage(uint32_t code, uint32_t data)
@@ -286,7 +286,8 @@ void TopMenuWindow::exec(int index)
 void TopMenuWindow::redraw()
 {
     // reset draw-count
-    m_drawCount = 0;
+    m_refreshCount = -1;
+    
     // draw now!!
     draw();
 }

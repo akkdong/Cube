@@ -19,6 +19,8 @@
 
 Window::Window(M5EPD_Canvas *pRefCanvas) 
     : Widget(pRefCanvas)
+    , m_lastKey(0)
+    , m_refreshCount(-1)
 {
 }
 

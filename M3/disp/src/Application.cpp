@@ -2,20 +2,26 @@
 //
 
 #include <Arduino.h>
+
 #include "board.h"
 #include "config.h"
 #include "logger.h"
 #include "timezone.h"
 #include "utils.h"
 #include "Application.h"
+#include "WebService.h"
 #include "Widgets.h"
 #include "Window.h"
 #include "MainWindow.h"
 #include "TopMenuWindow.h"
-#include "font/binaryttf.h"
-#include "ImageResource.h"
+#include "WiFiSettingWindow.h"
+#include "RouteSettingWindow.h"
+#include "DeviceSettingWindow.h"
 #include "KeypadInput.h"
 #include "DeviceRepository.h"
+#include "font/binaryttf.h"
+#include "ImageResource.h"
+
 
 #define THRESHOLD_CIRCLING_HEADING				(6)
 
@@ -213,6 +219,11 @@ void Application::update()
         return;
     }
 
+    if (wifiEnabled)
+    {
+        // nop
+    }
+
     //bool engMode = false;
     Stream& input = engMode ? Serial : Serial1;
     uint32_t now = millis();
@@ -228,7 +239,7 @@ void Application::update()
             bool fixed = NMEA.isFixed();
             if (fixed) // is fixed?
             {
-                LOGv("GPS: %f %f %f %f", NMEA.getLatitude(), NMEA.getLongitude(), NMEA.getSpeed(), NMEA.getTrack());
+                LOGd("GPS: %f %f %f %f", NMEA.getLatitude(), NMEA.getLongitude(), NMEA.getSpeed(), NMEA.getTrack());
 
                 // LOCK
                 contextPtr->varioState.latitudeLast = contextPtr->varioState.latitude;
@@ -291,7 +302,7 @@ void Application::update()
             {
                 gpsFixed = fixed;
                 contextPtr->deviceState.statusGPS = fixed ? 1 : 0;
-                LOGv("GPS Fixed: %s", gpsFixed ? "TRUE" : "FALSE");
+                LOGd("GPS Fixed: %s", gpsFixed ? "TRUE" : "FALSE");
 
                 if (fixed)
                 {
@@ -315,7 +326,7 @@ void Application::update()
         }
         else if (type == 2) // parsed VARIO sentence
         {
-            LOGv("VARIO: %f %f %f %f", NMEA.getPressure(), NMEA.getTemperature(), NMEA.getAltitudeBaro(), NMEA.getVerticalSpeed());
+            LOGd("VARIO: %f %f %f %f", NMEA.getPressure(), NMEA.getTemperature(), NMEA.getAltitudeBaro(), NMEA.getVerticalSpeed());
 
             // LOCK
             contextPtr->varioState.temperature = NMEA.getTemperature();
@@ -431,7 +442,7 @@ void Application::update()
     #endif
 
     // delay(1): switch task
-    vTaskDelay(pdMS_TO_TICKS(1));
+    //vTaskDelay(pdMS_TO_TICKS(1));
 }
 
 void Application::startVario()
@@ -853,9 +864,8 @@ void Application::ScreenTask()
                 //Scrn.switchWindow(new FlightStatWindow(&Display));
                 continue;
             case MSG_SHOW_WIFI:
-            LOGv("Activate window: WiFi Setting");
-                //Scrn.switchWindow(new WiFiSettingWindow(&Display));
-                Scrn.fallbackWindow(RES_OK);
+                LOGv("Activate window: WiFi Setting");
+                Scrn.switchWindow(new WiFiSettingWindow(&Display));
                 continue;
             case MSG_SHOW_ROUTE:
                 LOGv("Activate window: Route Setting");
@@ -870,6 +880,11 @@ void Application::ScreenTask()
             case MSG_FALLBACK:
                 Scrn.fallbackWindow(RES_OK);
                 continue;
+            }
+
+            if (msg.code == MSG_WIFI_START)
+            {
+                wifiEnabled = true;
             }
 
             //
