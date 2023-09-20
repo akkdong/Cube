@@ -280,7 +280,7 @@ void CaptivePortal::onRequestTrackLogs()
                         igc += ",";
                         
                     igc += "{\"name\":\"";
-                    igc += name.substring(11); // remove prefix: /TrackLogs/
+                    igc += name;
                     igc += "\",\"size\":";
                     igc += file.size();
                     igc += ",\"date\":\"";
