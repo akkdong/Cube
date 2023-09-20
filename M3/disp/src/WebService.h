@@ -10,22 +10,21 @@
 
 class WebServiceClass : public WebServer
 {
-protected:
+public:
     WebServiceClass();
+    virtual ~WebServiceClass();
 
 public:
-    static WebServiceClass& getService();
+    void begin() override;
 
-public:
-    static const char * getContentType(String filename);
-    static bool checkExist(fs::FS & fs, String path);
-    static bool handleFileRead(fs::FS & fs, String path);
+protected:
+    const char * getContentType(String filename);
+    bool checkExist(fs::FS & fs, String path);
+    bool handleFileRead(fs::FS & fs, String path);
 
-    static void onUpdateRequest();
-    static void onRequestTrackLogs();
-    static void onDownloadTrackLog();
-    static void onDeleteTrackLog();
-    static void onRequest();    
-
-    static void deleteAllCredentials();
+    void onUpdateRequest();
+    void onRequestTrackLogs();
+    void onDownloadTrackLog();
+    void onDeleteTrackLog();
+    void onRequest();    
 };

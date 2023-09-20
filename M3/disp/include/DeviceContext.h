@@ -287,7 +287,7 @@ struct FlightState
 	float			distNextPoint;
 
 	//
-	//FlightMode		flightMode;
+	FlightMode		flightMode;
 };
 
 enum GliderType

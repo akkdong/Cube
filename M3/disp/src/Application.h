@@ -23,6 +23,10 @@
 #include "VarioLogger.h"
 #include "VarioSentence.h"
 #include "IGCSentence.h"
+#include "CaptivePortal.h"
+
+#include <memory>
+#include <algorithm>
 
 
 //
@@ -119,6 +123,8 @@ protected:
     VarioLogger IGC;
     VarioSentence varioNmea;
     IGCSentence igcSentence;
+
+    std::unique_ptr<CaptivePortal> portalPtr;
 
     //
     volatile DeviceMode deviceMode;

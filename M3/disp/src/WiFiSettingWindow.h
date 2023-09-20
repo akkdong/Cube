@@ -22,6 +22,7 @@ public:
 protected:
     //
     virtual void onActive();
+    virtual void onClose();
     virtual void onDraw();   
     virtual void onMessage(uint32_t code, uint32_t data);
     virtual void onTimer(uint32_t id);

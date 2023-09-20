@@ -46,6 +46,7 @@ Application::Application()
     , gpsFixed(false)
     , prepareShutdown(false)
     , engMode(false)
+    , wifiEnabled(false)
 {
 }
 
@@ -71,6 +72,7 @@ void Application::initBoard()
     Serial1.setRxBufferSize(1024);
     Serial1.begin(115200, SERIAL_8N1, UART_DEVICE_RX, UART_DEVICE_TX);
     Wire.begin(TOUCH_SDA, TOUCH_SCL, (uint32_t) 400000U);
+    #if 0 // moved to Application::begin()
     SPI.begin(SPI_SCLK, SPI_MISO, SPI_MOSI, SPI_CS_SD);
 
     // mount SPIFFS
@@ -98,6 +100,7 @@ void Application::initBoard()
     {
         LOGi("No SD card inserted!!");
     }
+    #endif
 }
 
 void Application::begin()
@@ -121,6 +124,33 @@ void Application::begin()
     //TH.Begin();
     //
     NMEA.begin();
+
+
+    // mount SPIFFS
+    SPIFFS.begin();
+    // check SD-Card and ready to use
+    SD.begin(4, *EPD.GetSPI(), 25000000);
+
+    if (SD.cardType() != CARD_NONE)
+    {
+        // do firmware-update
+        #if SUPPPORT_FIRMWAREUPDATE
+        FirmwareUpdater fu;
+
+		if (fu.checkUpdate())
+		{
+			//
+			fu.performUpdate(display);
+			//
+			ESP.restart();
+		}		
+		// else go down
+        #endif
+    }
+    else
+    {
+        LOGi("No SD card inserted!!");
+    }
 
 
     // GUI startup
@@ -221,7 +251,34 @@ void Application::update()
 
     if (wifiEnabled)
     {
-        // nop
+        if (!portalPtr)
+        {
+            portalPtr.reset(new CaptivePortal);
+            if (!portalPtr)
+            {
+                wifiEnabled = false;
+            }
+            else
+            {
+                portalPtr->setSSID("Cube-M3");
+                portalPtr->setPassword("1234567890");
+                portalPtr->setAddress(IPAddress(172, 217, 28, 1));
+                portalPtr->start();
+            }
+        }
+
+        if (portalPtr)
+            portalPtr->update();
+    }
+    else
+    {
+        if (portalPtr)
+        {
+            // stop web/dns server & wifi
+            portalPtr->stop();
+            // release memory
+            portalPtr.reset();
+        }
     }
 
     //bool engMode = false;
@@ -498,7 +555,7 @@ void Application::startFlight()
     contextPtr->flightState.takeOffPos.lat = contextPtr->varioState.latitude;
     contextPtr->flightState.takeOffPos.lon = contextPtr->varioState.longitude;
     contextPtr->flightState.bearingTakeoff = -1;
-    //contextPtr->flightState.flightMode = FMODE_FLYING;
+    contextPtr->flightState.flightMode = FMODE_FLYING;
     contextPtr->flightState.frontPoint = contextPtr->flightState.rearPoint = 0;
     // init flight-stats
     contextPtr->flightStats.altitudeMax = contextPtr->varioState.altitudeGPS;
@@ -633,7 +690,7 @@ void Application::stopFlight()
 {
     // stop-flight
     deviceMode = MODE_GROUND;
-    //contextPtr->flightState.flightMode = FMODE_READY;
+    contextPtr->flightState.flightMode = FMODE_READY;
     contextPtr->flightState.bearingTakeoff = -1;
 
     // stop nmea-logging
@@ -673,7 +730,7 @@ void Application::stopFlight()
 void Application::startCircling()
 {
 	// start of circling
-	//contextPtr->flightState.flightMode = FMODE_CIRCLING;
+	contextPtr->flightState.flightMode = FMODE_CIRCLING;
     deviceMode = MODE_CIRCLING;
 
 	// save circling state
@@ -696,7 +753,7 @@ void Application::startCircling()
 void Application::stopCircling()
 {
 	// now normal flying
-	//contextPtr->flightState.flightMode = FMODE_FLYING;
+	contextPtr->flightState.flightMode = FMODE_FLYING;
     deviceMode = MODE_FLYING;
 
 	// update flight-statistics : thermaling count, max-gain
@@ -717,7 +774,7 @@ void Application::stopCircling()
 void Application::startGliding()
 {
 	// start of circling
-	//contextPtr->flightState.flightMode = FMODE_GLIDING;
+	contextPtr->flightState.flightMode = FMODE_GLIDING;
     deviceMode = MODE_GLIDING;
 
 	//
@@ -731,7 +788,7 @@ void Application::startGliding()
 void Application::stopGliding()
 {
 	// now normal flying
-	//contextPtr->flightState.flightMode = FMODE_FLYING;
+	contextPtr->flightState.flightMode = FMODE_FLYING;
     deviceMode = MODE_FLYING;
 
 	//
@@ -880,11 +937,13 @@ void Application::ScreenTask()
             case MSG_FALLBACK:
                 Scrn.fallbackWindow(RES_OK);
                 continue;
-            }
 
-            if (msg.code == MSG_WIFI_START)
-            {
+            case MSG_WIFI_START:
                 wifiEnabled = true;
+                continue;
+            case MSG_WIFI_STOP:
+                wifiEnabled = false;
+                continue;
             }
 
             //

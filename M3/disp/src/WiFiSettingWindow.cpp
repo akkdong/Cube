@@ -3,7 +3,6 @@
 
 #include <Arduino.h>
 #include <M5EPD_Canvas.h>
-#include <WiFiManager.h>
 
 #include "board.h"
 #include "WiFiSettingWindow.h"
@@ -13,7 +12,6 @@
 #include "DeviceRepository.h"
 #include "ImageResource.h"
 #include "logger.h"
-#include "WebService.h"
 
 
 #define CREDENTIAL_OFFSET           (0)
@@ -38,10 +36,20 @@ void WiFiSettingWindow::onActive()
     m_lastKey = 0;
 
     // start wifi-task
-    xTaskCreatePinnedToCore(WiFiTask, "WiFi", 8 * 1024, this, 1, &taskWiFi, 0);
+    //xTaskCreatePinnedToCore(WiFiTask, "WiFi", 8 * 1024, this, 1, &taskWiFi, 0);
 
     // refresh window
     this->draw();
+
+    // start WIFI(captive portal)
+    LOGv("Start WiFi: invoke captive-portal");
+    Application::getApp()->sendMessage(MSG_WIFI_START);
+}
+
+void WiFiSettingWindow::onClose()
+{
+    LOGv("Stop WiFi: terminate captive-portal");
+    Application::getApp()->sendMessage(MSG_WIFI_STOP);
 }
 
 void WiFiSettingWindow::onDraw()
@@ -148,8 +156,9 @@ void WiFiSettingWindow::WiFiTask(void *param)
 }
 
 
-
+#if 0
 WiFiManager wifiManager;
+WebServiceClass webService;
 
 void configModeCallback (WiFiManager *myWiFiManager) 
 {
@@ -158,15 +167,41 @@ void configModeCallback (WiFiManager *myWiFiManager)
 
   Serial.println(myWiFiManager->getConfigPortalSSID());
 }
-
+#endif
 
 void WiFiSettingWindow::WiFiTask()
 {
+    #if 0
     // suspend this task and wait resume
     LOGv("Suspend WiFiSetting window");
     vTaskSuspend(NULL);
     LOGv("Resume WiFiSetting window");
 
+    //
+    // WiFi State
+    //
+    // DISCONNECTED
+    // STA_CONNECTING
+    // STA_CONNECTED(WIFI_CONNECTED)
+    // AP_WAIT
+    // AP_CONNECTED(WIFI_CONNECTED)
+    //
+    // AP Config: SSID, AP_PASSWORD, STATIC_IP/GW/SN
+    // STA Config: SSID, PASSWORD
+    //
+    //
+    // WIFI: mode(AP, STA), SSID, PASSWORD
+    //
+    //
+
+    //typedef void (*WiFiEventCb)(arduino_event_id_t event);
+    //typedef std::function<void(arduino_event_id_t event, arduino_event_info_t info)> WiFiEventFuncCb;
+    //typedef void (*WiFiEventSysCb)(arduino_event_t *event);
+    //
+
+    WiFi.onEvent(/*WiFiEventCb*/ [] (arduino_event_id_t evt) {});
+    WiFi.onEvent(/*WiFiEventFuncCb*/[] (arduino_event_id_t evt, arduino_event_info_t info) {});
+    WiFi.onEvent(/*WiFiEventSysCb*/[] (arduino_event_t *evt) {});
 
     Serial.println("Start WiFiManager");
     //wifiManager.resetSettings();
@@ -179,13 +214,7 @@ void WiFiSettingWindow::WiFiTask()
     wifiManager.autoConnect("Cube-S3", "1234567890");
     Serial.println("  --> Done!");
 
-    WebServiceClass& webService = WebServiceClass::getService();
-    webService.on("/Update/{}", HTTP_POST, WebServiceClass::onUpdateRequest);
-    webService.on("/TrackLogs/list", HTTP_GET, WebServiceClass::onRequestTrackLogs);
-    webService.on("/TrackLogs/{}", HTTP_GET, WebServiceClass::onDownloadTrackLog);
-    webService.on("/TrackLogs/{}", HTTP_DELETE, WebServiceClass::onDeleteTrackLog);
-    webService.on("/", WebServiceClass::onRequest);
-    webService.onNotFound(WebServiceClass::onRequest);
+    //WebServiceClass& webService = WebServiceClass::getService();
     webService.begin();
 
     while (1)
@@ -251,5 +280,6 @@ void WiFiSettingWindow::WiFiTask()
         // handle portal-events
         wifiPortal.handleClient();
     }
+    #endif
     #endif
 }

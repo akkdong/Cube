@@ -6,7 +6,6 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Update.h>
-#include <WiFiManager.h>
 
 #include "board.h"
 #include "utils.h"
@@ -23,7 +22,7 @@
 #include "Application.h"
 #include "BLEVario.h"
 #include "GeographicLib/Geodesic.hpp"
-#include "WebService.h"
+#include "CaptivePortal.h"
 
 
 //

@@ -5,6 +5,8 @@
 #include <SD.h>
 #include <SPIFFS.h>
 #include "WebService.h"
+#include <uri/UriBraces.h>
+#include <uri/UriRegex.h>
 
 
 ///////////////////////////////////////////////////////////////////////////////////
@@ -53,12 +55,10 @@ WebServiceClass::WebServiceClass() : WebServer(80)
 {
 }
 
-WebServiceClass& WebServiceClass::getService()
+WebServiceClass::~WebServiceClass()
 {
-    static WebServiceClass service;
-
-    return service;
 }
+
 
 const char * WebServiceClass::getContentType(String filename)
 {
@@ -80,26 +80,26 @@ const char * WebServiceClass::getContentType(String filename)
     if (filename.endsWith(".gif"))
         return "image/gif";
 
-    if (filename.endsWith(".jpg"))
+    if (filename.endsWith(".jpg") || filename.endsWith(".jpeg"))
         return "image/jpeg";
 
     if (filename.endsWith(".ico"))
         return "image/x-icon";
 
-    //if (filename.endsWith(".xml"))
-    //    return "text/xml";
+    if (filename.endsWith(".igc"))
+        return "application/octet-stream";
 
-    //if (filename.endsWith(".zip"))
-    //    return "application/x-zip";
+    if (filename.endsWith(".xml"))
+        return "text/xml";
+
+    if (filename.endsWith(".zip"))
+        return "application/x-zip";
 
     if (filename.endsWith(".gz"))
         return "application/x-gzip";
 
-    //if (filename.endsWith(".pdf"))
-    //    return "application/x-pdf";
-
-    if (filename.endsWith(".igc"))
-        return "application/octet-stream";
+    if (filename.endsWith(".pdf"))
+        return "application/x-pdf";
 
     return "text/plain";
 }
@@ -138,19 +138,19 @@ bool WebServiceClass::handleFileRead(fs::FS & fs, String path)
         File file = fs.open(path, "r");
         if (file)
         {
-            getService().streamFile(file, contentType);
+            this->streamFile(file, contentType);
             file.close();
 
             return true;
         }
         
         Serial.println("  File open failed!");    
-        getService().send(400, "text/plain", "File Open Failed");
+        this->send(400, "text/plain", "File Open Failed");
     }
     else
     {
         Serial.println("  File not exist!");
-        getService().send(404, "text/plain", "File Not Found");
+        this->send(404, "text/plain", "File Not Found");
     }
 
     return false;
@@ -158,15 +158,13 @@ bool WebServiceClass::handleFileRead(fs::FS & fs, String path)
 
 void WebServiceClass::onUpdateRequest()
 {
-    WebServiceClass& webService = getService();
+    String target = "/" + this->pathArg(0);
 
-    //
-    String target = "/" + webService.pathArg(0);
     if (! SPIFFS.exists(target))
     {
         Serial.printf("File Not Exist: %s\n", target);
 
-        webService.send(404, "text/plain", "File Not Found");
+        this->send(404, "text/plain", "File Not Found");
     }
     else
     {
@@ -185,12 +183,12 @@ void WebServiceClass::onUpdateRequest()
         }
 
         // update
-        for (int i = 0; i < webService.args(); i++)
+        for (int i = 0; i < this->args(); i++)
         {
-            Serial.printf("%s: %s\n", webService.argName(i).c_str(), webService.arg(i).c_str());
+            Serial.printf("%s: %s\n", this->argName(i).c_str(), this->arg(i).c_str());
 
-            String name = webService.argName(i);
-            String value = webService.arg(i);
+            String name = this->argName(i);
+            String value = this->arg(i);
             JsonVariant var = doc[name];
 
             if (! var.isNull())
@@ -227,12 +225,12 @@ void WebServiceClass::onUpdateRequest()
             {
                 Serial.printf("Update Success.\n");
 
-                webService.send(200, "text/plain", "OK");
+                this->send(200, "text/plain", "OK");
             }
             else
             {
                 Serial.printf("Update Failed!\n");
-                webService.send(400, "text/plain", "File Write Failed");
+                this->send(400, "text/plain", "File Write Failed");
             }
         }
     }
@@ -240,18 +238,16 @@ void WebServiceClass::onUpdateRequest()
 
 void WebServiceClass::onRequestTrackLogs()
 {
-    WebServiceClass& webService = getService();
-    // webService._prepareHeader(header, 200, "application/json", (size_t)-1 /*CONTENT_LENGTH_UNKNOWN*/);
     const char * hdr =  "HTTP/1.1 200 OK\r\n"
                         "Content-Type: application/json\r\n"
                         "Transfer-Encoding: chunked\r\n"
                         "Accept-Ranges: none\r\n"
                         "Connection: close\r\n"
                         "\r\n";
-    webService._chunked = true;
-    webService._currentClientWrite(hdr, strlen(hdr));
+    this->_chunked = true;
+    this->_currentClientWrite(hdr, strlen(hdr));
 
-    webService.sendContent("[");
+    this->sendContent("[");
     File dir = SD.open("/TrackLogs");
     if (dir.isDirectory())
     {
@@ -281,7 +277,7 @@ void WebServiceClass::onRequestTrackLogs()
                     igc += getDateString(file.getLastWrite());
                     igc += "\"}";
 
-                    webService.sendContent(igc);
+                    this->sendContent(igc);
                     Serial.println(igc);
 
                     count += 1;
@@ -292,44 +288,48 @@ void WebServiceClass::onRequestTrackLogs()
             }
         }
 
-    webService.sendContent("]");
-    webService.sendContent("");
+    this->sendContent("]");
+    this->sendContent("");
 }
 
 void WebServiceClass::onDownloadTrackLog()
 {
-    WebServiceClass& webService = getService();
-    String target = "/TrackLogs/" + webService.pathArg(0);
+    String target = "/TrackLogs/" + this->pathArg(0);
 
-    webService.handleFileRead(SD, target);
+    this->handleFileRead(SD, target);
 }
 
 void WebServiceClass::onDeleteTrackLog()
 {
-    WebServiceClass& webService = getService();
-    String target = "/TrackLogs/" + webService.pathArg(0);
+    String target = "/TrackLogs/" + this->pathArg(0);
 
     Serial.print("handleFileDelete: ");
     Serial.println(target);
 
     if (SD.remove(target.c_str()))
     {
-        webService.send(200, "text/plain", "OK");
+        this->send(200, "text/plain", "OK");
         }
     else
     {
-        webService.send(400, "text/plain", "File Delete Failed");
+        this->send(400, "text/plain", "File Delete Failed");
     }
 }
 
 void WebServiceClass::onRequest()
 {
-    WebServiceClass& webService = getService();
-    webService.handleFileRead(SPIFFS, webService.uri());
+    this->handleFileRead(SPIFFS, this->uri());
 }
 
 
-void WebServiceClass::deleteAllCredentials()
+
+void WebServiceClass::begin()
 {
-}
+    this->on(UriBraces("/Update/{}"), HTTP_POST, std::bind(&WebServiceClass::onUpdateRequest, this));
+    this->on(Uri("/TrackLogs/list"), HTTP_GET, std::bind(&WebServiceClass::onRequestTrackLogs, this));
+    this->on(UriBraces("/TrackLogs/{}"), HTTP_GET, std::bind(&WebServiceClass::onDownloadTrackLog, this));
+    this->on(UriBraces("/TrackLogs/{}"), HTTP_DELETE, std::bind(&WebServiceClass::onDeleteTrackLog, this));
+    this->onNotFound(std::bind(&WebServiceClass::onRequest, this)); 
 
+    WebServer::begin();
+}
