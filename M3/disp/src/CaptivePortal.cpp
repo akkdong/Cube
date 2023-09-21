@@ -272,7 +272,7 @@ void CaptivePortal::onRequestTrackLogs()
 
                 if (name.endsWith(".igc"))
                 {
-                    // { "name": "xxx", "size": nnn, "date": ddd }
+                    // { "name": "xxx.igc", "size": nnn, "date": "YYYY-MM-DD hh:mm:ssZ" }
                     String igc;
 
                     // 

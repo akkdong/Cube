@@ -456,7 +456,7 @@ void Application::update()
             case 0xD7: // >  RIGHT
                 sendMessage(msg, EXT_KEY_RIGHT);
                 break;
-            }          
+            }
         }
     }
 
