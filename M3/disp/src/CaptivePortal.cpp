@@ -18,6 +18,8 @@
 #define DNS_TTL             (3600)
 #define DNS_PORT            (53)
 
+#define WEB_PORT            (80)
+
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////
@@ -29,6 +31,9 @@ CaptivePortal::CaptivePortal()
     , apPassword("") 
     , apIP(4, 3, 2, 1) // or 172.217.28.1
     , apEventID(0)
+    #if USE_ASYNCWEBSERVER
+    , webServer(WEB_PORT)
+    #endif
 {
 
 }
@@ -48,7 +53,11 @@ int CaptivePortal::start()
 
 	starSoftAP(apSSID.c_str(), apPassword.c_str(), apIP, apIP);
 	startDNSServer(apIP);
+    #if USE_ASYNCWEBSERVER
+    startAsyncWebServer(apIP);
+    #else
 	startWebServer(apIP);
+    #endif
 
     portalState = PORTAL_WAIT_CONNECTION;
 	return 0;
@@ -58,7 +67,11 @@ void CaptivePortal::stop()
 {
     if (portalState != PORTAL_READY)
     {
+        #if USE_ASYNCWEBSERVER
+        webServer.end();
+        #else
         webServer.close();
+        #endif
         dnsServer.stop();
 
         WiFi.removeEvent(apEventID);
@@ -74,7 +87,9 @@ void CaptivePortal::update()
     if (portalState != PORTAL_READY)
     {
 	    dnsServer.processNextRequest();
+        #if !USE_ASYNCWEBSERVER
 	    webServer.handleClient();
+        #endif
     }
 }
 
@@ -118,6 +133,7 @@ void CaptivePortal::startDNSServer(const IPAddress& ip)
   LOGd("DNSServer.start() => %d", ret);
 }
 
+#if !USE_ASYNCWEBSERVER
 void CaptivePortal::redirect(const IPAddress &ip)
 {
 	String location = String("http://") + ip.toString();
@@ -133,7 +149,357 @@ void CaptivePortal::redirect(String &uri)
     webServer.send(302, "text/plain", ""); // Empty content inhibits Content-length header so we have to close the socket ourselves.
     webServer.client().stop(); // Stop is needed because we sent no content length
 }
+#endif
 
+#if USE_ASYNCWEBSERVER
+void CaptivePortal::startAsyncWebServer(const IPAddress &ip)
+{
+    auto url = String("http://") + ip.toString();
+
+	// Portal connection validation pages
+	webServer.on("/connecttest.txt", [&url](AsyncWebServerRequest *request) { LOGd("/connecttest.txt"); request->redirect(url); });	// windows 11 captive portal workaround
+	webServer.on("/wpad.dat", [&url](AsyncWebServerRequest *request) { LOGd("/wpad.dat"); request->send(404); });				// Honestly don't understand what this is but a 404 stops win 10 keep calling this repeatedly and panicking the esp32 :)
+	webServer.on("/generate_204", [&url](AsyncWebServerRequest *request) { LOGd("/generate_204"); request->redirect(url); });		   	// android captive portal redirect
+	webServer.on("/redirect", [&url](AsyncWebServerRequest *request) { LOGd("/redirect"); request->redirect(url); });			   	    // microsoft redirect
+	webServer.on("/hotspot-detect.html", [&url](AsyncWebServerRequest *request) { LOGd("/hotspot-detect.html"); request->redirect(url); });  // apple call home
+	webServer.on("/canonical.html", [&url](AsyncWebServerRequest *request) { LOGd("/canonical.html"); request->redirect(url); });	   	// firefox captive portal call home
+	webServer.on("/success.txt", [&url](AsyncWebServerRequest *request) { LOGd("/success.txt"); request->send(200); });	    // firefox captive portal call home
+	webServer.on("/ncsi.txt", [&url](AsyncWebServerRequest *request) { LOGd("/ncsi.txt"); request->redirect(url); });			   	    // windows call home
+
+    // Portal service pages
+	webServer.on("/Update/{}", WebRequestMethod::HTTP_POST, std::bind(&CaptivePortal::onUpdateRequest, this, std::placeholders::_1));
+	webServer.on("/TrackLogs/list", WebRequestMethod::HTTP_GET, std::bind(&CaptivePortal::onRequestTrackLogs, this, std::placeholders::_1));
+	webServer.on("/TrackLogs/{}", WebRequestMethod::HTTP_GET, std::bind(&CaptivePortal::onDownloadTrackLog, this, std::placeholders::_1));
+	webServer.on("/TrackLogs/{}", WebRequestMethod::HTTP_DELETE, std::bind(&CaptivePortal::onDeleteTrackLog, this, std::placeholders::_1));
+    // Poral default request handler
+	webServer.onNotFound(std::bind(&CaptivePortal::onRequest, this, std::placeholders::_1));
+
+	//
+	webServer.begin();
+    LOGv("WebServer.begin()");
+}
+
+
+void CaptivePortal::onUpdateRequest(AsyncWebServerRequest *request)
+{
+    String target = "/" + request->pathArg(0);
+    LOGv("Update target: %s", target.c_str());
+    
+    if (!SPIFFS.exists(target))
+    {
+        request->send(404, "text/plain", "File Not Found");
+        LOGw("File Not Exist: %s", target.c_str());
+    }
+    else
+    {
+        //
+        const size_t capacity = JSON_OBJECT_SIZE(29) + 1024;
+        DynamicJsonDocument doc(capacity);
+
+        // read
+        {
+            File file = SPIFFS.open(target, FILE_READ);
+            if (file)
+            {
+                deserializeJson(doc, file);
+                file.close();
+            }
+        }
+
+        // update
+        for (int i = 0; i < request->args(); i++)
+        {
+            LOGd("%s: %s", request->argName(i).c_str(), request->arg(i).c_str());
+
+            String name = request->argName(i);
+            String value = request->arg(i);
+            JsonVariant var = doc[name];
+
+            if (! var.isNull())
+            {
+                if (var.is<bool>())
+                    doc[name] = parseBoolean(value);
+                else if (var.is<int>())
+                    doc[name] = parseInteger(value);
+                else if (var.is<float>())
+                    doc[name] = parseFloat(value);
+                else
+                    doc[name] = value;
+            }
+            else
+            {
+                doc[name] = value;
+            }
+        }
+
+        // save
+        {
+            File file = SPIFFS.open(target, FILE_WRITE);
+            size_t size = 0;
+
+            if (file)
+            {
+                size = serializeJson(doc, file);
+                file.close();
+
+                LOGd("Serialize %d bytes", size);
+            }
+
+            if (size != 0)
+            {
+                request->send(200, "text/plain", "OK");
+                LOGv("Update Success.");
+            }
+            else
+            {
+                request->send(400, "text/plain", "File Write Failed");
+                LOGw("Update Failed! : %s", target.c_str());
+            }
+        }
+    }
+}
+
+class LogFinder
+{
+public:
+    LogFinder(const char* rootDir) {
+    }
+    LogFinder(const LogFinder& finder) {
+        LOGe("!!!!!!NO!!!!!!!");
+    }
+    ~LogFinder() {
+        close();
+    }
+
+
+    bool open() {
+        dir = SD.open("/TrackLogs");
+        if (!dir.isDirectory())
+            return false;
+
+        data = "[";
+        count = 0;
+        eof = false;
+
+        return true;
+    }
+
+    void close() {
+        if (file.available())
+            file.close();
+        if (dir.available())
+            dir.close();
+    }
+
+    int read(uint8_t *buf, size_t maxLen) {
+        if (!eof)
+            next();
+
+        if (data.length() == 0)
+            return 0;
+
+        size_t size = data.length();
+        if (size > maxLen)
+            size = maxLen;
+        memcpy((void *)buf, data.c_str(), size);
+        data.substring(size, -1);
+
+        return size;
+    }
+
+    int next() {
+        // find next valid file
+        file = dir.openNextFile();
+        while (file)
+        {
+            if (!file.isDirectory() && file.size() > 0) {
+
+                String name(file.name());
+                if (name.endsWith(".igc"))
+                    break;
+            }
+
+            file = dir.openNextFile();
+        }
+
+        if (file) {
+            if (count > 0)
+                data += ",";
+                
+            data += "{\"name\":\"";
+            data += file.name();
+            data += "\",\"size\":";
+            data += file.size();
+            data += ",\"date\":\"";
+            data += getDateString(file.getLastWrite());
+            data += "\"}";
+            LOGv("Find: %s", file.name());
+
+            ++count;
+        } else {
+            data += "]";
+            eof = true;
+        }
+    }
+
+    String getDateString(time_t t)
+    {
+        struct tm * _tm;
+        _tm = gmtime(&t);
+
+        char str[32]; // YYYY-MM-DD hh:mm:ssZ
+        String date;
+        
+        sprintf(str, "%d-%d-%d %d:%d:%dZ", 
+            _tm->tm_year + 1900, _tm->tm_mon + 1, _tm->tm_mday,
+            _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
+
+        return String(str);
+    }    
+
+    File dir, file;
+    String data;
+    int count;
+    bool eof;
+};
+
+void CaptivePortal::onRequestTrackLogs(AsyncWebServerRequest *request)
+{
+    LogFinder lf("/TrackLogs");
+    if (lf.open())
+    {
+        AsyncWebServerResponse *response = request->beginChunkedResponse("application/json", [&lf](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+            return lf.read(buffer, maxLen);
+        });
+
+        request->send(response);
+    }
+    else
+    {
+        request->send(500, "No TrackLogs directory");
+    }
+
+    #if 0
+    request->setContentLength(CONTENT_LENGTH_UNKNOWN);
+    request->send(200, "application/json", "[");
+
+    File dir = SD.open("/TrackLogs");
+    if (dir.isDirectory())
+    {
+        File file = dir.openNextFile();
+        int count = 0;
+
+        LOGv("List up TrakcLogs");
+        while (file)
+        {
+            if (! file.isDirectory() && file.size() > 0)
+            {
+                String name(file.name());
+
+                if (name.endsWith(".igc"))
+                {
+                    // { "name": "xxx.igc", "size": nnn, "date": "YYYY-MM-DD hh:mm:ssZ" }
+                    String igc;
+
+                    // 
+                    if (count > 0)
+                        igc += ",";
+                        
+                    igc += "{\"name\":\"";
+                    igc += name;
+                    igc += "\",\"size\":";
+                    igc += file.size();
+                    igc += ",\"date\":\"";
+                    igc += getDateString(file.getLastWrite());
+                    igc += "\"}";
+
+                    request->sendContent(igc);
+                    LOGv(igc.c_str());
+
+                    count += 1;
+                }
+            }
+
+            file = dir.openNextFile();
+            }
+        }
+
+    request->sendContent("]");
+    request->sendContent("");
+    #endif
+}
+
+void CaptivePortal::onDownloadTrackLog(AsyncWebServerRequest *request)
+{
+    String target = "/TrackLogs/" + request->pathArg(0);
+    LOGv("handleFileDowload: %s", target.c_str());
+
+    this->handleFileRead(request, SD, target);
+}
+
+void CaptivePortal::onDeleteTrackLog(AsyncWebServerRequest *request)
+{
+    String target = "/TrackLogs/" + request->pathArg(0);
+    LOGv("handleFileDelete: %s", target.c_str());
+
+    if (SD.remove(target.c_str()))
+    {
+        request->send(200, "text/plain", "OK");
+        LOGv("TrackLog deleted: %s", target.c_str());
+    }
+    else
+    {
+        request->send(400, "text/plain", "File Delete Failed");
+        LOGw("TrackLog delete Failed: %s", target.c_str());
+    }
+}
+
+void CaptivePortal::onRequest(AsyncWebServerRequest *request)
+{
+    this->handleFileRead(request, SPIFFS, request->url());
+}
+
+bool CaptivePortal::handleFileRead(AsyncWebServerRequest *request, fs::FS & fs, String path)
+{
+    LOGv("handleFileRead: %s", path.c_str());
+    if (path.endsWith("/"))
+        path += "index.html";
+
+    String contentType = getContentType(path);
+    LOGd("  contentType: %s", contentType.c_str());
+    String path_gz = path + ".gz";
+
+    //if (checkExist(fs, path_gz) || checkExist(fs, path))
+    if (fs.exists(path_gz) || fs.exists(path))
+    {
+        //if (checkExist(fs, path_gz))
+        if (fs.exists(path_gz))
+            path = path + ".gz";
+
+        LOGd("  Open: %s", path.c_str());
+        File file = fs.open(path, "r");
+        if (file)
+        {
+            request->send(file, contentType);
+            file.close();
+
+            return true;
+        }
+        
+        request->send(400, "text/plain", "File Open Failed");
+        LOGw("  File open failed!: %s", path.c_str());    
+    }
+    else
+    {
+        request->send(404, "text/plain", "File Not Found");
+        LOGv("  File not exist! : %s", path.c_str());
+    }
+
+    return false;
+}
+
+
+#else
 void CaptivePortal::startWebServer(const IPAddress &ip)
 {
 	// Portal connection validation pages
@@ -297,6 +663,7 @@ void CaptivePortal::onRequestTrackLogs()
             file = dir.openNextFile();
             }
         }
+    }
 
     webServer.sendContent("]");
     webServer.sendContent("");
@@ -331,6 +698,47 @@ void CaptivePortal::onRequest()
 {
     this->handleFileRead(SPIFFS, webServer.uri());
 }
+
+bool CaptivePortal::handleFileRead(fs::FS & fs, String path)
+{
+    LOGv("handleFileRead: %s", path.c_str());
+    if (path.endsWith("/"))
+        path += "index.html";
+
+    String contentType = getContentType(path);
+    LOGd("  contentType: %s", contentType.c_str());
+    String path_gz = path + ".gz";
+
+    //if (checkExist(fs, path_gz) || checkExist(fs, path))
+    if (fs.exists(path_gz) || fs.exists(path))
+    {
+        //if (checkExist(fs, path_gz))
+        if (fs.exists(path_gz))
+            path = path + ".gz";
+
+        LOGd("  Open: %s", path.c_str());
+        File file = fs.open(path, "r");
+        if (file)
+        {
+            webServer.streamFile(file, contentType);
+            file.close();
+
+            return true;
+        }
+        
+        webServer.send(400, "text/plain", "File Open Failed");
+        LOGw("  File open failed!: %s", path.c_str());    
+    }
+    else
+    {
+        webServer.send(404, "text/plain", "File Not Found");
+        LOGv("  File not exist! : %s", path.c_str());
+    }
+
+    return false;
+}
+
+#endif
 
 void CaptivePortal::onWiFiEvent(WiFiEvent_t event,arduino_event_info_t info)
 {
@@ -483,46 +891,6 @@ bool CaptivePortal::checkExist(fs::FS & fs, String path)
 
     return exist;
 }
-
-bool CaptivePortal::handleFileRead(fs::FS & fs, String path)
-{
-    LOGv("handleFileRead: %s", path.c_str());
-    if (path.endsWith("/"))
-        path += "index.html";
-
-    String contentType = getContentType(path);
-    LOGd("  contentType: %s", contentType.c_str());
-    String path_gz = path + ".gz";
-
-    //if (checkExist(fs, path_gz) || checkExist(fs, path))
-    if (fs.exists(path_gz) || fs.exists(path))
-    {
-        //if (checkExist(fs, path_gz))
-        if (fs.exists(path_gz))
-            path = path + ".gz";
-
-        LOGd("  Open: %s", path.c_str());
-        File file = fs.open(path, "r");
-        if (file)
-        {
-            webServer.streamFile(file, contentType);
-            file.close();
-
-            return true;
-        }
-        
-        webServer.send(400, "text/plain", "File Open Failed");
-        LOGw("  File open failed!: %s", path.c_str());    
-    }
-    else
-    {
-        webServer.send(404, "text/plain", "File Not Found");
-        LOGv("  File not exist! : %s", path.c_str());
-    }
-
-    return false;
-}
-
 
 bool CaptivePortal::parseBoolean(String str)
 {

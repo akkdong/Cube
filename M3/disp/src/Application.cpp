@@ -9,7 +9,6 @@
 #include "timezone.h"
 #include "utils.h"
 #include "Application.h"
-#include "WebService.h"
 #include "Widgets.h"
 #include "Window.h"
 #include "MainWindow.h"

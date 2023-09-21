@@ -4,10 +4,18 @@
 #ifndef __CAPTIVE_PORTAL_H__
 #define __CAPTIVE_PORTAL_H__
 
+#ifndef USE_ASYNCWEBSERVER
+#define USE_ASYNCWEBSERVER    1
+#endif
+
 #include <WiFi.h>
 #include <DNSServer.h>
+#if USE_ASYNCWEBSERVER
+#include <AsyncTCP.h>
+#include <ESPAsyncWebServer.h>
+#else
 #include <WebServer.h>
-
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////////////////
 //
@@ -41,6 +49,17 @@ public:
 protected:
   void starSoftAP(const char *ssid, const char *pass, const IPAddress &ip, const IPAddress &gw);
   void startDNSServer(const IPAddress& ip);
+  #if USE_ASYNCWEBSERVER
+  void startAsyncWebServer(const IPAddress &ip);
+
+  void onUpdateRequest(AsyncWebServerRequest *request);
+  void onRequestTrackLogs(AsyncWebServerRequest *request);
+  void onDownloadTrackLog(AsyncWebServerRequest *request);
+  void onDeleteTrackLog(AsyncWebServerRequest *request);
+  void onRequest(AsyncWebServerRequest *request);
+
+  bool handleFileRead(AsyncWebServerRequest *request, fs::FS & fs, String path);
+  #else
   void startWebServer(const IPAddress &ip);
 
   void onUpdateRequest();
@@ -48,6 +67,9 @@ protected:
   void onDownloadTrackLog();
   void onDeleteTrackLog();
   void onRequest();
+
+  bool handleFileRead(fs::FS & fs, String path);
+  #endif
 
   void onWiFiEvent(WiFiEvent_t event,arduino_event_info_t info);
 
@@ -59,10 +81,11 @@ private:
 
   const char * getContentType(String filename);
   bool checkExist(fs::FS & fs, String path);
-  bool handleFileRead(fs::FS & fs, String path);
 
+  #if !USE_ASYNCWEBSERVER
   void redirect(String &uri);
   void redirect(const IPAddress &ip);
+  #endif
 
 protected:
   PortalState portalState;
@@ -71,7 +94,11 @@ protected:
   IPAddress apIP;
   wifi_event_id_t apEventID;
 
+  #if USE_ASYNCWEBSERVER
+  AsyncWebServer webServer;
+  #else
   WebServer webServer;
+  #endif
   DNSServer dnsServer;
 };
 
