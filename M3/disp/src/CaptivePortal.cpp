@@ -111,7 +111,7 @@ void CaptivePortal::starSoftAP(const char *ssid, const char *pass, const IPAddre
 
 	// start AP with given ssid, password, channel
 	ret = WiFi.softAP(ssid, pass && pass[0] ? pass : NULL, WIFI_CHANNEL);
-	LOGd("WiFi.softAP() => %d", ret);
+	LOGv("WiFi.softAP() => %d, %s", ret, WiFi.softAPIP().toString().c_str());
 
 	// Disable AMPDU RX on the ESP32 WiFi to fix a bug on Android
 	/*
@@ -130,17 +130,10 @@ void CaptivePortal::startDNSServer(const IPAddress& ip)
   // set TTL for DNS & start it
   dnsServer.setTTL(DNS_TTL);
   bool ret = dnsServer.start(DNS_PORT, "*", ip);
-  LOGd("DNSServer.start() => %d", ret);
+  LOGv("DNSServer.start() => %d", ret);
 }
 
 #if !USE_ASYNCWEBSERVER
-void CaptivePortal::redirect(const IPAddress &ip)
-{
-	String location = String("http://") + ip.toString();
-
-	redirect(location);
-}
-
 void CaptivePortal::redirect(String &uri)
 {
 	LOGd("-> Redirect to %s", uri.c_str());
@@ -154,23 +147,24 @@ void CaptivePortal::redirect(String &uri)
 #if USE_ASYNCWEBSERVER
 void CaptivePortal::startAsyncWebServer(const IPAddress &ip)
 {
-    auto url = String("http://") + ip.toString();
+    redirectUrl = String("http://") + ip.toString() + "/index.html";
+    LOGd("Redirect URL : %s", redirectUrl.c_str());
 
 	// Portal connection validation pages
-	webServer.on("/connecttest.txt", [&url](AsyncWebServerRequest *request) { LOGd("/connecttest.txt"); request->redirect(url); });	// windows 11 captive portal workaround
-	webServer.on("/wpad.dat", [&url](AsyncWebServerRequest *request) { LOGd("/wpad.dat"); request->send(404); });				// Honestly don't understand what this is but a 404 stops win 10 keep calling this repeatedly and panicking the esp32 :)
-	webServer.on("/generate_204", [&url](AsyncWebServerRequest *request) { LOGd("/generate_204"); request->redirect(url); });		   	// android captive portal redirect
-	webServer.on("/redirect", [&url](AsyncWebServerRequest *request) { LOGd("/redirect"); request->redirect(url); });			   	    // microsoft redirect
-	webServer.on("/hotspot-detect.html", [&url](AsyncWebServerRequest *request) { LOGd("/hotspot-detect.html"); request->redirect(url); });  // apple call home
-	webServer.on("/canonical.html", [&url](AsyncWebServerRequest *request) { LOGd("/canonical.html"); request->redirect(url); });	   	// firefox captive portal call home
-	webServer.on("/success.txt", [&url](AsyncWebServerRequest *request) { LOGd("/success.txt"); request->send(200); });	    // firefox captive portal call home
-	webServer.on("/ncsi.txt", [&url](AsyncWebServerRequest *request) { LOGd("/ncsi.txt"); request->redirect(url); });			   	    // windows call home
+	webServer.on("/connecttest.txt", [this](AsyncWebServerRequest *request) { LOGd("/connecttest.txt"); request->redirect(redirectUrl); });	// windows 11 captive portal workaround
+	webServer.on("/wpad.dat", [this](AsyncWebServerRequest *request) { LOGd("/wpad.dat"); request->send(404); });				// Honestly don't understand what this is but a 404 stops win 10 keep calling this repeatedly and panicking the esp32 :)
+	webServer.on("/generate_204", [this](AsyncWebServerRequest *request) { LOGd("/generate_204"); request->redirect(redirectUrl); });		   	// android captive portal redirect
+	webServer.on("/redirect", [this](AsyncWebServerRequest *request) { LOGd("/redirect"); request->redirect(redirectUrl); });			   	    // microsoft redirect
+	webServer.on("/hotspot-detect.html", [this](AsyncWebServerRequest *request) { LOGd("/hotspot-detect.html"); request->redirect(redirectUrl); });  // apple call home
+	webServer.on("/canonical.html", [this](AsyncWebServerRequest *request) { LOGd("/canonical.html"); request->redirect(redirectUrl); });	   	// firefox captive portal call home
+	webServer.on("/success.txt", [this](AsyncWebServerRequest *request) { LOGd("/success.txt"); request->send(200); });	    // firefox captive portal call home
+	webServer.on("/ncsi.txt", [this](AsyncWebServerRequest *request) { LOGd("/ncsi.txt"); request->redirect(redirectUrl); });			   	    // windows call home
 
     // Portal service pages
-	webServer.on("/Update/{}", WebRequestMethod::HTTP_POST, std::bind(&CaptivePortal::onUpdateRequest, this, std::placeholders::_1));
+	webServer.on("^\\/Update\\/([a-zA-Z0-9\\-_.]+)$", WebRequestMethod::HTTP_POST, std::bind(&CaptivePortal::onUpdateRequest, this, std::placeholders::_1));
 	webServer.on("/TrackLogs/list", WebRequestMethod::HTTP_GET, std::bind(&CaptivePortal::onRequestTrackLogs, this, std::placeholders::_1));
-	webServer.on("/TrackLogs/{}", WebRequestMethod::HTTP_GET, std::bind(&CaptivePortal::onDownloadTrackLog, this, std::placeholders::_1));
-	webServer.on("/TrackLogs/{}", WebRequestMethod::HTTP_DELETE, std::bind(&CaptivePortal::onDeleteTrackLog, this, std::placeholders::_1));
+	webServer.on("^\\/TrackLogs\\/([a-zA-Z0-9\\-_.]+)$", WebRequestMethod::HTTP_GET, std::bind(&CaptivePortal::onDownloadTrackLog, this, std::placeholders::_1));
+	webServer.on("^\\/TrackLogs\\/([a-zA-Z0-9\\-_.]+)$", WebRequestMethod::HTTP_DELETE, std::bind(&CaptivePortal::onDeleteTrackLog, this, std::placeholders::_1));
     // Poral default request handler
 	webServer.onNotFound(std::bind(&CaptivePortal::onRequest, this, std::placeholders::_1));
 
@@ -307,7 +301,7 @@ public:
         return size;
     }
 
-    int next() {
+    void next() {
         // find next valid file
         file = dir.openNextFile();
         while (file)
@@ -465,8 +459,6 @@ bool CaptivePortal::handleFileRead(AsyncWebServerRequest *request, fs::FS & fs, 
     if (path.endsWith("/"))
         path += "index.html";
 
-    String contentType = getContentType(path);
-    LOGd("  contentType: %s", contentType.c_str());
     String path_gz = path + ".gz";
 
     //if (checkExist(fs, path_gz) || checkExist(fs, path))
@@ -476,11 +468,12 @@ bool CaptivePortal::handleFileRead(AsyncWebServerRequest *request, fs::FS & fs, 
         if (fs.exists(path_gz))
             path = path + ".gz";
 
-        LOGd("  Open: %s", path.c_str());
+        String contentType = getContentType(path);
+        LOGd("  Open: %s(%s)", path.c_str(), contentType.c_str());
         File file = fs.open(path, "r");
         if (file)
         {
-            request->send(file, contentType);
+            request->send(file, path, contentType);
             file.close();
 
             return true;
@@ -502,15 +495,18 @@ bool CaptivePortal::handleFileRead(AsyncWebServerRequest *request, fs::FS & fs, 
 #else
 void CaptivePortal::startWebServer(const IPAddress &ip)
 {
+    redirectUrl = String("http://") + ip.toString() + "/index.html";
+    LOGd("Redirect URL : %s", redirectUrl.c_str());
+
 	// Portal connection validation pages
-	webServer.on(Uri("/connecttest.txt"), [this, ip]() { LOGd("/connecttest.txt"); redirect(ip); });	// windows 11 captive portal workaround
+	webServer.on(Uri("/connecttest.txt"), [this]() { LOGd("/connecttest.txt"); redirect(redirectUrl); });	// windows 11 captive portal workaround
 	webServer.on(Uri("/wpad.dat"), [this]() { LOGd("/wpad.dat"); webServer.send(404); });				// Honestly don't understand what this is but a 404 stops win 10 keep calling this repeatedly and panicking the esp32 :)
-	webServer.on(Uri("/generate_204"), [this, ip]() { LOGd("/generate_204"); redirect(ip); });		   	// android captive portal redirect
-	webServer.on(Uri("/redirect"), [this, ip]() { LOGd("/redirect"); redirect(ip); });			   	    // microsoft redirect
-	webServer.on(Uri("/hotspot-detect.html"), [this, ip]() { LOGd("/hotspot-detect.html"); redirect(ip); });  // apple call home
-	webServer.on(Uri("/canonical.html"), [this, ip]() { LOGd("/canonical.html"); redirect(ip); });	   	// firefox captive portal call home
-	webServer.on(Uri("/success.txt"), [this, ip]() { LOGd("/success.txt"); webServer.send(200); });	    // firefox captive portal call home
-	webServer.on(Uri("/ncsi.txt"), [this, ip]() { LOGd("/ncsi.txt"); redirect(ip); });			   	    // windows call home
+	webServer.on(Uri("/generate_204"), [this]() { LOGd("/generate_204"); redirect(redirectUrl); });		   	// android captive portal redirect
+	webServer.on(Uri("/redirect"), [this]() { LOGd("/redirect"); redirect(redirectUrl); });			   	    // microsoft redirect
+	webServer.on(Uri("/hotspot-detect.html"), [this]() { LOGd("/hotspot-detect.html"); redirect(redirectUrl); });  // apple call home
+	webServer.on(Uri("/canonical.html"), [this]() { LOGd("/canonical.html"); redirect(redirectUrl); });	   	// firefox captive portal call home
+	webServer.on(Uri("/success.txt"), [this]() { LOGd("/success.txt"); webServer.send(200); });	    // firefox captive portal call home
+	webServer.on(Uri("/ncsi.txt"), [this]() { LOGd("/ncsi.txt"); redirect(redirectUrl); });			   	    // windows call home
 
     // Portal service pages
 	webServer.on(UriBraces("/Update/{}"), HTTP_POST, std::bind(&CaptivePortal::onUpdateRequest, this));
@@ -661,7 +657,6 @@ void CaptivePortal::onRequestTrackLogs()
             }
 
             file = dir.openNextFile();
-            }
         }
     }
 
@@ -705,8 +700,6 @@ bool CaptivePortal::handleFileRead(fs::FS & fs, String path)
     if (path.endsWith("/"))
         path += "index.html";
 
-    String contentType = getContentType(path);
-    LOGd("  contentType: %s", contentType.c_str());
     String path_gz = path + ".gz";
 
     //if (checkExist(fs, path_gz) || checkExist(fs, path))
@@ -716,7 +709,9 @@ bool CaptivePortal::handleFileRead(fs::FS & fs, String path)
         if (fs.exists(path_gz))
             path = path + ".gz";
 
-        LOGd("  Open: %s", path.c_str());
+        String contentType = getContentType(path);
+        LOGd("  contentType: %s", contentType.c_str());
+        LOGd("  Open: %s(%s)", path.c_str(), contentType.c_str());
         File file = fs.open(path, "r");
         if (file)
         {

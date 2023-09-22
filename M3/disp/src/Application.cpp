@@ -263,6 +263,8 @@ void Application::update()
                 portalPtr->setPassword("1234567890");
                 portalPtr->setAddress(IPAddress(172, 217, 28, 1));
                 portalPtr->start();
+
+                LOGi("Captive-portal started!");
             }
         }
 
@@ -277,6 +279,8 @@ void Application::update()
             portalPtr->stop();
             // release memory
             portalPtr.reset();
+
+            LOGi("Captive-portal stopped!");
         }
     }
 

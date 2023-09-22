@@ -93,6 +93,7 @@ protected:
   String apPassword;
   IPAddress apIP;
   wifi_event_id_t apEventID;
+  String redirectUrl;
 
   #if USE_ASYNCWEBSERVER
   AsyncWebServer webServer;
