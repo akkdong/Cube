@@ -22,8 +22,8 @@ h1.pref {
 
 p.pref {
     font-size: 2.5em;
-    padding: 0px;
-    margin: 0px 0.1em;
+    padding: 0px 0;
+    margin: 0px 0.4em 0.3em;
 }
 
 
@@ -46,7 +46,7 @@ select {
     border: none;
     border-radius: 0.1em;
     color: white;
-    padding: 0.4em 0.1em;
+    padding: 0.6em 0.1em;
 	font-size: 3rem;
     text-decoration: none;
     margin: 0px;
@@ -57,15 +57,34 @@ select {
 .page_title {
     color: rgb(4, 20, 49); 
     font-size: 3em;
-	margin-top: 0.1em;
+	padding: 6pt 12pt;
+	background-color: rgba(141, 0, 223, 0.562);
+    margin: 6pt 4pt 0 4pt;
+	border-radius: 12pt;
 }
 
 .pref-group {
-    color: rgb(62, 15, 100); 
+	margin: 0.5em 0 0 0;
+	border: solid 0px red;
+}
+
+.pref-grp-title {
+	background-color: lightgray;
+    color: rgb(62, 15, 100);	
     font-size: 1.9em;
     font-weight: bold;
-    margin-top: 0.5em;
-    border: solid 0px green;
+	margin: 0;
+	padding: 6pt 12pt;
+    border-top-left-radius: 12pt;
+	border-top-right-radius: 12pt;
+}
+
+.pref-item {
+	border-left: solid 2px lightgray;
+	border-right: solid 2px lightgray;
+	border-bottom: solid 2px lightgray;
+	margin: 0;
+	padding: 0;
 }
 
 .pref-separator {
@@ -82,9 +101,9 @@ select {
 
 .pref-title {
     color: rgb(4, 53, 4);
-    font-size: 2em;
-    margin-bottom: 0.1em;
-    margin: 8px 2px 0px;
+    font-size: 1.8em;
+    margin-bottom: 6pt;
+	padding: 0 12pt;	
     border: solid 0px red;
 }
 
@@ -92,7 +111,7 @@ select {
     color: rgb(97, 92, 92);
     font-size: 1.8em;
     cursor: pointer;
-    margin: 0px 2px 8px;
+    margin: 0 0.5em 0;
     height: 1.2em;
     border: solid 0px blue;
 }
@@ -112,15 +131,20 @@ select {
 
 #title-buttons {
 	position: absolute; 
-	right: 0px; 
-	width: 2.1em;
-	height: 1em;
-	margin-right: 0.1em;
+	display: inline-block;
+	width: 2.2em;
+	height: 1.2em;
+	right: 18pt; 
+}
+
+.title-button {
+	border: solid 2px rgb(92, 0, 104);
+	border-radius: 12pt;
 }
 
 #id-download {
 	position: absolute;
-	left: 0px; 
+	left: 0; 
 	width: 1em; 
 	height: 1em;
 	margin: 4px;
@@ -128,7 +152,7 @@ select {
 
 #id-reload {
 	position: absolute;
-	left: 1.1em; 
+	left: 1.2em; 
 	width: 1em; 
 	height: 1em; 
 	margin: 4px;

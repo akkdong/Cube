@@ -36,7 +36,7 @@ app.post("/Update/:target", (req, res) => {
             const data = fs.readFileSync(confFile, { encoding: "utf-8" })
             const json = JSON.parse(data)
             const merged = { ...json, ...req.body }
-            fs.writeFileSync(confFile, JSON.stringify(merged), { encoding: "utf-8" })
+            fs.writeFileSync(confFile, JSON.stringify(merged, null, 4), { encoding: "utf-8" })
 
             console.log("Update File :", target)
             res.send("OK")

@@ -236,13 +236,14 @@ function makePrefItem (item) {
     }
 
     return $('<div>')
-        .append(_hr)
+		.addClass('pref-item')
         .append(_title)
         .append(_value);
+        //.append(_hr);
 }
 
 function makePrefGroup (title, items) {
-    var _group = $('<div>').append($('<div>').addClass('pref-group').text(title));
+    var _group = $('<div>').addClass('pref-group').append($('<div>').addClass('pref-grp-title').text(title));
 
     $.each(items, function (idx, item) {
         _group.append(makePrefItem(item));
@@ -313,7 +314,7 @@ function setEventHandlers() {
     //
     $("#id-download").click(function () {
 		if (confirm("Save Preferences?") == true) {
-        savePref();
+            savePref();
 		}
     });
 
