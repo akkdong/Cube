@@ -129,6 +129,12 @@ select {
 }
 
 
+#title-backbutton {
+    display: inline-block;
+	width: auto;
+	height: 0.8em;
+}
+
 #title-buttons {
 	position: absolute; 
 	display: inline-block;

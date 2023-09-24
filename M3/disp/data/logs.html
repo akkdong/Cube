@@ -4,6 +4,12 @@
 <title>Track Logs</title>
 <link rel="stylesheet" type="text/css" href="style.css"/>
 <style>
+	#title-backbutton {
+		display: inline-block;
+		width: auto;
+		height: 0.8em;
+	}
+
 	.file-separator {
 		margin: 0.4em 0.1em;
 		color: rgb(44, 31, 31);
@@ -184,7 +190,17 @@
 </script>
 </head>
 <body>
-    <div class="page_title">Track Logs...</div>
+    <div class="page_title">
+		<span id="title-backbutton">
+			<span id="id-back" onclick="history.back()">
+				<img class="pref-image-button" 
+					src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAMAAAD04JH5AAAABGdBTUEAALGPC/xhBQAAAAFzUkdCAK7OHOkAAAAgY0hSTQAAeiYAAICEAAD6AAAAgOgAAHUwAADqYAAAOpgAABdwnLpRPAAAAH5QTFRFAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA////ggil/gAAACh0Uk5TAAEIM6MtMc7HKyTWKjrNMNc5U++5FARo8Pxn/ZbqWQJYA+lX8QVfUcxqKZkAAAABYktHRCnKt4UkAAAACXBIWXMAALP6AACz+gFmujCYAAABEUlEQVR42u3YVw6CQBhF4RF7713ELvtfoSXGqMDEB/jvy7kb+E4ykwzBOZb3SkFJG1CuVKV+rR43mlo/VhY8fWHBy5cVvH1RwYcvKfjyBQU/vnlBwjcuSPFNC1J9w4IM36wg0zcq8Pj3gpbWj9sdsd/Fx8fHx8fHx8fHx8fHz8nv4ePj4+Pj4+Pb+n3v989gWLTvRmNfwGRaeMBsvvAELCsGBSsKKKCAAgoooIACCiiggAIKKKCAAgoooIACCv4u8P7VXW8CbUG4jQoP8J1CuNsX73sKjPzMAjM/o+Bg56fexMPR0E8pMPYTBeb+T4HA/yqQ+B8FIv9dIPNfBUL/UXAKlb5z58tV6jsXGby/LNfdAF6W6qEEfqJHAAAAJXRFWHRkYXRlOmNyZWF0ZQAyMDIwLTAxLTMwVDE2OjUxOjQ1KzAwOjAw/ellpAAAACV0RVh0ZGF0ZTptb2RpZnkAMjAyMC0wMS0zMFQxNjo1MTo0NSswMDowMIy03RgAAABGdEVYdHNvZnR3YXJlAEltYWdlTWFnaWNrIDYuNy44LTkgMjAxOS0wMi0wMSBRMTYgaHR0cDovL3d3dy5pbWFnZW1hZ2ljay5vcmdBe+LIAAAAGHRFWHRUaHVtYjo6RG9jdW1lbnQ6OlBhZ2VzADGn/7svAAAAGHRFWHRUaHVtYjo6SW1hZ2U6OmhlaWdodAA1MTLA0FBRAAAAF3RFWHRUaHVtYjo6SW1hZ2U6OldpZHRoADUxMhx8A9wAAAAZdEVYdFRodW1iOjpNaW1ldHlwZQBpbWFnZS9wbmc/slZOAAAAF3RFWHRUaHVtYjo6TVRpbWUAMTU4MDQwMzEwNRDrK1MAAAATdEVYdFRodW1iOjpTaXplADMuNjlLQkIRtiuyAAAARnRFWHRUaHVtYjo6VVJJAGZpbGU6Ly8uL3VwbG9hZHMvNTYvN3JtTkNFai8yMTMxL2JhY2tfYXJyb3dfaWNvbl8xMzE1NjMucG5nBEbI+gAAAABJRU5ErkJggg==" />
+			</span>
+		</span>
+		<span>
+			Track Logs...
+		</span>
+	</div>
 	<div id="logs">
 		<!--
 		<div href="2019-07-04-MIN-XXX-01.igc">

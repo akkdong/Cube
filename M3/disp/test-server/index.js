@@ -34,8 +34,11 @@ app.post("/Update/:target", (req, res) => {
     try {
         if (fs.existsSync(confFile)) {
             const data = fs.readFileSync(confFile, { encoding: "utf-8" })
-            const json = JSON.parse(data)
-            const merged = { ...json, ...req.body }
+            const jsonOld = JSON.parse(data)
+            const jsonNew = req.body
+            const merged = { ...jsonOld, ...jsonNew }
+            //console.log("original config: ", jsonOld)
+            //console.log("request config: ", jsonNew)
             fs.writeFileSync(confFile, JSON.stringify(merged, null, 4), { encoding: "utf-8" })
 
             console.log("Update File :", target)

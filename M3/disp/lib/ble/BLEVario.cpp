@@ -169,6 +169,7 @@ void BLEVario::begin(void)
 
     BLESecurity* pSecurity = new BLESecurity();
     pSecurity->setAuthenticationMode(ESP_LE_AUTH_REQ_SC_MITM_BOND);
+    // ???? new but not used ????
 
 #endif // USE_NIMBLE
 
@@ -205,6 +206,39 @@ void BLEVario::begin(void)
 
 void BLEVario::end(void)
 {
+    //
+    // TODO: BLEVario::end() is not perfect. How can i do it perfectly?
+    //
+    // Workaround: Brieifly stops BT and restart the device
+    //
+
+    // stop BLEAdvertising
+    bleServer->getAdvertising()->stop();
+
+    // stop UART service: uartService in bleServer
+    uartService->stop();
+    //auto tx = uartService->getCharacteristic(CHARACTERISTIC_UUID_TX)->??
+    //tx->removeDescriptor() ??
+    //auto rx = uartService->getCharacteristic(CHARACTERISTIC_UUID_RX)->??
+    // rx->setCallbacks(nullptr); ??
+
+    bleServer->removeService(uartService);
+
+    // hidDevice->stopServices()
+    hidDevice->deviceInfo()->stop();
+    hidDevice->hidService()->stop();
+    hidDevice->batteryService()->stop();
+
+    //hidDevice->hidService()->getCharacteristic(KEYBOARD_ID);
+    //hidDevice->hidService()->getCharacteristic(KEYBOARD_ID);
+    //hidDevice->hidService()->getCharacteristic(MEDIA_KEYS_ID);
+
+    //bleServer->setCallback(nullptr);
+
+    //delete bleServer;
+    //delete hidDevice;
+
+    BLEDevice::deinit(true);
 }
 
 bool BLEVario::isConnected(void) 

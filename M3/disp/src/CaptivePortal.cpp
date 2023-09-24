@@ -4,6 +4,7 @@
 #include "CaptivePortal.h"
 #include <SPIFFS.h>
 #include <SD.h>
+#include <AsyncJson.h>
 #include <ArduinoJson.h>
 
 #include <uri/UriBraces.h>
@@ -60,19 +61,30 @@ public:
     }
 
     int read(uint8_t *buf, size_t maxLen) {
-        if (!eof)
-            next();
+        uint8_t *ptr = buf;
+        size_t totalSize = 0, remain = maxLen;
 
-        if (data.length() == 0)
-            return 0;
+        while (remain > 0)
+        {
+            if (!eof)
+                next();
 
-        size_t size = data.length();
-        if (size > maxLen)
-            size = maxLen;
-        memcpy((void *)buf, data.c_str(), size);
-        data = data.substring(size, -1);
+            if (data.length() == 0)
+                break;
 
-        return size;
+            size_t size = data.length();
+            if (size > remain)
+                size = remain;
+            memcpy((void *)ptr, data.c_str(), size);
+            data = data.substring(size, -1);
+            LOGd(" copy %d bytes", size);
+
+            ptr += size;
+            totalSize += size;
+            remain -= size;
+        }
+
+        return totalSize;
     }
 
     void next() {
@@ -101,7 +113,7 @@ public:
             data += ",\"date\":\"";
             data += getDateString(file.getLastWrite());
             data += "\"}";
-            LOGv("Find: %s", file.name());
+            LOGd("  find: %s", file.name());
 
             ++count;
         } else {
@@ -211,21 +223,21 @@ void CaptivePortal::starSoftAP(const char *ssid, const char *pass, const IPAddre
 {
 	// event handler
     apEventID = WiFi.onEvent(std::bind(&CaptivePortal::onWiFiEvent, this, std::placeholders::_1, std::placeholders::_2));
-    LOGd("WiFi.onEvent() => %u", apEventID);
+    LOGd("WiFi.onEvent() => event id: %u", apEventID);
 
 	// set WIFI mode to AP
     WiFi.persistent(false);
 	bool ret = WiFi.mode(WIFI_MODE_AP);
-	LOGd("WiFi.mode() => %d", ret);
+	LOGd("WiFi.mode() => ret(%d)", ret);
 
 	// configure AP with specfic ip/gw/mask
 	const IPAddress mask(255, 255, 255, 0);
 	ret = WiFi.softAPConfig(ip, gw, mask);
-	LOGd("WiFi.softAPConfig(%s, %s, %s) => %d", ip.toString().c_str(), gw.toString().c_str(), mask.toString(), ret);
+	LOGd("WiFi.softAPConfig(\"%s\", \"%s\", \"%s\") => ret(%d)", ip.toString().c_str(), gw.toString().c_str(), mask.toString(), ret);
 
 	// start AP with given ssid, password, channel
 	ret = WiFi.softAP(ssid, pass && pass[0] ? pass : NULL, WIFI_CHANNEL);
-	LOGv("WiFi.softAP(%s, %s) => %d, %s", ssid, pass && pass[0] ? pass : "", ret, WiFi.softAPIP().toString().c_str());
+	LOGv("WiFi.softAP(\"%s\", \"%s\") => %s, ret(%d)", ssid, pass && pass[0] ? pass : "", WiFi.softAPIP().toString().c_str(), ret);
 
 	// Disable AMPDU RX on the ESP32 WiFi to fix a bug on Android
 	/*
@@ -244,7 +256,7 @@ void CaptivePortal::startDNSServer(const IPAddress& ip)
   // set TTL for DNS & start it
   dnsServer.setTTL(DNS_TTL);
   bool ret = dnsServer.start(DNS_PORT, "*", ip);
-  LOGv("DNSServer.start() => %d", ret);
+  LOGv("DNSServer.start() => ret(%d)", ret);
 }
 
 #if !USE_ASYNCWEBSERVER
@@ -275,7 +287,12 @@ void CaptivePortal::startAsyncWebServer(const IPAddress &ip)
 	webServer.on("/ncsi.txt", [this](AsyncWebServerRequest *request) { LOGd("/ncsi.txt"); request->redirect(redirectUrl); });			   	    // windows call home
 
     // Portal service pages
+    #if 0
 	webServer.on("^\\/Update\\/([a-zA-Z0-9\\-_.]+)$", WebRequestMethod::HTTP_POST, std::bind(&CaptivePortal::onUpdateRequest, this, std::placeholders::_1));
+    #else
+    AsyncCallbackJsonWebHandler* handler = new AsyncCallbackJsonWebHandler("/Update/config.json", std::bind(&CaptivePortal::OnUpdateConfigJson, this, std::placeholders::_1, std::placeholders::_2));   
+    webServer.addHandler(handler);
+    #endif
 	webServer.on("/TrackLogs/list", WebRequestMethod::HTTP_GET, std::bind(&CaptivePortal::onRequestTrackLogs, this, std::placeholders::_1));
 	webServer.on("^\\/TrackLogs\\/([a-zA-Z0-9\\-_.]+)$", WebRequestMethod::HTTP_GET, std::bind(&CaptivePortal::onDownloadTrackLog, this, std::placeholders::_1));
 	webServer.on("^\\/TrackLogs\\/([a-zA-Z0-9\\-_.]+)$", WebRequestMethod::HTTP_DELETE, std::bind(&CaptivePortal::onDeleteTrackLog, this, std::placeholders::_1));
@@ -292,6 +309,78 @@ void CaptivePortal::startAsyncWebServer(const IPAddress &ip)
     LOGv("WebServer.begin()");
 }
 
+void CaptivePortal::OnUpdateConfigJson(AsyncWebServerRequest *request, JsonVariant &json)
+{
+    String target = "/config.json"; // + request->pathArg(0);
+    LOGv("OnUpdateConfigJson: %s", target.c_str());
+    
+    if (SPIFFS.exists(target))
+    {
+        //
+        const size_t capacity = JSON_OBJECT_SIZE(45) + 1240;
+        DynamicJsonDocument doc(capacity);
+
+        // read
+        {
+            File file = SPIFFS.open(target, FILE_READ);
+            if (file)
+            {
+                deserializeJson(doc, file);
+                file.close();
+            }
+        }
+
+        // merge(or assign)
+        auto jsonObj = json.as<JsonObject>();
+        for (JsonPair pair : jsonObj)
+        {
+            String name = pair.key().c_str();
+            JsonVariant value = pair.value();
+            doc[name] = value;
+
+            #if LOG_LEVEL >= LOG_LEVEL_VERBOSE
+            if (value.is<bool>())
+                LOGv("[%s] = %s", name.c_str(), value.as<bool>() ? "true" : "false");
+            else if (value.is<int>())
+                LOGv("[%s] = %d", name.c_str(), value.as<int>());
+            else if (value.is<float>())
+                LOGv("[%s] = %f", name.c_str(), value.as<float>());
+            else
+                LOGv("[%s] = %s", name.c_str(), value.as<const char *>());
+            #endif
+        }
+        
+        // save
+        {
+            File file = SPIFFS.open(target, FILE_WRITE);
+            size_t size = 0;
+
+            if (file)
+            {
+                size = serializeJson(doc, file);
+                file.close();
+
+                LOGv("Serialize %d bytes", size);
+            }
+
+            if (size != 0)
+            {
+                request->send(200, "text/plain", "OK");
+                LOGv("Update Success.");
+            }
+            else
+            {
+                request->send(400, "text/plain", "File Write Failed");
+                LOGw("Update Failed! : %s", target.c_str());
+            }
+        }
+    }
+    else
+    {
+        request->send(404, "text/plain", "File Not Found");
+        LOGw("File Not Exist: %s", target.c_str());
+    }
+}
 
 void CaptivePortal::onUpdateRequest(AsyncWebServerRequest *request)
 {
@@ -306,7 +395,7 @@ void CaptivePortal::onUpdateRequest(AsyncWebServerRequest *request)
     else
     {
         //
-        const size_t capacity = JSON_OBJECT_SIZE(29) + 1024;
+        const size_t capacity = JSON_OBJECT_SIZE(45) + 1240;
         DynamicJsonDocument doc(capacity);
 
         // read
@@ -322,7 +411,7 @@ void CaptivePortal::onUpdateRequest(AsyncWebServerRequest *request)
         // update
         for (int i = 0; i < request->args(); i++)
         {
-            LOGd("%s: %s", request->argName(i).c_str(), request->arg(i).c_str());
+            LOGv("%s: %s", request->argName(i).c_str(), request->arg(i).c_str());
 
             String name = request->argName(i);
             String value = request->arg(i);
@@ -355,7 +444,7 @@ void CaptivePortal::onUpdateRequest(AsyncWebServerRequest *request)
                 size = serializeJson(doc, file);
                 file.close();
 
-                LOGd("Serialize %d bytes", size);
+                LOGv("Serialize %d bytes", size);
             }
 
             if (size != 0)
@@ -377,10 +466,12 @@ void CaptivePortal::onRequestTrackLogs(AsyncWebServerRequest *request)
     if (_lf.open())
     {
         AsyncWebServerResponse *response = request->beginChunkedResponse("application/json", [] (uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+            LOGd("read-chunk bufLen=%d, index=%d", maxLen, index);
             int size = _lf.read(buffer, maxLen);
             if (size == 0)
                 _lf.close();
 
+            LOGd("  total %d bytes", size);
             return size;
         });
 
@@ -435,6 +526,7 @@ bool CaptivePortal::handleFileRead(AsyncWebServerRequest *request, fs::FS & fs, 
     }
     else
     {
+        LOGv("Not Found: %s",path.c_str());
         request->send(404, "text/plain", "Not found");
     }
 
@@ -485,7 +577,7 @@ void CaptivePortal::onUpdateRequest()
     else
     {
         //
-        const size_t capacity = JSON_OBJECT_SIZE(29) + 1024;
+        const size_t capacity = JSON_OBJECT_SIZE(45) + 1240;
         DynamicJsonDocument doc(capacity);
 
         // read

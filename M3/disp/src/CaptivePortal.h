@@ -12,7 +12,9 @@
 #include <DNSServer.h>
 #if USE_ASYNCWEBSERVER
 #include <AsyncTCP.h>
+#include <AsyncJson.h>
 #include <ESPAsyncWebServer.h>
+#include <ArduinoJson.h>
 #else
 #include <WebServer.h>
 #endif
@@ -55,6 +57,7 @@ protected:
   #if USE_ASYNCWEBSERVER
   void startAsyncWebServer(const IPAddress &ip);
 
+  void OnUpdateConfigJson(AsyncWebServerRequest *request, JsonVariant &json);
   void onUpdateRequest(AsyncWebServerRequest *request);
   void onRequestTrackLogs(AsyncWebServerRequest *request);
   void onDownloadTrackLog(AsyncWebServerRequest *request);

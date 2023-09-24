@@ -111,15 +111,20 @@ void WiFiSettingWindow::onKeyLongPressed(uint32_t key)
     {
     case EXT_KEY_LEFT:
     case EXT_KEY_RIGHT:
-        break;
     case EXT_KEY_UP:
         break;
     case EXT_KEY_DOWN:
+        #if USE_FALLBACK
         Application::getApp()->sendMessage(MSG_FALLBACK);
+        #else
+        // restart device
+        LOGi("Restart device.");
+        delay(100);
+
+        ESP.restart();
+        #endif
         break;
     }
-
-    m_lastKey = 0;
 }
 
 void WiFiSettingWindow::onKeyReleased(uint32_t key)
@@ -131,17 +136,12 @@ void WiFiSettingWindow::onKeyReleased(uint32_t key)
     switch (key)
     {
     case KEY_LEFT:
-    case EXT_KEY_LEFT:
-        break;
     case KEY_RIGHT:
-    case EXT_KEY_RIGHT:
-        break;
+    case KEY_PUSH:
     case EXT_KEY_UP:
-        LOGv("Start WiFi");
-        vTaskResume(taskWiFi);
-        break;
+    case EXT_KEY_LEFT:
+    case EXT_KEY_RIGHT:
     case EXT_KEY_DOWN:
-        // nop
         break;
     }
 }
