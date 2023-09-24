@@ -75,10 +75,11 @@ bool DeviceRepository::loadPref()
 	File file = SPIFFS.open("/config.json");
 	if (file)
 	{
-		const size_t capacity = JSON_OBJECT_SIZE(31) + 700;
+		const size_t capacity = JSON_OBJECT_SIZE(45) + 1240;
 		DynamicJsonDocument doc(capacity);
 
 		DeserializationError error = deserializeJson(doc, file);
+		LOGv("config.json deserialize => %s(%d)", error.c_str(), error.code());
 		file.close();
 
 		if (! error)
@@ -345,40 +346,40 @@ void DeviceRepository::set(JsonDocument& doc)
 
 void DeviceRepository::dump()
 {
-	Serial.printf("DeviceDefault.enableBT = %d\r\n", contextPtr->deviceDefault.enableBT);
-	Serial.printf("DeviceDefault.enableSound = %d\r\n", contextPtr->deviceDefault.enableSound);
-	Serial.printf("DeviceDefault.enableSimulation = %d\r\n", contextPtr->deviceDefault.enableSimulation);
-	Serial.printf("DeviceDefault.enableNmeaLogging = %d\r\n", contextPtr->deviceDefault.enableNmeaLogging);
-	Serial.printf("DeviceDefault.btName = %s\r\n", contextPtr->deviceDefault.btName);
-	Serial.printf("DeviceDefault.wifiSSID = %s\r\n", contextPtr->deviceDefault.wifiSSID);
-	Serial.printf("DeviceDefault.wifiPassword = %s\r\n", contextPtr->deviceDefault.wifiPassword);
-	Serial.printf("DeviceDefault.timezone = %f\r\n", contextPtr->deviceDefault.timezone);
+	LOGv("DeviceDefault.enableBT = %d", contextPtr->deviceDefault.enableBT);
+	LOGv("DeviceDefault.enableSound = %d", contextPtr->deviceDefault.enableSound);
+	LOGv("DeviceDefault.enableSimulation = %d", contextPtr->deviceDefault.enableSimulation);
+	LOGv("DeviceDefault.enableNmeaLogging = %d", contextPtr->deviceDefault.enableNmeaLogging);
+	LOGv("DeviceDefault.btName = %s", contextPtr->deviceDefault.btName);
+	LOGv("DeviceDefault.wifiSSID = %s", contextPtr->deviceDefault.wifiSSID);
+	LOGv("DeviceDefault.wifiPassword = %s", contextPtr->deviceDefault.wifiPassword);
+	LOGv("DeviceDefault.timezone = %f", contextPtr->deviceDefault.timezone);
 
-	Serial.printf("VolumeSettings.vario = %d\r\n", contextPtr->volume.vario);
-	Serial.printf("VolumeSettings.effect = %d\r\n", contextPtr->volume.effect);
-	Serial.printf("VolumeSettings.autoTurnOn = %d\r\n", contextPtr->volume.autoTurnOn);
+	LOGv("VolumeSettings.vario = %d", contextPtr->volume.vario);
+	LOGv("VolumeSettings.effect = %d", contextPtr->volume.effect);
+	LOGv("VolumeSettings.autoTurnOn = %d", contextPtr->volume.autoTurnOn);
 
-	Serial.printf("VarioSettings.sinkThreshold = %f\r\n", contextPtr->varioSettings.sinkThreshold);
-	Serial.printf("VarioSettings.climbThreshold = %f\r\n", contextPtr->varioSettings.climbThreshold);
-	Serial.printf("VarioSettings.sensitivity = %f\r\n", contextPtr->varioSettings.sensitivity);
-	Serial.printf("VarioSettings.sentence = %d\r\n", contextPtr->varioSettings.sentence);
-	Serial.printf("VarioSettings.altitudeRef1 = %f\r\n", contextPtr->varioSettings.altitudeRef1);
-	Serial.printf("VarioSettings.altitudeRef2 = %f\r\n", contextPtr->varioSettings.altitudeRef2);
-	Serial.printf("VarioSettings.altitudeRef3 = %f\r\n", contextPtr->varioSettings.altitudeRef3);
-	Serial.printf("VarioSettings.dampingFactor = %f\r\n", contextPtr->varioSettings.dampingFactor);
+	LOGv("VarioSettings.sinkThreshold = %f", contextPtr->varioSettings.sinkThreshold);
+	LOGv("VarioSettings.climbThreshold = %f", contextPtr->varioSettings.climbThreshold);
+	LOGv("VarioSettings.sensitivity = %f", contextPtr->varioSettings.sensitivity);
+	LOGv("VarioSettings.sentence = %d", contextPtr->varioSettings.sentence);
+	LOGv("VarioSettings.altitudeRef1 = %f", contextPtr->varioSettings.altitudeRef1);
+	LOGv("VarioSettings.altitudeRef2 = %f", contextPtr->varioSettings.altitudeRef2);
+	LOGv("VarioSettings.altitudeRef3 = %f", contextPtr->varioSettings.altitudeRef3);
+	LOGv("VarioSettings.dampingFactor = %f", contextPtr->varioSettings.dampingFactor);
 
-	//Serial.printf("KalmanParameter.varZMeas = %f\r\n", contextPtr->kalman.varZMeas);
-	//Serial.printf("KalmanParameter.varZAccel = %f\r\n", contextPtr->kalman.varZAccel);
-	//Serial.printf("KalmanParameter.varAccelBias = %f\r\n", contextPtr->kalman.varAccelBias);
+	//LOGv("KalmanParameter.varZMeas = %f", contextPtr->kalman.varZMeas);
+	//LOGv("KalmanParameter.varZAccel = %f", contextPtr->kalman.varZAccel);
+	//LOGv("KalmanParameter.varAccelBias = %f", contextPtr->kalman.varAccelBias);
 
-	Serial.printf("GliderInfo.type = %d\r\n", contextPtr->gliderInfo.type);
-	Serial.printf("GliderInfo.manufacture = %s\r\n", contextPtr->gliderInfo.manufacture);
-	Serial.printf("GliderInfo.model = %s\r\n", contextPtr->gliderInfo.model);
+	LOGv("GliderInfo.type = %d", contextPtr->gliderInfo.type);
+	LOGv("GliderInfo.manufacture = %s", contextPtr->gliderInfo.manufacture);
+	LOGv("GliderInfo.model = %s", contextPtr->gliderInfo.model);
 
-	Serial.printf("IGCLogger.enable = %d\r\n", contextPtr->logger.enable);
-	Serial.printf("IGCLogger.takeoffSpeed = %d\r\n", contextPtr->logger.takeoffSpeed);
-	Serial.printf("IGCLogger.landingSpeed = %d\r\n", contextPtr->logger.landingSpeed);
-	Serial.printf("IGCLogger.landingTimeout = %d\r\n", contextPtr->logger.landingTimeout);
-	Serial.printf("IGCLogger.loggingInterval = %d\r\n", contextPtr->logger.loggingInterval);
-	Serial.printf("IGCLogger.pilot = %s\r\n", contextPtr->logger.pilot);
+	LOGv("IGCLogger.enable = %d", contextPtr->logger.enable);
+	LOGv("IGCLogger.takeoffSpeed = %d", contextPtr->logger.takeoffSpeed);
+	LOGv("IGCLogger.landingSpeed = %d", contextPtr->logger.landingSpeed);
+	LOGv("IGCLogger.landingTimeout = %d", contextPtr->logger.landingTimeout);
+	LOGv("IGCLogger.loggingInterval = %d", contextPtr->logger.loggingInterval);
+	LOGv("IGCLogger.pilot = %s", contextPtr->logger.pilot);
 }

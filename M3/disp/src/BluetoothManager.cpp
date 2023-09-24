@@ -35,6 +35,9 @@ int BluetoothManager::begin(uint8_t mode, const char* deviceName)
 
 void BluetoothManager::end()
 {
+    #ifdef ARDUINO
+    bleDevice.end();
+    #endif
 }
 
 void BluetoothManager::update(VarioSentence& varioNmea, NmeaParser& nmeaParser)

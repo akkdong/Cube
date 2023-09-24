@@ -134,7 +134,7 @@ void MainWindow::onActive()
     m_refreshCount = -1;
     m_lastKey = 0;
 
-    changePage(1);
+    changePage(0);
 
     #define MBOX_WIDTH      420
     #define MBOX_HEIGHT     80

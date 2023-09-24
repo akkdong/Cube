@@ -25,6 +25,120 @@
 ////////////////////////////////////////////////////////////////////////////////////////////
 //
 
+class LogFinder
+{
+public:
+    LogFinder(const char* rootDir) {
+    }
+    LogFinder(const LogFinder& finder) {
+        LOGe("!!!!!!NO!!!!!!!");
+    }
+    ~LogFinder() {
+        close();
+    }
+
+
+    bool open() {
+        //
+        close();
+
+        //
+        dir = SD.open("/TrackLogs");
+        if (!dir.isDirectory())
+            return false;
+
+        data = "[";
+        count = 0;
+        eof = false;
+
+        return true;
+    }
+
+    void close() {
+        file.close();
+        dir.close();
+    }
+
+    int read(uint8_t *buf, size_t maxLen) {
+        if (!eof)
+            next();
+
+        if (data.length() == 0)
+            return 0;
+
+        size_t size = data.length();
+        if (size > maxLen)
+            size = maxLen;
+        memcpy((void *)buf, data.c_str(), size);
+        data = data.substring(size, -1);
+
+        return size;
+    }
+
+    void next() {
+        // find next valid file
+        file = dir.openNextFile();
+        while (file)
+        {
+            if (!file.isDirectory() && file.size() > 0) {
+
+                String name(file.name());
+                if (name.endsWith(".igc"))
+                    break;
+            }
+
+            file = dir.openNextFile();
+        }
+
+        if (file) {
+            if (count > 0)
+                data += ",";
+                
+            data += "{\"name\":\"";
+            data += file.name();
+            data += "\",\"size\":";
+            data += file.size();
+            data += ",\"date\":\"";
+            data += getDateString(file.getLastWrite());
+            data += "\"}";
+            LOGv("Find: %s", file.name());
+
+            ++count;
+        } else {
+            data += "]";
+            eof = true;
+        }
+    }
+
+    String getDateString(time_t t)
+    {
+        struct tm * _tm;
+        _tm = gmtime(&t);
+
+        char str[32]; // YYYY-MM-DD hh:mm:ssZ
+        String date;
+        
+        sprintf(str, "%d-%d-%d %d:%d:%dZ", 
+            _tm->tm_year + 1900, _tm->tm_mon + 1, _tm->tm_mday,
+            _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
+
+        return String(str);
+    }    
+
+    File dir, file;
+    String data;
+    int count;
+    bool eof;
+};
+
+
+LogFinder _lf("/TrackLogs");
+
+
+
+////////////////////////////////////////////////////////////////////////////////////////////
+//
+
 CaptivePortal::CaptivePortal()
     : portalState(PORTAL_READY)
     , apSSID("CaptivePortal")
@@ -111,7 +225,7 @@ void CaptivePortal::starSoftAP(const char *ssid, const char *pass, const IPAddre
 
 	// start AP with given ssid, password, channel
 	ret = WiFi.softAP(ssid, pass && pass[0] ? pass : NULL, WIFI_CHANNEL);
-	LOGv("WiFi.softAP() => %d, %s", ret, WiFi.softAPIP().toString().c_str());
+	LOGv("WiFi.softAP(%s, %s) => %d, %s", ssid, pass && pass[0] ? pass : "", ret, WiFi.softAPIP().toString().c_str());
 
 	// Disable AMPDU RX on the ESP32 WiFi to fix a bug on Android
 	/*
@@ -166,7 +280,12 @@ void CaptivePortal::startAsyncWebServer(const IPAddress &ip)
 	webServer.on("^\\/TrackLogs\\/([a-zA-Z0-9\\-_.]+)$", WebRequestMethod::HTTP_GET, std::bind(&CaptivePortal::onDownloadTrackLog, this, std::placeholders::_1));
 	webServer.on("^\\/TrackLogs\\/([a-zA-Z0-9\\-_.]+)$", WebRequestMethod::HTTP_DELETE, std::bind(&CaptivePortal::onDeleteTrackLog, this, std::placeholders::_1));
     // Poral default request handler
+    #if SERVING_STATIC_FILES
+    webServer.serveStatic("/", SPIFFS, "/");
+    webServer.onNotFound([](AsyncWebServerRequest *request) { request->send(404, "text/plain", "Not found"); });
+    #else
 	webServer.onNotFound(std::bind(&CaptivePortal::onRequest, this, std::placeholders::_1));
+    #endif
 
 	//
 	webServer.begin();
@@ -177,7 +296,7 @@ void CaptivePortal::startAsyncWebServer(const IPAddress &ip)
 void CaptivePortal::onUpdateRequest(AsyncWebServerRequest *request)
 {
     String target = "/" + request->pathArg(0);
-    LOGv("Update target: %s", target.c_str());
+    LOGv("onUpdateRequest: %s", target.c_str());
     
     if (!SPIFFS.exists(target))
     {
@@ -253,117 +372,16 @@ void CaptivePortal::onUpdateRequest(AsyncWebServerRequest *request)
     }
 }
 
-class LogFinder
-{
-public:
-    LogFinder(const char* rootDir) {
-    }
-    LogFinder(const LogFinder& finder) {
-        LOGe("!!!!!!NO!!!!!!!");
-    }
-    ~LogFinder() {
-        close();
-    }
-
-
-    bool open() {
-        dir = SD.open("/TrackLogs");
-        if (!dir.isDirectory())
-            return false;
-
-        data = "[";
-        count = 0;
-        eof = false;
-
-        return true;
-    }
-
-    void close() {
-        if (file.available())
-            file.close();
-        if (dir.available())
-            dir.close();
-    }
-
-    int read(uint8_t *buf, size_t maxLen) {
-        if (!eof)
-            next();
-
-        if (data.length() == 0)
-            return 0;
-
-        size_t size = data.length();
-        if (size > maxLen)
-            size = maxLen;
-        memcpy((void *)buf, data.c_str(), size);
-        data.substring(size, -1);
-
-        return size;
-    }
-
-    void next() {
-        // find next valid file
-        file = dir.openNextFile();
-        while (file)
-        {
-            if (!file.isDirectory() && file.size() > 0) {
-
-                String name(file.name());
-                if (name.endsWith(".igc"))
-                    break;
-            }
-
-            file = dir.openNextFile();
-        }
-
-        if (file) {
-            if (count > 0)
-                data += ",";
-                
-            data += "{\"name\":\"";
-            data += file.name();
-            data += "\",\"size\":";
-            data += file.size();
-            data += ",\"date\":\"";
-            data += getDateString(file.getLastWrite());
-            data += "\"}";
-            LOGv("Find: %s", file.name());
-
-            ++count;
-        } else {
-            data += "]";
-            eof = true;
-        }
-    }
-
-    String getDateString(time_t t)
-    {
-        struct tm * _tm;
-        _tm = gmtime(&t);
-
-        char str[32]; // YYYY-MM-DD hh:mm:ssZ
-        String date;
-        
-        sprintf(str, "%d-%d-%d %d:%d:%dZ", 
-            _tm->tm_year + 1900, _tm->tm_mon + 1, _tm->tm_mday,
-            _tm->tm_hour, _tm->tm_min, _tm->tm_sec);
-
-        return String(str);
-    }    
-
-    File dir, file;
-    String data;
-    int count;
-    bool eof;
-};
-
 void CaptivePortal::onRequestTrackLogs(AsyncWebServerRequest *request)
 {
-    LogFinder lf("/TrackLogs");
-    if (lf.open())
+    if (_lf.open())
     {
-        AsyncWebServerResponse *response = request->beginChunkedResponse("application/json", [&lf](uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
-            return lf.read(buffer, maxLen);
+        AsyncWebServerResponse *response = request->beginChunkedResponse("application/json", [] (uint8_t *buffer, size_t maxLen, size_t index) -> size_t {
+            int size = _lf.read(buffer, maxLen);
+            if (size == 0)
+                _lf.close();
+
+            return size;
         });
 
         request->send(response);
@@ -372,61 +390,12 @@ void CaptivePortal::onRequestTrackLogs(AsyncWebServerRequest *request)
     {
         request->send(500, "No TrackLogs directory");
     }
-
-    #if 0
-    request->setContentLength(CONTENT_LENGTH_UNKNOWN);
-    request->send(200, "application/json", "[");
-
-    File dir = SD.open("/TrackLogs");
-    if (dir.isDirectory())
-    {
-        File file = dir.openNextFile();
-        int count = 0;
-
-        LOGv("List up TrakcLogs");
-        while (file)
-        {
-            if (! file.isDirectory() && file.size() > 0)
-            {
-                String name(file.name());
-
-                if (name.endsWith(".igc"))
-                {
-                    // { "name": "xxx.igc", "size": nnn, "date": "YYYY-MM-DD hh:mm:ssZ" }
-                    String igc;
-
-                    // 
-                    if (count > 0)
-                        igc += ",";
-                        
-                    igc += "{\"name\":\"";
-                    igc += name;
-                    igc += "\",\"size\":";
-                    igc += file.size();
-                    igc += ",\"date\":\"";
-                    igc += getDateString(file.getLastWrite());
-                    igc += "\"}";
-
-                    request->sendContent(igc);
-                    LOGv(igc.c_str());
-
-                    count += 1;
-                }
-            }
-
-            file = dir.openNextFile();
-            }
-        }
-
-    request->sendContent("]");
-    request->sendContent("");
-    #endif
 }
 
 void CaptivePortal::onDownloadTrackLog(AsyncWebServerRequest *request)
 {
     String target = "/TrackLogs/" + request->pathArg(0);
-    LOGv("handleFileDowload: %s", target.c_str());
+    LOGv("onDownloadTrackLog: %s", target.c_str());
 
     this->handleFileRead(request, SD, target);
 }
@@ -434,7 +403,7 @@ void CaptivePortal::onDownloadTrackLog(AsyncWebServerRequest *request)
 void CaptivePortal::onDeleteTrackLog(AsyncWebServerRequest *request)
 {
     String target = "/TrackLogs/" + request->pathArg(0);
-    LOGv("handleFileDelete: %s", target.c_str());
+    LOGv("onDeleteTrackLog: %s", target.c_str());
 
     if (SD.remove(target.c_str()))
     {
@@ -459,36 +428,17 @@ bool CaptivePortal::handleFileRead(AsyncWebServerRequest *request, fs::FS & fs, 
     if (path.endsWith("/"))
         path += "index.html";
 
-    String path_gz = path + ".gz";
-
-    //if (checkExist(fs, path_gz) || checkExist(fs, path))
-    if (fs.exists(path_gz) || fs.exists(path))
+    if (fs.exists(path))
     {
-        //if (checkExist(fs, path_gz))
-        if (fs.exists(path_gz))
-            path = path + ".gz";
-
         String contentType = getContentType(path);
-        LOGd("  Open: %s(%s)", path.c_str(), contentType.c_str());
-        File file = fs.open(path, "r");
-        if (file)
-        {
-            request->send(file, path, contentType);
-            file.close();
-
-            return true;
-        }
-        
-        request->send(400, "text/plain", "File Open Failed");
-        LOGw("  File open failed!: %s", path.c_str());    
+        request->send(fs, path, contentType);
     }
     else
     {
-        request->send(404, "text/plain", "File Not Found");
-        LOGv("  File not exist! : %s", path.c_str());
+        request->send(404, "text/plain", "Not found");
     }
 
-    return false;
+    return true;
 }
 
 
@@ -710,7 +660,6 @@ bool CaptivePortal::handleFileRead(fs::FS & fs, String path)
             path = path + ".gz";
 
         String contentType = getContentType(path);
-        LOGd("  contentType: %s", contentType.c_str());
         LOGd("  Open: %s(%s)", path.c_str(), contentType.c_str());
         File file = fs.open(path, "r");
         if (file)
@@ -840,7 +789,7 @@ const char * CaptivePortal::getContentType(String filename)
         return "text/css";
 
     if (filename.endsWith(".js"))
-        return "application/javascript";
+        return "text/javascript";
 
     if (filename.endsWith(".json"))
         return "application/json";

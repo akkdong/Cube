@@ -200,8 +200,8 @@ void Application::begin()
     //
     msgQueue = xQueueCreate(10, sizeof(Message));
 
-    xTaskCreatePinnedToCore(ScreenTask, "SCR", 4096, this, 1, &taskScreen, 0);
-    xTaskCreatePinnedToCore(DeviceTask, "DEV", 2048, this, 1, &taskDevice, 0); 
+    xTaskCreatePinnedToCore(ScreenTask, "SCR", 4096, this, 4, &taskScreen, 0);
+    xTaskCreatePinnedToCore(DeviceTask, "DEV", 2048, this, 4, &taskDevice, 0); 
 
 
     //
@@ -250,6 +250,9 @@ void Application::update()
 
     if (wifiEnabled)
     {
+        if (portalPtr)
+            portalPtr->update();
+
         if (!portalPtr)
         {
             portalPtr.reset(new CaptivePortal);
@@ -259,17 +262,24 @@ void Application::update()
             }
             else
             {
-                portalPtr->setSSID("Cube-M3");
-                portalPtr->setPassword("1234567890");
+                if (contextPtr->deviceState.statusBT > 0)
+                {
+                    LOGv("Stop BT if you want to provide secure WiFi servers.");
+
+                    // stop BT
+                    BT.end();
+                    // change BT status
+                    contextPtr->deviceState.statusBT = 0;
+                }
+
+                LOGv("Set Portal: SSID(%s), Password(%s)", contextPtr->deviceDefault.wifiSSID, contextPtr->deviceDefault.wifiPassword);
+                portalPtr->setSSID(contextPtr->deviceDefault.wifiSSID[0] ? contextPtr->deviceDefault.wifiSSID : "Cube-M3");
+                portalPtr->setPassword(contextPtr->deviceDefault.wifiPassword);
                 portalPtr->setAddress(IPAddress(172, 217, 28, 1));
                 portalPtr->start();
-
                 LOGi("Captive-portal started!");
             }
         }
-
-        if (portalPtr)
-            portalPtr->update();
     }
     else
     {
@@ -279,6 +289,15 @@ void Application::update()
             portalPtr->stop();
             // release memory
             portalPtr.reset();
+
+            // chceck BT (was auto-enable?)
+            if (contextPtr->deviceDefault.enableBT)
+            {
+                LOGv("If autorun flag was turned on, restart BT now!");
+
+                BT.begin(0x03, contextPtr->deviceDefault.btName);
+                contextPtr->deviceState.statusBT = 1;
+            }
 
             LOGi("Captive-portal stopped!");
         }
@@ -294,7 +313,7 @@ void Application::update()
         int type = NMEA.update(ch);
 
         //
-        if (type == 1) // parsed GPS sentence
+        if (type == 1 && !portalPtr) // parsed GPS sentence
         {
             bool fixed = NMEA.isFixed();
             if (fixed) // is fixed?
@@ -384,7 +403,7 @@ void Application::update()
                 sendMessage(MSG_GPS_FIXED, fixed);
             }
         }
-        else if (type == 2) // parsed VARIO sentence
+        else if (type == 2 && !portalPtr) // parsed VARIO sentence
         {
             LOGd("VARIO: %f %f %f %f", NMEA.getPressure(), NMEA.getTemperature(), NMEA.getAltitudeBaro(), NMEA.getVerticalSpeed());
 
@@ -463,46 +482,52 @@ void Application::update()
         }
     }
 
-    // update BT state
-    if (contextPtr->deviceState.statusBT > 0)
+    if (!portalPtr)
     {
-        bool connected = BT.isConnected();
-        if ((connected && contextPtr->deviceState.statusBT < 2) || (!connected && contextPtr->deviceState.statusBT > 1))
-            contextPtr->deviceState.statusBT = connected ? 2 : 1;
-    }
+        // update BT state
+        if (contextPtr->deviceState.statusBT > 0)
+        {
+            bool connected = BT.isConnected();
+            if ((connected && contextPtr->deviceState.statusBT < 2) || (!connected && contextPtr->deviceState.statusBT > 1))
+                contextPtr->deviceState.statusBT = connected ? 2 : 1;
 
-    // flush bt buffer
-    BT.update(varioNmea, NMEA);
+            // flush bt buffer
+            if (connected)
+                BT.update(varioNmea, NMEA);
+        }
 
-    // flush igc-sentence
-    #if 0
-    if (IGC.isLogging() && igcSentence.available()) 
-    {
-        //float altitude = NMEA.getAltitude();
-        //IGC.updateBaroAltitude(altitude);
+        // flush igc-sentence
+        #if 0
+        if (IGC.isLogging() && igcSentence.available()) 
+        {
+            //float altitude = NMEA.getAltitude();
+            //IGC.updateBaroAltitude(altitude);
 
-        #if 0 // write character by character
-        while (igcSentence.available())
-            IGC.write(igcSentence.read());
-        #else // write buffer
-        this->contextLock.enter();
-        IGC.write(igcSentence.getData(), igcSentence.getDataLen());
-        this->contextLock.leave();
-        igcSentence.end();
+            #if 0 // write character by character
+            while (igcSentence.available())
+                IGC.write(igcSentence.read());
+            #else // write buffer
+            this->contextLock.enter();
+            IGC.write(igcSentence.getData(), igcSentence.getDataLen());
+            this->contextLock.leave();
+            igcSentence.end();
+            #endif
+        }
+        #else
+        if (IGC.isLogging())
+        {
+            // flush buffer
+            this->contextLock.enter();
+            IGC.flush();
+            this->contextLock.leave();
+        }
         #endif
     }
-    #else
-    if (IGC.isLogging())
+    else
     {
-        // flush buffer
-        this->contextLock.enter();
-        IGC.flush();
-        this->contextLock.leave();
+        // delay(1): switch task
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
-    #endif
-
-    // delay(1): switch task
-    //vTaskDelay(pdMS_TO_TICKS(1));
 }
 
 void Application::startVario()
@@ -533,7 +558,7 @@ void Application::startFlight()
     }
 
     // start bt-logging
-    if (contextPtr->deviceDefault.enableNmeaLogging)
+    if (contextPtr->deviceState.statusBT > 1 && contextPtr->deviceDefault.enableNmeaLogging)
         BT.startLogging(contextPtr->varioState.timeCurrent);
 
     // start igc-logging & update device-state

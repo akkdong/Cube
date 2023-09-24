@@ -167,8 +167,12 @@ void TopMenuWindow::onTouchUp(int x, int y)
     int index = hitTest(x, y);
     if (index >= 0 && m_active == index)
     {
+        #if 0
         if (millis() - m_lastTouch > 2000)
             exec(m_active);
+        #else
+        exec(m_active);
+        #endif
     }
 }
 
@@ -183,11 +187,8 @@ void TopMenuWindow::onKeyLongPressed(uint32_t key)
     {
     case EXT_KEY_LEFT:
     case EXT_KEY_RIGHT:
-        // nop
-        break;
     case EXT_KEY_UP:
-        if (m_active >= 0)
-            exec(m_active);
+        // nop
         break;
     case EXT_KEY_DOWN:
         Application::getApp()->sendMessage(MSG_FALLBACK);
@@ -215,6 +216,9 @@ void TopMenuWindow::onKeyReleased(uint32_t key)
             Application::getApp()->sendMessage(MSG_INVALIDATE);
         break;
     case EXT_KEY_UP:
+        if (m_active >= 0)
+            exec(m_active);
+        break;
     case EXT_KEY_DOWN:
         // nop
         break;

@@ -34,6 +34,9 @@ public:
 
 public:
   //
+  void startWebServer(const IPAddress &ip) { startAsyncWebServer(ip); }
+
+  //
   int start();
   void stop();
 
