@@ -170,12 +170,21 @@ void DeviceRepository::reset()
     contextPtr->deviceDefault.timezone = VARIOMETER_TIME_ZONE; 			// GMT+9	
 	contextPtr->deviceDefault.timezoneOffset = (time_t)(VARIOMETER_TIME_ZONE * 3600.0f);
 
-	strcpy(contextPtr->deviceDefault.btName, "M3-001");
-	strcpy(contextPtr->deviceDefault.wifiSSID, "");
-	strcpy(contextPtr->deviceDefault.wifiPassword, "");
+	strcpy(contextPtr->deviceDefault.btName, "CubeM3-001");
+	strcpy(contextPtr->deviceDefault.wifiSSID, "CubeM3");
+	strcpy(contextPtr->deviceDefault.wifiPassword, "1234567890");
 
 	//
+	contextPtr->deviceState.batteryPower = 0;
+	contextPtr->deviceState.temperature = 0;
+	contextPtr->deviceState.humidity = 0;
+
+	contextPtr->deviceState.statusGPS = 0;
 	contextPtr->deviceState.statusBT = 0; // contextPtr->deviceDefault.enableBT ? 1 : 0;
+	contextPtr->deviceState.statusSDCard = 0;
+
+	contextPtr->deviceState.ipAddr[0] = '\0';
+	contextPtr->deviceState.wifiState = 0;
 
 	//
 	contextPtr->flightState.bearingTakeoff = -1;

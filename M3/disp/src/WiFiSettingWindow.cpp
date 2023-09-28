@@ -25,6 +25,8 @@
 
 WiFiSettingWindow::WiFiSettingWindow(M5EPD_Canvas *pRefCanvas)
     : Window(pRefCanvas, 0, 0, LCD_WIDTH, LCD_HEIGHT)
+    , btnReboot(pRefCanvas, 0, 0, 0, 0)
+    , m_lastTouch(-1)
 {
 }
 
@@ -38,8 +40,16 @@ void WiFiSettingWindow::onActive()
     // start wifi-task
     //xTaskCreatePinnedToCore(WiFiTask, "WiFi", 8 * 1024, this, 1, &taskWiFi, 0);
 
+    btnReboot.setStyle(1);
+    btnReboot.setImage(ImageResource_btn_reboot_64x64, 64, 64);
+    btnReboot.setLabel("Reboot");
+    btnReboot.setTextSize(32);
+    btnReboot.move(760, 360, 160, 140);
+    btnReboot.show(true);
+
     // refresh window
     this->draw();
+    this->setTimer(1, 1000);
 
     // start WIFI(captive portal)
     LOGv("Start WiFi: invoke captive-portal");
@@ -57,39 +67,115 @@ void WiFiSettingWindow::onDraw()
     // erase bkgnd
     m_pRefCanvas->fillRect(0, 0, LCD_WIDTH, LCD_HEIGHT, M5EPD_Canvas::G0);
 
-    // draw state of each step
-    //
-    // Step0
-    // Step1
-    // Step2
-    // Step3
-
-    m_pRefCanvas->setTextDatum(TL_DATUM);
+    // draw wifi logo
+    int x = 102, y = 62;
+    m_pRefCanvas->pushImage(x - 96 / 2, y - 96 / 2, 96, 96, ImageResource_wifi_logo_m_96x96);
+    // draw "Instruction" string
+    m_pRefCanvas->setTextDatum(CL_DATUM);
     m_pRefCanvas->setTextSize(48);
     m_pRefCanvas->setTextColor(M5EPD_Canvas::G15);
-    m_pRefCanvas->drawString("WiFi Setting", 100, 40);
+    m_pRefCanvas->drawString("Instruction", x + 96 / 2 + 8, y);
+
+    // draw instruction
+    DeviceContext *contextPtr = DeviceRepository::instance().getContext();
+    char sz[128];
+
+    x = 82; y = 146;
+    m_pRefCanvas->setTextSize(32);
+    m_pRefCanvas->drawString("1. Connect to WiFi", x, y);
+    x = 110; y = 196;
+    sprintf(sz, "SSID: %s, Password: %s", contextPtr->deviceDefault.wifiSSID, contextPtr->deviceDefault.wifiPassword[0] ? contextPtr->deviceDefault.wifiPassword : "");
+    m_pRefCanvas->drawString(sz, x, y);
+
+    x = 82; y = 280;
+    m_pRefCanvas->drawString("2. Open Configuration Page", x, y);
+    x = 110; y = 330;
+    if (contextPtr->deviceState.ipAddr[0])
+        sprintf(sz, "http://%s/", contextPtr->deviceState.ipAddr);
+    else
+        strcpy(sz, "IP: <un-assigned>");
+    m_pRefCanvas->drawString(sz, x, y);
+
+    // draw wifi state
+    x = 66; y = 468;
+    sprintf(sz, "WiFi State: %s", getWfiFiState(contextPtr));
+    m_pRefCanvas->setTextSize(48);
+    m_pRefCanvas->drawString(sz, x, y);
+    m_pRefCanvas->drawFastHLine(64, 498, 696 - 64, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawFastHLine(64, 499, 696 - 64, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawFastHLine(64, 500, 696 - 64, M5EPD_Canvas::G15);
+
+    // draw animation
+    x = 700; y = 24;
+    m_pRefCanvas->pushImage(x, y, 96, 96, ImageResource_mobile_m_96x96);
+    x = 840;
+    m_pRefCanvas->pushImage(x, y, 96, 96, ImageResource_laptop_m_96x96);
+    x = 780; y = 28;
+    switch (aniIndex)
+    {
+    case 1:
+        m_pRefCanvas->pushImage(x, y, 42, 74, ImageResource_radio_strength_1_42x74);
+        break;
+    case 2:
+        m_pRefCanvas->pushImage(x, y, 42, 74, ImageResource_radio_strength_2_42x74);
+        break;
+    case 3:
+        m_pRefCanvas->pushImage(x, y, 42, 74, ImageResource_radio_strength_3_42x74);
+        break;
+    }
+
+    // draw buttin
+    btnReboot.draw();
 
     // update EPD
-    m_pRefCanvas->pushCanvas(0, 0, UPDATE_MODE_GC16);
+    m_pRefCanvas->pushCanvas(0, 0, ((++m_refreshCount) % 60) == 0 ? UPDATE_MODE_GC16 : UPDATE_MODE_DU);
+}
+
+const char * WiFiSettingWindow::getWfiFiState(DeviceContext *contextPtr)
+{
+    //arduino_event_id_t event = static_cast<arduino_event_id_t>(contextPtr->deviceState.wifiState);
+    //return WiFi.eventName(event);
+    switch(contextPtr->deviceState.wifiState)
+    {
+    case 1:
+        return "AP Started";
+    case 2:
+        return "Connected";
+    case 0:
+    default:
+        return "Ready";
+    }
 }
 
 void WiFiSettingWindow::onMessage(uint32_t code, uint32_t data)
 {
     switch (code)
     {
-    case MSG_WIFI_START:
-        break;
-    case MSG_WIFI_STOP:
+    case MSG_WIFI_STATE_CHANGED:
+    case MSG_INVALIDATE:
+        this->draw();
         break;
     }
 }
 
 void WiFiSettingWindow::onTimer(uint32_t id)
 {
+    this->aniIndex = (this->aniIndex + 1) % 4;
+    this->draw();
 }
 
 void WiFiSettingWindow::onTouchDown(int x, int y)
 {
+    int index = hitTest(x, y);
+    LOGv("WiFiSettingWindow hit-test: (%d, %d) -> %d", x, y, index);
+
+    if (index == 0)
+    {
+        LOGv("Touch reboot button");
+        btnReboot.setActive(true);
+        Application::getApp()->sendMessage(MSG_INVALIDATE);
+        m_lastTouch = 0;
+    }
 }
 
 void WiFiSettingWindow::onTouchMove(int x, int y)
@@ -98,6 +184,13 @@ void WiFiSettingWindow::onTouchMove(int x, int y)
 
 void WiFiSettingWindow::onTouchUp(int x, int y)
 {
+    int index = hitTest(x, y);
+    if (index == m_lastTouch)
+        rebootDevice();
+
+    btnReboot.setActive(false);
+    Application::getApp()->sendMessage(MSG_INVALIDATE);
+    m_lastTouch = -1;
 }
 
 void WiFiSettingWindow::onKeyPressed(uint32_t key)
@@ -111,17 +204,14 @@ void WiFiSettingWindow::onKeyLongPressed(uint32_t key)
     {
     case EXT_KEY_LEFT:
     case EXT_KEY_RIGHT:
-    case EXT_KEY_UP:
         break;
+    case EXT_KEY_UP:
     case EXT_KEY_DOWN:
         #if USE_FALLBACK
         Application::getApp()->sendMessage(MSG_FALLBACK);
         #else
         // restart device
-        LOGi("Restart device.");
-        delay(100);
-
-        ESP.restart();
+        rebootDevice();
         #endif
         break;
     }
@@ -282,4 +372,20 @@ void WiFiSettingWindow::WiFiTask()
     }
     #endif
     #endif
+}
+
+int WiFiSettingWindow::hitTest(int x, int y)
+{
+    if (btnReboot.pointInWidget(x, y))
+        return 0;
+
+    return -1;
+}
+
+void WiFiSettingWindow::rebootDevice()
+{
+    LOGi("Restart device!");
+    
+    delay(100);
+    ESP.restart();    
 }

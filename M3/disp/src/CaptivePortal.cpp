@@ -10,6 +10,8 @@
 #include <uri/UriBraces.h>
 #include <uri/UriRegex.h>
 
+#include "DeviceRepository.h"
+#include "Application.h"
 #include "logger.h"
 
 
@@ -184,6 +186,10 @@ int CaptivePortal::start()
     #else
 	startWebServer(apIP);
     #endif
+
+    DeviceContext *contextPtr = DeviceRepository::instance().getContext();
+    strcpy(contextPtr->deviceState.ipAddr, apIP.toString().c_str());
+    Application::getApp()->sendMessage(MSG_WIFI_STATE_CHANGED);
 
     portalState = PORTAL_WAIT_CONNECTION;
 	return 0;
@@ -779,6 +785,11 @@ bool CaptivePortal::handleFileRead(fs::FS & fs, String path)
 void CaptivePortal::onWiFiEvent(WiFiEvent_t event,arduino_event_info_t info)
 {
     LOGv("[WiFi] onEvent: %s", WiFi.eventName(event));
+
+    DeviceContext *contextPtr = DeviceRepository::instance().getContext();
+    //contextPtr->deviceState.wifiState = static_cast<int>(event);
+    //Application::getApp()->sendMessage(MSG_WIFI_STATE_CHANGED);
+
     switch (event) 
     {
     case ARDUINO_EVENT_WIFI_READY:
@@ -802,18 +813,24 @@ void CaptivePortal::onWiFiEvent(WiFiEvent_t event,arduino_event_info_t info)
     case ARDUINO_EVENT_WIFI_STA_LOST_IP:
         break;
     case ARDUINO_EVENT_WIFI_AP_START:
+        contextPtr->deviceState.wifiState = 1;
+        Application::getApp()->sendMessage(MSG_WIFI_STATE_CHANGED);
         break;
     case ARDUINO_EVENT_WIFI_AP_STOP:
+        contextPtr->deviceState.wifiState = 0;
+        Application::getApp()->sendMessage(MSG_WIFI_STATE_CHANGED);
         break;
     case ARDUINO_EVENT_WIFI_AP_STACONNECTED:
+        LOGv( "[WiFi] STA Connected");
         portalState = PORTAL_CONNECTED;
+        contextPtr->deviceState.wifiState = 2;
+        Application::getApp()->sendMessage(MSG_WIFI_STATE_CHANGED);
         break;
     case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
+        LOGv( "[WiFi] STA Disconnected");
         portalState = PORTAL_WAIT_CONNECTION;
-        // reason ??
-        //  WIFI_REASON_CONNECTION_FAIL
-        //  WIFI_REASON_AUTH_FAIL
-        //  WIFI_REASON_AUTH_EXPIRE
+        contextPtr->deviceState.wifiState = 1;
+        Application::getApp()->sendMessage(MSG_WIFI_STATE_CHANGED);
         break;
     case ARDUINO_EVENT_WIFI_AP_STAIPASSIGNED:
         LOGv( "[WiFi] STA IP: %s", IPAddress(info.wifi_ap_staipassigned.ip.addr).toString().c_str());

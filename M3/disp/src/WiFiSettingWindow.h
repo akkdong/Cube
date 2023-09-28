@@ -7,6 +7,8 @@
 #include <stdint.h>
 #include "Window.h"
 
+class DeviceContext;
+
 
 /////////////////////////////////////////////////////////////////////////////////
 // class WiFiSettingWindow
@@ -40,7 +42,16 @@ protected:
     void WiFiTask();
 
 
+private:
+    const char *getWfiFiState(DeviceContext *contextPtr);
+    int hitTest(int x, int y);
+    void rebootDevice();
+
 protected:
+    int aniIndex = 3;
+    ButtonClass btnReboot;
+    uint32_t m_lastTouch;
+
     TaskHandle_t taskWiFi;
 };
 

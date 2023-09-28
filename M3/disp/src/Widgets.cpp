@@ -1122,6 +1122,8 @@ ButtonClass::ButtonClass(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
 void ButtonClass::onDraw()
 {
     m_pRefCanvas->fillRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G0);
+    if (m_style)
+        m_pRefCanvas->drawRect(m_x, m_y, m_w, m_h, M5EPD_Canvas::G15);
 
     int cx = m_x + m_w / 2;
     int cy = m_y + m_h / 2;

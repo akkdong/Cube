@@ -25,6 +25,7 @@ enum MessageCode {
 
     // WiFi message
     MSG_WIFI_START,
+    MSG_WIFI_STATE_CHANGED,
     MSG_WIFI_STOP,
 
     // common message: key & touch
