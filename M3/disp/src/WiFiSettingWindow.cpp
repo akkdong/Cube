@@ -138,12 +138,12 @@ const char * WiFiSettingWindow::getWfiFiState(DeviceContext *contextPtr)
     switch(contextPtr->deviceState.wifiState)
     {
     case 1:
-        return "AP Started";
+        return "AP Ready";
     case 2:
         return "Connected";
     case 0:
     default:
-        return "Ready";
+        return "WiFi Off";
     }
 }
 
