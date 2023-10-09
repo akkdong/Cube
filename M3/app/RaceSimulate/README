@@ -1,0 +1,54 @@
+waypoint
+- version
+- name
+- latitude
+- longitude
+- altitude
+- descritpion
+
+{
+  version: 1,
+  unit: ["feet", "meter"],
+  points: [
+    {
+      name: "",
+      latitude: x.y,
+      longitude: x.y,
+      altitude: nnn,
+      description: ""
+    }
+  ]
+}
+
+
+
+task
+- version
+- points[]
+  - name
+  - latitude
+  - longitute
+  - type [CYLINDER, ??]
+  - radius
+- race
+  - SSS
+  - ESS
+  - gate { open, close }
+  - earth-model  [WGS84, FAI-SPHERE]
+
+
+{
+  version: 1,
+  points: [
+
+  ],
+  race: {
+    SSS: "$name" or index,
+    ESS: "$name" or index,
+    gate: {
+      open: "$time",
+      close: "$time"
+    },
+    eatchModel: ["WGS84", "SPHERE"]
+  }
+}

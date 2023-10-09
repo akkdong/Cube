@@ -1,0 +1,6 @@
+*.user
+*.aps
+
+/.vs
+/build
+
