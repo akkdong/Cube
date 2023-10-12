@@ -4,7 +4,11 @@
 #ifndef __XC_ROUTE_H__
 #define __XC_ROUTE_H__
 
+#include <iostream>
+
 #include "WayPoints.h"
+#include "ArduinoJson.h"
+
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -44,8 +48,8 @@ class XcRoute
 public:
     XcRoute();
 
-	void addTurnPoint(XcTurnPointPtr pointPtr);
-	void reset();
+	void addTurnPoint(XcTurnPointPtr pointPtr) { points.push_back(pointPtr); }
+	void reset() { points.clear(); }
 
 
 protected:
@@ -60,7 +64,7 @@ protected:
 class XcTask
 {
 public:
-    XcTask();
+	XcTask();
 
 	enum TaskType {
 		CLASSIC,
@@ -72,12 +76,31 @@ public:
 		WGS84,
 	};
 
+	//
+	void setTaskType(TaskType type) { taskType = type; }
+	void setGateOpen(time_t t) { gateOpen = t; }
+	void setDeadLine(time_t t) { deadLine = t; }
+	void setEarthModel(EarthModel model) { earthModel = model; }
+
+	void addTurnPoint(XcTurnPointPtr pointPtr) { route.addTurnPoint(pointPtr); }
+	void resetTurnPoint() { route.reset(); }
+
+	//
+	bool load(std::istream &in);
+	/*
+	bool load(fs::File& f);
+	bool load(Stream &s);
+	*/
+
+protected:
+	void set(JsonDocument &doc);
+
 protected:
 	int	version;
 	TaskType taskType;
-	time_t	gateOpen;
-	time_t	deadLine;
-	EarthModel	earthModel;
+	time_t gateOpen;
+	time_t deadLine;
+	EarthModel earthModel;
 	XcRoute route;
 };
 

@@ -1,7 +1,6 @@
 // WayPoints.cpp
 //
 
-#include "pch.h"
 #include "WayPoints.h"
 
 
