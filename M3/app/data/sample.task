@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "taskType": "CLASSIC",
+  "turnpoints": [
+    {
+      "radius": 400,
+      "waypoint": {
+        "lon": 128.17466735839844,
+        "lat": 36.73116683959961,
+        "altSmoothed": 840,
+        "name": "M32084",
+        "description": "TAKEOFF- MUNGYEONG1"
+      },
+      "type": "TAKEOFF"
+    },
+    {
+      "radius": 1000,
+      "waypoint": {
+        "lon": 128.1441650390625,
+        "lat": 36.72050094604492,
+        "altSmoothed": 670,
+        "name": "M34067",
+        "description": "MT- BONGMYEONG"
+      },
+      "type": "SSS"
+    },
+    {
+      "radius": 1000,
+      "waypoint": {
+        "lon": 128.19883728027344,
+        "lat": 36.75633239746094,
+        "altSmoothed": 1050,
+        "name": "M23105",
+        "description": "MT- UNDAL"
+      }
+    },
+    {
+      "radius": 1000,
+      "waypoint": {
+        "lon": 128.1458282470703,
+        "lat": 36.76333236694336,
+        "altSmoothed": 600,
+        "name": "M21060",
+        "description": "MT- SIROOBONG"
+      }
+    },
+    {
+      "radius": 400,
+      "waypoint": {
+        "lon": 128.1826629638672,
+        "lat": 36.71699905395508,
+        "altSmoothed": 920,
+        "name": "M36092",
+        "description": "MT- DANSAN"
+      }
+    },
+    {
+      "radius": 400,
+      "waypoint": {
+        "lon": 128.15249633789062,
+        "lat": 36.752498626708984,
+        "altSmoothed": 210,
+        "name": "M24021",
+        "description": "SCHOOL- DANGPORI"
+      }
+    },
+    {
+      "radius": 1000,
+      "waypoint": {
+        "lon": 128.1999969482422,
+        "lat": 36.71033477783203,
+        "altSmoothed": 780,
+        "name": "M37078",
+        "description": "MT- BUGOKRI"
+      }
+    },
+    {
+      "radius": 400,
+      "waypoint": {
+        "lon": 128.16482543945312,
+        "lat": 36.74983215332031,
+        "altSmoothed": 260,
+        "name": "M26026",
+        "description": "VILLAGE- MYUNGENGYO"
+      },
+      "type": "ESS"
+    },
+    {
+      "radius": 400,
+      "waypoint": {
+        "lon": 128.1540069580078,
+        "lat": 36.73683166503906,
+        "altSmoothed": 230,
+        "name": "L28023",
+        "description": "LANDING- GOYORI"
+      }
+    }
+  ],
+  "sss": {
+    "type": "RACE",
+    "direction": "ENTER",
+    "timeGates": [
+      "03:00:00Z"
+    ]
+  },
+  "goal": {
+    "type": "CYLINDER",
+    "deadline": "14:00:00Z"
+  },
+  "earthModel": "WGS84"
+}
