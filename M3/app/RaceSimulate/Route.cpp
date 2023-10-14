@@ -38,12 +38,21 @@ XcRoute::XcRoute()
 {
 }
 
+XcTurnPointPtr XcRoute::getTurnPoint(size_t index)
+{
+	if (index < points.size())
+		return points[index];
+
+	return nullptr;
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // class XcTask
 
 XcTask::XcTask()
 {
+	reset();
 }
 
 
@@ -55,6 +64,7 @@ bool XcTask::load(std::istream &in)
 	if (err)
 		return false;
 
+	reset();
 	set(doc);
 
 	return true;
@@ -71,6 +81,17 @@ bool XcTask::load(Stream &s)
 	return false;
 }
 */
+
+void XcTask::reset()
+{
+	version = 1;
+	taskType = CLASSIC;
+	gateOpen = 0;
+	deadLine = 0;
+	earthModel = WGS84;
+
+	route.reset();
+}
 
 
 void XcTask::set(JsonDocument &doc)
@@ -131,9 +152,7 @@ void XcTask::set(JsonDocument &doc)
 	if (!version.isUnbound())
 	{
 		if (version.is<int>())
-		{
-			int v = version.as<int>();
-		}
+			this->version = version.as<int>();
 	}
 
 	if (!sss.isUnbound() && sss.is<ArduinoJson::JsonObject>())
@@ -142,7 +161,7 @@ void XcTask::set(JsonDocument &doc)
 		// direction
 		// timeGates
 		//
-		// this->setGateOpen();
+		this->setGateOpen(0);
 	}
 
 	if (!goal.isUnbound() && goal.is<ArduinoJson::JsonObject>())
@@ -150,7 +169,7 @@ void XcTask::set(JsonDocument &doc)
 		// type
 		// deadline
 		//
-		// this->setDeadLine();
+		this->setDeadLine(0);
 	}
 
 	if (!model.isUnbound())

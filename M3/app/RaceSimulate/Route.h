@@ -51,6 +51,9 @@ public:
 	void addTurnPoint(XcTurnPointPtr pointPtr) { points.push_back(pointPtr); }
 	void reset() { points.clear(); }
 
+	XcTurnPointPtr getTurnPoint(size_t index);
+	size_t getTurnPointCount() { return points.size(); }
+
 
 protected:
     std::vector<XcTurnPointPtr> points;
@@ -77,6 +80,8 @@ public:
 	};
 
 	//
+	XcRoute &getRoute() { return route; }
+
 	void setTaskType(TaskType type) { taskType = type; }
 	void setGateOpen(time_t t) { gateOpen = t; }
 	void setDeadLine(time_t t) { deadLine = t; }
@@ -91,6 +96,7 @@ public:
 	bool load(fs::File& f);
 	bool load(Stream &s);
 	*/
+	void reset();
 
 protected:
 	void set(JsonDocument &doc);
@@ -101,6 +107,7 @@ protected:
 	time_t gateOpen;
 	time_t deadLine;
 	EarthModel earthModel;
+
 	XcRoute route;
 };
 
