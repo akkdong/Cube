@@ -44,6 +44,10 @@ int CMainFrame::OnCreate(LPCREATESTRUCT lpCreateStruct)
 		TRACE0("Failed to create view window\n");
 		return -1;
 	}
+
+	//
+	SetMenu(NULL);
+
 	return 0;
 }
 

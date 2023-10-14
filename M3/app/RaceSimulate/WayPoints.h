@@ -10,35 +10,55 @@
 
 typedef std::string String;
 
+class XcRoute;
+
+///////////////////////////////////////////////////////////////////////////////
+// class XcBasePoint
+
+class XcBasePoint
+{
+	friend class XcRoute;
+
+public:
+	XcBasePoint();
+	XcBasePoint(double lat, double lon);
+
+	double getLatitude() { return this->lat; }
+	double getLongitude() { return this->lon; }
+
+	void setLatitude(double lat) { this->lat = lat; }
+	void setLongitude(double lon) { this->lon = lon; }
+
+protected:
+    double lat;
+    double lon;
+};
+
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // class XcPoint
 
-class XcPoint
+class XcPoint : public XcBasePoint
 {
 public:
-    XcPoint();
+	XcPoint();
 	XcPoint(const char *name, double lat, double lon, double alt, const char *desc = nullptr);
 
 	const char *getName() { return this->name.c_str(); }
 	const char *getDescription() { return this->description.c_str(); }
-	double getLatitude() { return this->lat; }
-	double getLongitude() { return this->lon; }
 	double getAltitude() { return this->altitude; }
 
 	void setName(const char *name);
 	void setDescription(const char *desc);
-	void setLatitude(double lat);
-	void setLongitude(double lon);
 	void setAltitude(double alt);
 
 protected:
-    String name;
-    String description;
-    double lat;
-    double lon;
-    double altitude;
+	String name;
+	String description;
+	double altitude;
 };
+
 
 
 ///////////////////////////////////////////////////////////////////////////////

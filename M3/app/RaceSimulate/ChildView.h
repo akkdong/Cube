@@ -27,14 +27,22 @@ public:
 public:
 	XcTask mTask;
 
-	double mCenterPos[2]; // drawing center lat/lon
+	XcBasePoint mCenterPos; // drawing center lat/lon
 	double mBoundary[4]; // left(W), top(N), right(E), bottom(S)
 
 	double mZoomRatio = 1.0;
 	CPoint mDrawOffset;
 
-	std::shared_ptr<XcPoint> mPilotPosPtr;
+	std::shared_ptr<XcBasePoint> mPilotPosPtr;
+	bool mPilotInCylinder;
 	size_t mStartTurnPoint;
+
+	//
+	CButton m_wndOpen;
+	CButton m_wndZoomIn;
+	CButton m_wndZoomOut;
+	CButton m_wndNext;
+	CButton m_wndPrev;
 
 #if 0
 	double mTotalDist;
@@ -49,10 +57,12 @@ public:
 
 	void DrawCircle(CDC* pDC, int cx, int cy, double lat, double lon, double radius);
 	void DrawLine(CDC* pDC, int cx, int cy, double lat1, double lon1, double lat2, double lon2);
+	void DrawPilot(CDC* pDC, int cx, int cy, double lat, double lon);
 
 // Overrides
 	protected:
 	virtual BOOL PreCreateWindow(CREATESTRUCT& cs);
+	virtual BOOL PreTranslateMessage(MSG *pMsg);
 
 // Implementation
 public:
@@ -60,11 +70,16 @@ public:
 
 	// Generated message map functions
 protected:
+	afx_msg int OnCreate(LPCREATESTRUCT lpCreateStruct);
 	afx_msg void OnPaint();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
 	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
-	afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
+	afx_msg void OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg void OnFileOpen();
+	afx_msg void OnZoomIn();
+	afx_msg void OnZoomOut();
+	afx_msg void OnMoveNext();
+	afx_msg void OnMovePrev();
 
 	DECLARE_MESSAGE_MAP()
 };

@@ -18,6 +18,12 @@
 #define new DEBUG_NEW
 #endif
 
+#define IDC_OPEN		(1001)
+#define IDC_ZOOMIN		(1002)
+#define IDC_ZOOMOUT		(1003)
+#define IDC_NEXT		(1004)
+#define IDC_PREV		(1005)
+
 
 // CChildView
 
@@ -31,11 +37,16 @@ CChildView::~CChildView()
 
 
 BEGIN_MESSAGE_MAP(CChildView, CWnd)
+	ON_WM_CREATE()
 	ON_WM_PAINT()
 	ON_WM_SIZE()
 	ON_WM_LBUTTONDBLCLK()
-	ON_WM_CHAR()
-	ON_COMMAND(ID_FILE_OPEN, OnFileOpen)
+	ON_WM_KEYDOWN()
+	ON_COMMAND(IDC_OPEN, OnFileOpen)
+	ON_COMMAND(IDC_ZOOMIN, OnZoomIn)
+	ON_COMMAND(IDC_ZOOMOUT, OnZoomOut)
+	ON_COMMAND(IDC_NEXT, OnMoveNext)
+	ON_COMMAND(IDC_PREV, OnMovePrev)
 END_MESSAGE_MAP()
 
 
@@ -52,7 +63,21 @@ BOOL CChildView::PreCreateWindow(CREATESTRUCT& cs)
 	cs.lpszClass = AfxRegisterWndClass(CS_HREDRAW|CS_VREDRAW|CS_DBLCLKS, 
 		::LoadCursor(nullptr, IDC_ARROW), reinterpret_cast<HBRUSH>(COLOR_WINDOW+1), nullptr);
 
-	return TRUE;
+	return TRUE; 
+}
+
+int CChildView::OnCreate(LPCREATESTRUCT lpCreateStruct)
+{
+	if (CWnd::OnCreate(lpCreateStruct) == -1)
+		return -1;
+
+	m_wndOpen.Create(_T("Open"), WS_CHILD|WS_VISIBLE|BS_PUSHBUTTON, CRect(CPoint(10, 10), CSize(120, 32)), this, IDC_OPEN);
+	m_wndZoomIn.Create(_T("Zoom In"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, CRect(CPoint(10, 50), CSize(120, 32)), this, IDC_ZOOMIN);
+	m_wndZoomOut.Create(_T("Zoom OUt"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, CRect(CPoint(10, 90), CSize(120, 32)), this, IDC_ZOOMOUT);
+	m_wndNext.Create(_T("Next"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, CRect(CPoint(10, 130), CSize(120, 32)), this, IDC_NEXT);
+	m_wndPrev.Create(_T("Prev"), WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, CRect(CPoint(10, 170), CSize(120, 32)), this, IDC_PREV);
+
+	return 0;
 }
 
 void CChildView::OnPaint() 
@@ -60,6 +85,9 @@ void CChildView::OnPaint()
 	CPaintDC dc(this); // device context for painting
 	CRect rc;
 
+	CPen penStart(PS_SOLID, 2, RGB(255, 0, 0));
+	CPen penFinish(PS_SOLID, 2, RGB(0, 0, 255));
+	CPen penNormal(PS_SOLID, 1, RGB(0, 0, 0));
 	int nSaveDC = dc.SaveDC();
 	dc.SelectObject(CBrush::FromHandle((HBRUSH)GetStockObject(NULL_BRUSH)));
 
@@ -68,29 +96,38 @@ void CChildView::OnPaint()
 	int cy = rc.top + rc.Height() / 2;
 
 	auto &geod = GeographicLib::Geodesic::WGS84();
-	auto route = mTask.getRoute();
 	double lastLat, lastLon;
 
 	size_t startIndex = mStartTurnPoint;
-	for (size_t i = 0; i < route.getTurnPointCount(); i++)
+	for (size_t i = 0; i < mTask.getTurnPointCount(); i++)
 	{
-		auto ptr = route.getTurnPoint(i);
+		auto ptr = mTask.getTurnPoint(i);
 		double lat = ptr->getLatitude();
 		double lon = ptr->getLongitude();
 		double radius = ptr->getRadius();
 		double theta = ptr->getTheta();
 
+		CPen* pOldPen = nullptr;
+		if (i == 0)
+			pOldPen = dc.SelectObject(&penStart);
+		else if (i + 1 == mTask.getTurnPointCount())
+			pOldPen = dc.SelectObject(&penFinish);
 		DrawCircle(&dc, cx, cy, lat, lon, radius);
+		if (pOldPen)
+			dc.SelectObject(pOldPen);
+
 		if (i >= startIndex)
 		{
 			if (i > startIndex)
 			{
-				double lat_target, lon_target;
-				geod.Direct(lat, lon, theta, radius, lat_target, lon_target);
-				DrawLine(&dc, cx, cy, lastLat, lastLon, lat_target, lon_target);
+				auto& proj = ptr->getProjection();
+				double lat_proj = proj.getLatitude();
+				double lon_proj = proj.getLongitude();
 
-				lastLat = lat_target;
-				lastLon = lon_target;
+				DrawLine(&dc, cx, cy, lastLat, lastLon, lat_proj, lon_proj);
+
+				lastLat = lat_proj;
+				lastLon = lon_proj;
 			}
 			else
 			{
@@ -116,8 +153,11 @@ void CChildView::OnPaint()
 	//	DrawLine(&dc, cx, cy, mBoundary[GEO_S], mBoundary[GEO_W], mBoundary[GEO_N], mBoundary[GEO_W]);
 	//}
 
-	//if (mPilotPosPtr)
-	//	DrawLine(&dc, cx, cy, mCenterPos[GEO_LAT], mCenterPos[GEO_LON], mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
+	if (mPilotPosPtr)
+	{
+		// draw pilot position
+		DrawPilot(&dc, cx, cy, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
+	}
 
 	dc.RestoreDC(nSaveDC);
 }
@@ -127,11 +167,11 @@ void CChildView::DrawCircle(CDC* pDC, int cx, int cy, double lat, double lon, do
 	auto &geod = GeographicLib::Geodesic::WGS84();
 	double geo_x, geo_y;
 	
-	geod.Inverse(mCenterPos[GEO_LAT], mCenterPos[GEO_LON], mCenterPos[GEO_LAT], lon, geo_x);
-	geod.Inverse(mCenterPos[GEO_LAT], mCenterPos[GEO_LON], lat, mCenterPos[GEO_LON], geo_y);
+	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon, geo_x);
+	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat, mCenterPos.getLongitude(), geo_y);
 
-	int x = (int)(geo_x * mZoomRatio) * (mCenterPos[GEO_LON] < lon ? 1 : -1);
-	int y = (int)(geo_y * mZoomRatio) * (mCenterPos[GEO_LAT] < lat ? -1 : 1);
+	int x = (int)(geo_x * mZoomRatio) * (mCenterPos.getLongitude() < lon ? 1 : -1);
+	int y = (int)(geo_y * mZoomRatio) * (mCenterPos.getLatitude() < lat ? -1 : 1);
 	int r = (int)(radius * mZoomRatio);
 
 	cx += x;
@@ -145,18 +185,38 @@ void CChildView::DrawLine(CDC* pDC, int cx, int cy, double lat1, double lon1, do
 	auto &geod = GeographicLib::Geodesic::WGS84();
 	double dx1, dx2, dy1, dy2;
 
-	geod.Inverse(mCenterPos[GEO_LAT], mCenterPos[GEO_LON], mCenterPos[GEO_LAT], lon1, dx1);
-	geod.Inverse(mCenterPos[GEO_LAT], mCenterPos[GEO_LON], lat1, mCenterPos[GEO_LON], dy1);
-	geod.Inverse(mCenterPos[GEO_LAT], mCenterPos[GEO_LON], mCenterPos[GEO_LAT], lon2, dx2);
-	geod.Inverse(mCenterPos[GEO_LAT], mCenterPos[GEO_LON], lat2, mCenterPos[GEO_LON], dy2);
+	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon1, dx1);
+	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat1, mCenterPos.getLongitude(), dy1);
+	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon2, dx2);
+	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat2, mCenterPos.getLongitude(), dy2);
 
-	int x1 = (int)(dx1 * mZoomRatio) * (mCenterPos[GEO_LON] < lon1 ? 1 : -1) + cx;
-	int y1 = (int)(dy1 * mZoomRatio) * (mCenterPos[GEO_LAT] < lat1 ? -1 : 1) + cy;
-	int x2 = (int)(dx2 * mZoomRatio) * (mCenterPos[GEO_LON] < lon2 ? 1 : -1) + cx;
-	int y2 = (int)(dy2 * mZoomRatio) * (mCenterPos[GEO_LAT] < lat2 ? -1 : 1) + cy;
+	int x1 = (int)(dx1 * mZoomRatio) * (mCenterPos.getLongitude() < lon1 ? 1 : -1) + cx;
+	int y1 = (int)(dy1 * mZoomRatio) * (mCenterPos.getLatitude() < lat1 ? -1 : 1) + cy;
+	int x2 = (int)(dx2 * mZoomRatio) * (mCenterPos.getLongitude() < lon2 ? 1 : -1) + cx;
+	int y2 = (int)(dy2 * mZoomRatio) * (mCenterPos.getLatitude() < lat2 ? -1 : 1) + cy;
 
 	pDC->MoveTo(x1, y1);
 	pDC->LineTo(x2, y2);
+}
+
+void CChildView::DrawPilot(CDC* pDC, int cx, int cy, double lat, double lon)
+{
+	auto &geod = GeographicLib::Geodesic::WGS84();
+	double geo_x, geo_y;
+
+	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon, geo_x);
+	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat, mCenterPos.getLongitude(), geo_y);
+
+	int x = (int)(geo_x * mZoomRatio) * (mCenterPos.getLongitude() < lon ? 1 : -1);
+	int y = (int)(geo_y * mZoomRatio) * (mCenterPos.getLatitude() < lat ? -1 : 1);
+
+	cx += x;
+	cy += y;
+
+	pDC->MoveTo(cx + 10, cy + 10);
+	pDC->LineTo(cx - 10, cy - 10);
+	pDC->MoveTo(cx + 10, cy - 10);
+	pDC->LineTo(cx - 10, cy + 10);
 }
 
 
@@ -168,30 +228,13 @@ public:
 
 	}
 
-	virtual void OnButtonClicked(DWORD dwIDCtl)
-	{
-	}
-
-	virtual void OnCheckButtonToggled(DWORD dwIDCtl, BOOL bChecked)
-	{
-	}
-
-	virtual void OnControlActivating(DWORD dwIDCtl)
-	{
-	}
-
 	virtual void OnItemSelected(DWORD dwIDCtl, DWORD dwIDItem)
 	{
 		if (dwIDCtl == 1001)
 			this->SetControlState(1000, dwIDItem == 3 ? CDCS_INACTIVE : CDCS_ENABLED | CDCS_VISIBLE);
 	}
-
-	virtual void OnLBSelChangedNotify(UINT nIDBox, UINT iCurSel, UINT nCode)
-	{
-		
-	}
-
 };
+
 
 void CChildView::OnFileOpen()
 {
@@ -223,12 +266,11 @@ void CChildView::OnFileOpen()
 		{
 			// calculate boundary
 			auto &geod = GeographicLib::Geodesic::WGS84();
-			auto route = mTask.getRoute();
 			double geo_N, geo_S, geo_W, geo_E;
 
-			for (size_t i = 0; i < route.getTurnPointCount(); i++)
+			for (size_t i = 0; i < mTask.getTurnPointCount(); i++)
 			{
-				auto ptr = route.getTurnPoint(i);
+				auto ptr = mTask.getTurnPoint(i);
 				if (i == 0)
 				{
 					geo_N = geo_S = ptr->getLatitude();
@@ -279,8 +321,8 @@ void CChildView::OnFileOpen()
 			mBoundary[GEO_E] = geo_E; // right
 			mBoundary[GEO_S] = geo_S; // bottom
 
-			mCenterPos[GEO_LAT] = geo_S + (geo_N - geo_S) / 2.0;
-			mCenterPos[GEO_LON] = geo_W + (geo_E - geo_W) / 2.0;
+			mCenterPos.setLatitude(geo_S + (geo_N - geo_S) / 2.0);
+			mCenterPos.setLongitude(geo_W + (geo_E - geo_W) / 2.0);
 
 			// calcualte zoom-factor
 			CRect rect;
@@ -347,7 +389,7 @@ void CChildView::OnFileOpen()
 
 			TRACE("Total Distance: %.1f Km, Optimized Distance: %.1f Km\n", mTotalDist / 1000.0, result.fval / 1000.0);
 #else
-			TRACE("Total Distance: %.1f Km, Optimized Distance: %.1f Km\n", route.getTotalDistance() / 1000.0, route.getOptimizedDistance() / 1000.0);
+			TRACE("Total Distance: %.1f Km, Optimized Distance: %.1f Km\n", mTask.getTotalDistance() / 1000.0, mTask.getOptimizedDistance() / 1000.0);
 #endif
 
 			mStartTurnPoint = 0;
@@ -360,6 +402,59 @@ void CChildView::OnFileOpen()
 	}
 }
 
+void CChildView::OnZoomIn()
+{
+	mZoomRatio += mZoomRatio * 0.1;
+	Invalidate();
+}
+
+void CChildView::OnZoomOut()
+{
+	mZoomRatio -= mZoomRatio * 0.1;
+	Invalidate();
+}
+
+void CChildView::OnMoveNext()
+{
+	if (mPilotPosPtr)
+	{
+		size_t startPoint = mStartTurnPoint;
+
+		if (startPoint + 2 < mTask.getTurnPointCount())
+			startPoint = startPoint + 1;
+
+		if (startPoint != mStartTurnPoint)
+		{
+			mStartTurnPoint = startPoint;
+			mTask.optimize(mStartTurnPoint, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
+			TRACE("Optimized Distance: %.1f Km\n", mTask.getOptimizedDistance() / 1000.0);
+
+			Invalidate();
+		}
+	}
+}
+
+void CChildView::OnMovePrev()
+{
+	if (mPilotPosPtr)
+	{
+		size_t startPoint = mStartTurnPoint;
+
+		if (startPoint > 0)
+			startPoint = startPoint - 1;
+
+		if (startPoint != mStartTurnPoint)
+		{
+			mStartTurnPoint = startPoint;
+			mTask.optimize(mStartTurnPoint, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
+			TRACE("Optimized Distance: %.1f Km\n", mTask.getOptimizedDistance() / 1000.0);
+
+			Invalidate();
+		}
+	}
+}
+
+
 void CChildView::OnSize(UINT nType, int cx, int cy)
 {
 	CWnd::OnSize(nType, cx, cy);
@@ -371,8 +466,8 @@ void CChildView::RecalcLayout(int cx, int cy)
 	auto &geod = GeographicLib::Geodesic::WGS84();
 
 	double geo_w, geo_h;
-	geod.Inverse(mCenterPos[GEO_LAT], mBoundary[GEO_W], mCenterPos[GEO_LAT], mBoundary[GEO_E], geo_w);
-	geod.Inverse(mBoundary[GEO_N], mCenterPos[GEO_LON], mBoundary[GEO_S], mCenterPos[GEO_LON], geo_h);
+	geod.Inverse(mCenterPos.getLatitude(), mBoundary[GEO_W], mCenterPos.getLatitude(), mBoundary[GEO_E], geo_w);
+	geod.Inverse(mBoundary[GEO_N], mCenterPos.getLongitude(), mBoundary[GEO_S], mCenterPos.getLongitude(), geo_h);
 
 	double w, h;
 	geod.Inverse(mBoundary[GEO_N], mBoundary[GEO_W], mBoundary[GEO_N], mBoundary[GEO_E], w);
@@ -399,10 +494,8 @@ void CChildView::RecalcLayout(int cx, int cy)
 
 void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
-	if (!mPilotPosPtr)
-		mPilotPosPtr = std::make_shared<XcPoint>();
-
-	if (mPilotPosPtr && mTask.getRoute().getTurnPointCount() > 0)
+	// hit-test: calculate geo-position
+	double lat, lon;
 	{
 		CRect rect;
 		GetClientRect(rect);
@@ -420,35 +513,72 @@ void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point)
 		angle = angle * 180.0 / pi;
 		if (angle < 0)
 			angle = 360 + angle;
-		TRACE("angle = %f\n", angle);
 		// screen to geo
 		dist = dist / mZoomRatio;
-		TRACE("dist = %f\n", dist);
-		
-		// save pilot position
+
+		// calculate pilot position
 		auto &geod = GeographicLib::Geodesic::WGS84();
-		double lat, lon;
-		geod.Direct(mCenterPos[GEO_LAT], mCenterPos[GEO_LON], angle, dist, lat, lon);
-
-		mPilotPosPtr->setLatitude(lat);
-		mPilotPosPtr->setLongitude(lon);
-
-		// optimize from new pilot position
-		mTask.getRoute().optimize(mStartTurnPoint, lat, lon);
-
-		Invalidate();
+		geod.Direct(mCenterPos.getLatitude(), mCenterPos.getLongitude(), angle, dist, lat, lon);
 	}
+
+
+	if (GetAsyncKeyState(VK_SHIFT) < 0)
+	{
+		mCenterPos.setLatitude(lat);
+		mCenterPos.setLongitude(lon);
+	}
+	else
+	{
+		if (!mPilotPosPtr)
+		{
+			mPilotPosPtr = std::make_shared<XcBasePoint>(lat, lon);
+			auto ptr = mTask.getTurnPoint(mStartTurnPoint + 1);
+			mPilotInCylinder = ptr->inside(lat, lon);
+		}
+		else
+		{
+			mPilotPosPtr->setLatitude(lat);
+			mPilotPosPtr->setLongitude(lon);
+		}
+
+		if (mPilotPosPtr)
+		{
+			// optimize from new pilot position
+			mTask.optimize(mStartTurnPoint, lat, lon);
+			TRACE("Optimized Distance: %.1f Km\n", mTask.getOptimizedDistance() / 1000.0);
+
+			// check cylinder hit
+			if (mStartTurnPoint + 1 < mTask.getTurnPointCount())
+			{
+				auto ptr = mTask.getTurnPoint(mStartTurnPoint + 1);
+				bool inside = ptr->inside(lat, lon);
+				if (mPilotInCylinder != inside)
+				{
+					// case of inbound or outbound
+					OnMoveNext();
+
+					auto ptr = mTask.getTurnPoint(mStartTurnPoint + 1);
+					mPilotInCylinder = ptr->inside(lat, lon);
+				}
+			}
+		}
+	}
+
+	Invalidate();
 }
 
-void CChildView::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
+void CChildView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
+	CWnd::OnKeyDown(nChar, nRepCnt, nFlags);
+
+#if 0
 	if (mPilotPosPtr)
 	{
 		size_t startPoint = mStartTurnPoint;
 
 		if (nChar == '+')
 		{
-			if (startPoint + 2 < mTask.getRoute().getTurnPointCount())
+			if (startPoint + 2 < mTask.getTurnPointCount())
 				startPoint = startPoint + 1;
 		}
 		else if (nChar == '-')
@@ -460,8 +590,36 @@ void CChildView::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
 		if (startPoint != mStartTurnPoint)
 		{
 			mStartTurnPoint = startPoint;
-			mTask.getRoute().optimize(mStartTurnPoint, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
+			mTask.optimize(mStartTurnPoint, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
+			TRACE("Optimized Distance: %.1f Km\n", mTask.getOptimizedDistance() / 1000.0);
+
 			Invalidate();
 		}
 	}
+#else
+#endif
+}
+
+BOOL CChildView::PreTranslateMessage(MSG *pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		switch (pMsg->wParam)
+		{
+		case VK_UP:
+			OnZoomIn();
+			break;
+		case VK_DOWN:
+			OnZoomOut();
+			break;
+		case VK_RIGHT:
+			OnMoveNext();
+			break;
+		case VK_LEFT:
+			OnMovePrev();
+			break;
+		}
+	}
+
+	return CWnd::PreTranslateMessage(pMsg);
 }

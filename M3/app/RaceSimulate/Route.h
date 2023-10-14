@@ -38,11 +38,17 @@ public:
 	Type getType() { return type; }
 	double getRadius() { return radius; }
 	double getTheta() { return theta; }
+	XcBasePoint &getProjection() { return proj; }
+
+	double getDistance(double lat, double lon); // distance from (lat,lon) to center of point
+	bool inside(double lat, double lon); // is inside or outside of cylinder
 
 protected:
 	Type type;
 	double radius;
 	double theta;
+
+	XcBasePoint proj;
 };
 
 typedef std::shared_ptr<XcTurnPoint> XcTurnPointPtr;
@@ -53,15 +59,20 @@ typedef std::shared_ptr<XcTurnPoint> XcTurnPointPtr;
 
 class XcRoute
 {
-	friend class XcTask;
-
 public:
     XcRoute();
+
+	enum EarthModel {
+		FAISPHERE,
+		WGS84,
+	};
+
 
 	XcTurnPointPtr getTurnPoint(size_t index);
 	size_t getTurnPointCount() { return points.size(); }
 	double getTotalDistance() { return totalDist; }
 	double getOptimizedDistance() { return optimizedDist; }
+	EarthModel getEatchModel() { return earthModel; }
 
 	void addTurnPoint(XcTurnPointPtr pointPtr) { points.push_back(pointPtr); }
 	void reset();
@@ -80,6 +91,8 @@ protected:
 	// 
 	double totalDist;
 	double optimizedDist;
+
+	EarthModel earthModel;
 };
 
 
@@ -87,7 +100,7 @@ protected:
 ///////////////////////////////////////////////////////////////////////////////
 // class XcTask
 
-class XcTask
+class XcTask : public XcRoute
 {
 public:
 	XcTask();
@@ -97,17 +110,10 @@ public:
 		COMPETITION,
 	};
 
-	enum EarthModel {
-		FAISPHERE,
-		WGS84,
-	};
-
 	//
-	XcRoute &getRoute() { return route; }
 	TaskType getTaskType() { return taskType; }
 	time_t getGateOpen() { return gateOpen; }
 	time_t getDeadLine() { return deadLine; }
-	EarthModel getEatchModel() { return earthModel; }
 
 	void setTaskType(TaskType type) { taskType = type; }
 	void setGateOpen(time_t t) { gateOpen = t; }
@@ -130,9 +136,6 @@ protected:
 	TaskType taskType;
 	time_t gateOpen;
 	time_t deadLine;
-	EarthModel earthModel;
-
-	XcRoute route;
 };
 
 

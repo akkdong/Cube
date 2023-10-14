@@ -24,7 +24,6 @@ XcTurnPoint::XcTurnPoint(Type _type, double _r, const char *name, double lat, do
 	, radius(_r)
 	, theta(0)
 {
-
 }
 
 XcTurnPoint::XcTurnPoint(Type _type, double _r, XcPoint& point)
@@ -33,7 +32,24 @@ XcTurnPoint::XcTurnPoint(Type _type, double _r, XcPoint& point)
 	, radius(_r)
 	, theta(0)
 {
+}
 
+double XcTurnPoint::getDistance(double lat, double lon)
+{
+	auto &geod = GeographicLib::Geodesic::WGS84();
+	double dist;
+	geod.Inverse(this->lat, this->lon, lat, lon, dist);
+
+	return dist;
+}
+
+bool XcTurnPoint::inside(double lat, double lon)
+{
+	auto &geod = GeographicLib::Geodesic::WGS84();
+	double dist;
+	geod.Inverse(this->lat, this->lon, lat, lon, dist);
+
+	return dist < this->radius ? true : false;
 }
 
 
@@ -59,9 +75,11 @@ void XcRoute::reset()
 
 	totalDist = 0;
 	optimizedDist = 0;
+
+	earthModel = WGS84;
 }
 
-
+#if 0
 void XcRoute::optimize(size_t startPoint, double lat_current, double lon_current)
 {
 	size_t remainPoints = this->points.size() - startPoint;
@@ -120,6 +138,64 @@ void XcRoute::optimize(size_t startPoint, double lat_current, double lon_current
 
 	this->optimizedDist = result.fval;
 }
+#else
+void XcRoute::optimize(size_t startPoint, double lat_current, double lon_current)
+{
+	size_t remainPoints = this->points.size() - startPoint;
+	auto &geod = GeographicLib::Geodesic::WGS84();
+
+	auto totalLength = [&, this](const Eigen::VectorXd &theta) -> double {
+		//
+		for (size_t i = 0; i < (size_t)theta.size(); i++)
+		{
+			auto ptr = this->points[i + startPoint];
+			double lat, lon, radius;
+
+			if (i == 0)
+			{
+				lat = lat_current;
+				lon = lon_current;
+				radius = 0;
+			}
+			else
+			{
+				lat = ptr->getLatitude();
+				lon = ptr->getLongitude();
+				radius = ptr->getRadius();
+			}
+
+			geod.Direct(lat, lon, theta[i], radius, ptr->proj.lat, ptr->proj.lon);
+		}
+
+		//
+		double totalDist = 0.0;
+
+		for (int i = 0; i < theta.size() - 1; i++)
+		{
+			auto ptr1 = this->points[i + startPoint];
+			auto ptr2 = this->points[i + startPoint + 1];
+			double dist;
+
+			geod.Inverse(ptr1->proj.lat, ptr1->proj.lon, ptr2->proj.lat, ptr2->proj.lon, dist);
+			totalDist += dist;
+		}
+
+		return totalDist;
+	};
+
+	Eigen::VectorXd theta(remainPoints);
+	for (size_t i = 0; i < remainPoints; ++i)
+		theta[i] = points[i + startPoint]->theta;
+
+	bfgs::optimizer<decltype(totalLength)> o(totalLength, theta);
+	bfgs::result result = o.optimize();
+
+	for (size_t i = startPoint; i < points.size(); ++i)
+		points[i]->theta = result.x[i - startPoint];
+
+	this->optimizedDist = result.fval;
+}
+#endif
 
 void XcRoute::optimize(size_t startPoint)
 {
@@ -175,8 +251,8 @@ bool XcTask::load(std::istream &in)
 	reset();
 	set(doc);
 
-	route.calcTotalDistance();
-	route.optimize();
+	calcTotalDistance();
+	optimize();
 
 	return true;
 }
@@ -195,13 +271,12 @@ bool XcTask::load(Stream &s)
 
 void XcTask::reset()
 {
+	XcRoute::reset();
+
 	version = 1;
 	taskType = CLASSIC;
 	gateOpen = 0;
 	deadLine = 0;
-	earthModel = WGS84;
-
-	route.reset();
 }
 
 
@@ -222,7 +297,7 @@ void XcTask::set(JsonDocument &doc)
 	{
 		auto& ar = turnPoints.as< ArduinoJson::JsonArray>();
 		size_t size = ar.size(), index = 0;
-		route.points.assign(size, nullptr);
+		this->points.assign(size, nullptr);
 
 		for (auto it = ar.begin(); it != ar.end(); ++it, ++index)
 		{
@@ -257,7 +332,7 @@ void XcTask::set(JsonDocument &doc)
 
 				XcTurnPointPtr pointPtr = std::make_shared<XcTurnPoint>(type, r, name, lat, lon, alt, desc);
 				if (pointPtr)
-					route.points[index] = pointPtr;
+					this->points[index] = pointPtr;
 			}
 		}
 	}

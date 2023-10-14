@@ -7,22 +7,37 @@
 
 
 ///////////////////////////////////////////////////////////////////////////////
+// class XcBasePoint
+
+XcBasePoint::XcBasePoint()
+	: lat(0)
+	, lon(0)
+{
+}
+
+XcBasePoint::XcBasePoint(double _lat, double _lon)
+	: lat(_lat)
+	, lon(_lon)
+{
+}
+
+
+
+///////////////////////////////////////////////////////////////////////////////
 // class XcPoint
 
 XcPoint::XcPoint()
-	: name("")
+	: XcBasePoint()
+	, name("")
 	, description("")
-	, lat(0)
-	, lon(0)
 	, altitude(0)
 {
 }
 
 XcPoint::XcPoint(const char *_name, double _lat, double _lon, double _alt, const char *_desc)
-	: name(_name)
+	: XcBasePoint(_lat, _lon)
+	, name(_name)
 	, description(_desc)
-	, lat(_lat)
-	, lon(_lon)
 	, altitude(_alt)
 {
 }
@@ -37,21 +52,10 @@ void XcPoint::setDescription(const char *desc)
 	this->description = desc;
 }
 
-void XcPoint::setLatitude(double lat)
-{
-	this->lat = lat;
-}
-
-void XcPoint::setLongitude(double lon)
-{
-	this->lon = lon;
-}
-
 void XcPoint::setAltitude(double alt)
 {
 	this->altitude = alt;
 }
-
 
 
 
