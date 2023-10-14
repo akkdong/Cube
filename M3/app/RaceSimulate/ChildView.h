@@ -30,13 +30,18 @@ public:
 	double mCenterPos[2]; // drawing center lat/lon
 	double mBoundary[4]; // left(W), top(N), right(E), bottom(S)
 
-	double mTotalDist;
-	double mOptimizedDist;
-
 	double mZoomRatio = 1.0;
 	CPoint mDrawOffset;
 
+	std::shared_ptr<XcPoint> mPilotPosPtr;
+	size_t mStartTurnPoint;
+
+#if 0
+	double mTotalDist;
+	double mOptimizedDist;
+
 	std::vector<double> mTheta;
+#endif
 
 // Operations
 public:
@@ -57,6 +62,8 @@ public:
 protected:
 	afx_msg void OnPaint();
 	afx_msg void OnSize(UINT nType, int cx, int cy);
+	afx_msg void OnLButtonDblClk(UINT nFlags, CPoint point);
+	afx_msg void OnChar(UINT nChar, UINT nRepCnt, UINT nFlags);
 	afx_msg void OnFileOpen();
 
 	DECLARE_MESSAGE_MAP()

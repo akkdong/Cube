@@ -33,6 +33,8 @@ CChildView::~CChildView()
 BEGIN_MESSAGE_MAP(CChildView, CWnd)
 	ON_WM_PAINT()
 	ON_WM_SIZE()
+	ON_WM_LBUTTONDBLCLK()
+	ON_WM_CHAR()
 	ON_COMMAND(ID_FILE_OPEN, OnFileOpen)
 END_MESSAGE_MAP()
 
@@ -69,38 +71,53 @@ void CChildView::OnPaint()
 	auto route = mTask.getRoute();
 	double lastLat, lastLon;
 
+	size_t startIndex = mStartTurnPoint;
 	for (size_t i = 0; i < route.getTurnPointCount(); i++)
 	{
 		auto ptr = route.getTurnPoint(i);
 		double lat = ptr->getLatitude();
 		double lon = ptr->getLongitude();
 		double radius = ptr->getRadius();
+		double theta = ptr->getTheta();
 
 		DrawCircle(&dc, cx, cy, lat, lon, radius);
-		if (i > 0)
+		if (i >= startIndex)
 		{
-			double lat_target, lon_target;
-			geod.Direct(lat, lon, mTheta[i], radius, lat_target, lon_target);
-			DrawLine(&dc, cx, cy, lastLat, lastLon, lat_target, lon_target);
+			if (i > startIndex)
+			{
+				double lat_target, lon_target;
+				geod.Direct(lat, lon, theta, radius, lat_target, lon_target);
+				DrawLine(&dc, cx, cy, lastLat, lastLon, lat_target, lon_target);
 
-			lastLat = lat_target;
-			lastLon = lon_target;
-		}
-		else
-		{
-			lastLat = lat;
-			lastLon = lon;
+				lastLat = lat_target;
+				lastLon = lon_target;
+			}
+			else
+			{
+				if (mPilotPosPtr)
+				{
+					lastLat = mPilotPosPtr->getLatitude();
+					lastLon = mPilotPosPtr->getLongitude();
+				}
+				else
+				{
+					lastLat = lat;
+					lastLon = lon;
+				}
+			}
 		}
 	}
 
 	// draw boundary
-	if (0)
-	{
-		DrawLine(&dc, cx, cy, mBoundary[GEO_N], mBoundary[GEO_W], mBoundary[GEO_N], mBoundary[GEO_E]);
-		DrawLine(&dc, cx, cy, mBoundary[GEO_N], mBoundary[GEO_E], mBoundary[GEO_S], mBoundary[GEO_E]);
-		DrawLine(&dc, cx, cy, mBoundary[GEO_S], mBoundary[GEO_E], mBoundary[GEO_S], mBoundary[GEO_W]);
-		DrawLine(&dc, cx, cy, mBoundary[GEO_S], mBoundary[GEO_W], mBoundary[GEO_N], mBoundary[GEO_W]);
-	}
+	//{
+	//	DrawLine(&dc, cx, cy, mBoundary[GEO_N], mBoundary[GEO_W], mBoundary[GEO_N], mBoundary[GEO_E]);
+	//	DrawLine(&dc, cx, cy, mBoundary[GEO_N], mBoundary[GEO_E], mBoundary[GEO_S], mBoundary[GEO_E]);
+	//	DrawLine(&dc, cx, cy, mBoundary[GEO_S], mBoundary[GEO_E], mBoundary[GEO_S], mBoundary[GEO_W]);
+	//	DrawLine(&dc, cx, cy, mBoundary[GEO_S], mBoundary[GEO_W], mBoundary[GEO_N], mBoundary[GEO_W]);
+	//}
+
+	//if (mPilotPosPtr)
+	//	DrawLine(&dc, cx, cy, mCenterPos[GEO_LAT], mCenterPos[GEO_LON], mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
 
 	dc.RestoreDC(nSaveDC);
 }
@@ -272,6 +289,7 @@ void CChildView::OnFileOpen()
 			Invalidate();
 
 			// calculate optimized path
+#if 0
 			mTotalDist = mOptimizedDist = 0;
 
 			size_t points = route.getTurnPointCount();
@@ -328,6 +346,12 @@ void CChildView::OnFileOpen()
 				mTheta[i] = result.x[i];
 
 			TRACE("Total Distance: %.1f Km, Optimized Distance: %.1f Km\n", mTotalDist / 1000.0, result.fval / 1000.0);
+#else
+			TRACE("Total Distance: %.1f Km, Optimized Distance: %.1f Km\n", route.getTotalDistance() / 1000.0, route.getOptimizedDistance() / 1000.0);
+#endif
+
+			mStartTurnPoint = 0;
+			mPilotPosPtr = nullptr;
 		}
 		else
 		{
@@ -370,4 +394,74 @@ void CChildView::RecalcLayout(int cx, int cy)
 
 	mDrawOffset.x = (LONG)((scrn_w - draw_w) / 2 + 10);
 	mDrawOffset.y = (LONG)((scrn_h - draw_h) / 2 + 10);
+}
+
+
+void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point)
+{
+	if (!mPilotPosPtr)
+		mPilotPosPtr = std::make_shared<XcPoint>();
+
+	if (mPilotPosPtr && mTask.getRoute().getTurnPointCount() > 0)
+	{
+		CRect rect;
+		GetClientRect(rect);
+
+		int cx = rect.left + rect.Width() / 2;
+		int cy = rect.top + rect.Height() / 2;
+
+		double dx = (double)point.x - (double)cx;
+		double dy = (double)point.y - (double)cy;
+		double dist = sqrt(dx * dx + dy * dy);
+		double angle = std::atan2<double>(dx, -dy);
+
+		// radian to degree
+		const double pi = 3.14159265359;
+		angle = angle * 180.0 / pi;
+		if (angle < 0)
+			angle = 360 + angle;
+		TRACE("angle = %f\n", angle);
+		// screen to geo
+		dist = dist / mZoomRatio;
+		TRACE("dist = %f\n", dist);
+		
+		// save pilot position
+		auto &geod = GeographicLib::Geodesic::WGS84();
+		double lat, lon;
+		geod.Direct(mCenterPos[GEO_LAT], mCenterPos[GEO_LON], angle, dist, lat, lon);
+
+		mPilotPosPtr->setLatitude(lat);
+		mPilotPosPtr->setLongitude(lon);
+
+		// optimize from new pilot position
+		mTask.getRoute().optimize(mStartTurnPoint, lat, lon);
+
+		Invalidate();
+	}
+}
+
+void CChildView::OnChar(UINT nChar, UINT nRepCnt, UINT nFlags)
+{
+	if (mPilotPosPtr)
+	{
+		size_t startPoint = mStartTurnPoint;
+
+		if (nChar == '+')
+		{
+			if (startPoint + 2 < mTask.getRoute().getTurnPointCount())
+				startPoint = startPoint + 1;
+		}
+		else if (nChar == '-')
+		{
+			if (startPoint > 0)
+				startPoint = startPoint - 1;
+		}
+
+		if (startPoint != mStartTurnPoint)
+		{
+			mStartTurnPoint = startPoint;
+			mTask.getRoute().optimize(mStartTurnPoint, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
+			Invalidate();
+		}
+	}
 }

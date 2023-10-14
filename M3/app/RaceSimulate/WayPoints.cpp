@@ -10,10 +10,15 @@
 // class XcPoint
 
 XcPoint::XcPoint()
+	: name("")
+	, description("")
+	, lat(0)
+	, lon(0)
+	, altitude(0)
 {
 }
 
-XcPoint::XcPoint(const char *_name, float _lat, float _lon, float _alt, const char *_desc)
+XcPoint::XcPoint(const char *_name, double _lat, double _lon, double _alt, const char *_desc)
 	: name(_name)
 	, description(_desc)
 	, lat(_lat)
@@ -32,17 +37,17 @@ void XcPoint::setDescription(const char *desc)
 	this->description = desc;
 }
 
-void XcPoint::setLatitude(float lat)
+void XcPoint::setLatitude(double lat)
 {
 	this->lat = lat;
 }
 
-void XcPoint::setLongitude(float lon)
+void XcPoint::setLongitude(double lon)
 {
 	this->lon = lon;
 }
 
-void XcPoint::setAltitude(float alt)
+void XcPoint::setAltitude(double alt)
 {
 	this->altitude = alt;
 }
