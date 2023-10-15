@@ -203,6 +203,7 @@
     <ClInclude Include="Resource.h" />
     <ClInclude Include="Route.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="utils_geographiclib.h" />
     <ClInclude Include="WayPoints.h" />
   </ItemGroup>
   <ItemGroup>
@@ -218,6 +219,10 @@
     <ClCompile Include="Route.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+    </ClCompile>
+    <ClCompile Include="utils_geographiclib.cpp">
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">NotUsing</PrecompiledHeader>
+      <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="WayPoints.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">NotUsing</PrecompiledHeader>

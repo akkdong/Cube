@@ -45,6 +45,9 @@
     <ClInclude Include="bfgs.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="utils_geographiclib.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="RaceSimulate.cpp">
@@ -63,6 +66,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Route.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="utils_geographiclib.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

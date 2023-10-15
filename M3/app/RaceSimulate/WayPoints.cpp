@@ -15,7 +15,7 @@ XcBasePoint::XcBasePoint()
 {
 }
 
-XcBasePoint::XcBasePoint(double _lat, double _lon)
+XcBasePoint::XcBasePoint(Math::real _lat, Math::real _lon)
 	: lat(_lat)
 	, lon(_lon)
 {
@@ -34,7 +34,7 @@ XcPoint::XcPoint()
 {
 }
 
-XcPoint::XcPoint(const char *_name, double _lat, double _lon, double _alt, const char *_desc)
+XcPoint::XcPoint(const char *_name, Math::real _lat, Math::real _lon, Math::real _alt, const char *_desc)
 	: XcBasePoint(_lat, _lon)
 	, name(_name)
 	, description(_desc)
@@ -52,7 +52,7 @@ void XcPoint::setDescription(const char *desc)
 	this->description = desc;
 }
 
-void XcPoint::setAltitude(double alt)
+void XcPoint::setAltitude(Math::real alt)
 {
 	this->altitude = alt;
 }

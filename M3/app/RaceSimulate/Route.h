@@ -6,8 +6,11 @@
 
 #include <iostream>
 
+#include "utils_geographiclib.h"
 #include "WayPoints.h"
 #include "ArduinoJson.h"
+
+#define CALC_REPEATCOUNT		(1)
 
 class XcTurnPoint;
 class XcRoute;
@@ -32,21 +35,21 @@ public:
 	};
 
 	XcTurnPoint();
-	XcTurnPoint(Type type, double radius, const char *name, double lat, double lon, double alt, const char *desc = nullptr);
-	XcTurnPoint(Type type, double radius, XcPoint& point);
+	XcTurnPoint(Type type, Math::real radius, const char *name, Math::real lat, Math::real lon, Math::real alt, const char *desc = nullptr);
+	XcTurnPoint(Type type, Math::real radius, XcPoint& point);
 
 	Type getType() { return type; }
-	double getRadius() { return radius; }
-	double getTheta() { return theta; }
+	Math::real getRadius() { return radius; }
+	Math::real getTheta() { return theta; }
 	XcBasePoint &getProjection() { return proj; }
 
-	double getDistance(double lat, double lon); // distance from (lat,lon) to center of point
-	bool inside(double lat, double lon); // is inside or outside of cylinder
+	Math::real getDistance(Math::real lat, Math::real lon); // distance from (lat,lon) to center of point
+	bool inside(Math::real lat, Math::real lon); // is inside or outside of cylinder
 
 protected:
 	Type type;
-	double radius;
-	double theta;
+	Math::real radius;
+	Math::real theta;
 
 	XcBasePoint proj;
 };
@@ -62,37 +65,32 @@ class XcRoute
 public:
     XcRoute();
 
-	enum EarthModel {
-		FAISPHERE,
-		WGS84,
-	};
-
-
+	//
 	XcTurnPointPtr getTurnPoint(size_t index);
 	size_t getTurnPointCount() { return points.size(); }
-	double getTotalDistance() { return totalDist; }
-	double getOptimizedDistance() { return optimizedDist; }
-	EarthModel getEatchModel() { return earthModel; }
+	Math::real getTotalDistance() { return totalDist; }
+	Math::real getOptimizedDistance() { return optimizedDist; }
 
 	void addTurnPoint(XcTurnPointPtr pointPtr) { points.push_back(pointPtr); }
 	void reset();
 
-	void optimize(size_t startPoint, double lat, double lon);
+	//
+	void optimize(size_t startPoint, Math::real lat, Math::real lon);
 	void optimize(size_t startPoint = 0);
 
 	void calcTotalDistance();
 
-protected:
-	
+public:
+#if CALC_REPEATCOUNT
+	int repeatCount;
+#endif
 
 protected:
     std::vector<XcTurnPointPtr> points;
 
 	// 
-	double totalDist;
-	double optimizedDist;
-
-	EarthModel earthModel;
+	Math::real totalDist;
+	Math::real optimizedDist;
 };
 
 
@@ -110,6 +108,14 @@ public:
 		COMPETITION,
 	};
 
+	enum TaskState {
+		READY,
+		TAKEOFF,
+		STARTED,
+		FINAL,
+		GOAL,
+	};
+
 	//
 	TaskType getTaskType() { return taskType; }
 	time_t getGateOpen() { return gateOpen; }
@@ -118,7 +124,6 @@ public:
 	void setTaskType(TaskType type) { taskType = type; }
 	void setGateOpen(time_t t) { gateOpen = t; }
 	void setDeadLine(time_t t) { deadLine = t; }
-	void setEarthModel(EarthModel model) { earthModel = model; }
 
 	//
 	bool load(std::istream &in);
@@ -134,9 +139,11 @@ protected:
 protected:
 	int	version;
 	TaskType taskType;
+	TaskState taskState;
 	time_t gateOpen;
 	time_t deadLine;
 };
+
 
 
 #endif // __XC_ROUTE_H__

@@ -2,7 +2,6 @@
 //
 
 #include <fstream>
-#include <GeographicLib/Geodesic.hpp>
 
 #include "Route.h"
 #undef min
@@ -18,7 +17,7 @@ XcTurnPoint::XcTurnPoint()
 {
 }
 
-XcTurnPoint::XcTurnPoint(Type _type, double _r, const char *name, double lat, double lon, double alt, const char *desc)
+XcTurnPoint::XcTurnPoint(Type _type, Math::real _r, const char *name, Math::real lat, Math::real lon, Math::real alt, const char *desc)
 	: XcPoint(name, lat, lon, alt, desc)
 	, type(_type)
 	, radius(_r)
@@ -26,7 +25,7 @@ XcTurnPoint::XcTurnPoint(Type _type, double _r, const char *name, double lat, do
 {
 }
 
-XcTurnPoint::XcTurnPoint(Type _type, double _r, XcPoint& point)
+XcTurnPoint::XcTurnPoint(Type _type, Math::real _r, XcPoint& point)
 	: XcPoint(point)
 	, type(_type)
 	, radius(_r)
@@ -34,20 +33,18 @@ XcTurnPoint::XcTurnPoint(Type _type, double _r, XcPoint& point)
 {
 }
 
-double XcTurnPoint::getDistance(double lat, double lon)
+Math::real XcTurnPoint::getDistance(Math::real lat, Math::real lon)
 {
-	auto &geod = GeographicLib::Geodesic::WGS84();
-	double dist;
-	geod.Inverse(this->lat, this->lon, lat, lon, dist);
+	Math::real dist;
+	geod_inverse(this->lat, this->lon, lat, lon, dist);
 
 	return dist;
 }
 
-bool XcTurnPoint::inside(double lat, double lon)
+bool XcTurnPoint::inside(Math::real lat, Math::real lon)
 {
-	auto &geod = GeographicLib::Geodesic::WGS84();
-	double dist;
-	geod.Inverse(this->lat, this->lon, lat, lon, dist);
+	Math::real dist;
+	geod_inverse(this->lat, this->lon, lat, lon, dist);
 
 	return dist < this->radius ? true : false;
 }
@@ -75,15 +72,13 @@ void XcRoute::reset()
 
 	totalDist = 0;
 	optimizedDist = 0;
-
-	earthModel = WGS84;
 }
 
 #if 0
-void XcRoute::optimize(size_t startPoint, double lat_current, double lon_current)
+void XcRoute::optimize(size_t startPoint, Math::real lat_current, Math::real lon_current)
 {
 	size_t remainPoints = this->points.size() - startPoint;
-	auto totalLength = [&, this](const Eigen::VectorXd &theta) -> double {
+	auto totalLength = [&, this](const Eigen::VectorXd &theta) -> Math::real {
 		//
 		Eigen::VectorXd lat_proj = Eigen::VectorXd(remainPoints);
 		Eigen::VectorXd lon_proj = Eigen::VectorXd(remainPoints);
@@ -92,8 +87,8 @@ void XcRoute::optimize(size_t startPoint, double lat_current, double lon_current
 		for (size_t i = 0; i < (size_t)theta.size(); i++)
 		{
 			auto& ptr = this->points[i + startPoint];
-			double lat, lon, radius;
-			double lat_target, lon_target;
+			Math::real lat, lon, radius;
+			Math::real lat_target, lon_target;
 
 			if (i == 0)
 			{
@@ -114,11 +109,11 @@ void XcRoute::optimize(size_t startPoint, double lat_current, double lon_current
 		}
 
 		//
-		double totalDist = 0.0;
+		Math::real totalDist = 0.0;
 
 		for (int i = 0; i < theta.size() - 1; i++)
 		{
-			double dist;
+			Math::real dist;
 			geod.Inverse(lat_proj[i], lon_proj[i], lat_proj[i + 1], lon_proj[i + 1], dist);
 			totalDist += dist;
 		}
@@ -139,17 +134,19 @@ void XcRoute::optimize(size_t startPoint, double lat_current, double lon_current
 	this->optimizedDist = result.fval;
 }
 #else
-void XcRoute::optimize(size_t startPoint, double lat_current, double lon_current)
+void XcRoute::optimize(size_t startPoint, Math::real lat_current, Math::real lon_current)
 {
 	size_t remainPoints = this->points.size() - startPoint;
-	auto &geod = GeographicLib::Geodesic::WGS84();
+#if CALC_REPEATCOUNT
+	repeatCount = 0;
+#endif
 
-	auto totalLength = [&, this](const Eigen::VectorXd &theta) -> double {
+	auto totalLength = [&, this](const Eigen::VectorXd &theta) -> Math::real {
 		//
 		for (size_t i = 0; i < (size_t)theta.size(); i++)
 		{
 			auto ptr = this->points[i + startPoint];
-			double lat, lon, radius;
+			Math::real lat, lon, radius;
 
 			if (i == 0)
 			{
@@ -164,21 +161,26 @@ void XcRoute::optimize(size_t startPoint, double lat_current, double lon_current
 				radius = ptr->getRadius();
 			}
 
-			geod.Direct(lat, lon, theta[i], radius, ptr->proj.lat, ptr->proj.lon);
+			geod_direct(lat, lon, theta[i], radius, ptr->proj.lat, ptr->proj.lon);
 		}
 
 		//
-		double totalDist = 0.0;
+		Math::real totalDist = 0.0;
 
 		for (int i = 0; i < theta.size() - 1; i++)
 		{
 			auto ptr1 = this->points[i + startPoint];
 			auto ptr2 = this->points[i + startPoint + 1];
-			double dist;
+			Math::real dist;
 
-			geod.Inverse(ptr1->proj.lat, ptr1->proj.lon, ptr2->proj.lat, ptr2->proj.lon, dist);
+			geod_inverse(ptr1->proj.lat, ptr1->proj.lon, ptr2->proj.lat, ptr2->proj.lon, dist);
 			totalDist += dist;
 		}
+
+		//
+#if CALC_REPEATCOUNT
+		++repeatCount;
+#endif
 
 		return totalDist;
 	};
@@ -199,7 +201,7 @@ void XcRoute::optimize(size_t startPoint, double lat_current, double lon_current
 
 void XcRoute::optimize(size_t startPoint)
 {
-	if (this->points.size() > 1 && startPoint < this->points.size())
+	if (this->points.size() > 1 && startPoint + 1 < this->points.size())
 	{
 		auto ptr = this->points[startPoint];
 		optimize(startPoint, ptr->getLatitude(), ptr->getLongitude());
@@ -208,20 +210,20 @@ void XcRoute::optimize(size_t startPoint)
 
 void XcRoute::calcTotalDistance()
 {
-	auto &geod = GeographicLib::Geodesic::WGS84();
-	double lat_last, lon_last;
+	Math::real lat_last, lon_last;
 
 	this->totalDist = 0;
 	for (size_t i = 0; i < this->points.size(); i++)
 	{
 		auto ptr = this->points[i];
-		double lat = ptr->getLatitude();
-		double lon = ptr->getLongitude();
+		Math::real lat = ptr->getLatitude();
+		Math::real lon = ptr->getLongitude();
 
 		if (i > 0)
 		{
-			double dist;
-			geod.Inverse(lat_last, lon_last, lat, lon, dist);
+			Math::real dist;
+			geod_inverse(lat_last, lon_last, lat, lon, dist);
+
 			this->totalDist += dist;
 		}
 
@@ -308,15 +310,15 @@ void XcTask::set(JsonDocument &doc)
 			if (!points.isUnbound() && points.is<ArduinoJson::JsonObject>())
 			{
 				auto& obj = points.as<ArduinoJson::JsonObject>();
-				double lon = (double)obj["lon"];
-				double lat = (double)obj["lat"];
-				double alt = (double)obj["altSmoothed"];
+				Math::real lon = (Math::real)obj["lon"];
+				Math::real lat = (Math::real)obj["lat"];
+				Math::real alt = (Math::real)obj["altSmoothed"];
 				const char *name = (const char *)obj["name"];
 				const char *desc = (const char *)obj["description"];
 
-				double r = 0;
+				Math::real r = 0;
 				if (!radius.isUnbound())
-					r = (double)radius;
+					r = (Math::real)radius;
 
 				XcTurnPoint::Type t = XcTurnPoint::TURN;
 				if (!type.isUnbound())
@@ -364,7 +366,14 @@ void XcTask::set(JsonDocument &doc)
 	if (!model.isUnbound())
 	{
 		const char *str = (const char *)model;
+
 		if (strcmp(str, "WGS84") == 0)
-			this->setEarthModel(XcTask::WGS84);
+		{
+			geod_setEarthModel(EarthModel::WGS84);
+		}
+		else if (strcmp(str, "FAI") == 0)
+		{
+			geod_setEarthModel(EarthModel::FAISPHERE);
+		}
 	}
 }

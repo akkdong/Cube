@@ -8,30 +8,38 @@
 #include <vector>
 #include <memory>
 
-typedef std::string String;
+#include "utils_geographiclib.h"
 
+
+#ifndef ARUDINO_MAIN
+typedef std::string String;
+#endif
+
+class XcWayPoints;
 class XcRoute;
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // class XcBasePoint
 
 class XcBasePoint
 {
+	friend class XcWayPoints;
 	friend class XcRoute;
 
 public:
 	XcBasePoint();
-	XcBasePoint(double lat, double lon);
+	XcBasePoint(Math::real lat, Math::real lon);
 
-	double getLatitude() { return this->lat; }
-	double getLongitude() { return this->lon; }
+	Math::real getLatitude() { return this->lat; }
+	Math::real getLongitude() { return this->lon; }
 
-	void setLatitude(double lat) { this->lat = lat; }
-	void setLongitude(double lon) { this->lon = lon; }
+	void setLatitude(Math::real lat) { this->lat = lat; }
+	void setLongitude(Math::real lon) { this->lon = lon; }
 
 protected:
-    double lat;
-    double lon;
+    Math::real lat;
+    Math::real lon;
 };
 
 
@@ -41,22 +49,25 @@ protected:
 
 class XcPoint : public XcBasePoint
 {
+	friend class XcWayPoints;
+	friend class XcRoute;
+
 public:
 	XcPoint();
-	XcPoint(const char *name, double lat, double lon, double alt, const char *desc = nullptr);
+	XcPoint(const char *name, Math::real lat, Math::real lon, Math::real alt, const char *desc = nullptr);
 
 	const char *getName() { return this->name.c_str(); }
 	const char *getDescription() { return this->description.c_str(); }
-	double getAltitude() { return this->altitude; }
+	Math::real getAltitude() { return this->altitude; }
 
 	void setName(const char *name);
 	void setDescription(const char *desc);
-	void setAltitude(double alt);
+	void setAltitude(Math::real alt);
 
 protected:
 	String name;
 	String description;
-	double altitude;
+	Math::real altitude;
 };
 
 

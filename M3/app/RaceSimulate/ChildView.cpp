@@ -41,6 +41,10 @@ BEGIN_MESSAGE_MAP(CChildView, CWnd)
 	ON_WM_PAINT()
 	ON_WM_SIZE()
 	ON_WM_LBUTTONDBLCLK()
+	ON_WM_LBUTTONDOWN()
+	ON_WM_LBUTTONUP()
+	ON_WM_MOUSEMOVE()
+	ON_WM_MOUSEWHEEL()
 	ON_WM_KEYDOWN()
 	ON_COMMAND(IDC_OPEN, OnFileOpen)
 	ON_COMMAND(IDC_ZOOMIN, OnZoomIn)
@@ -95,17 +99,16 @@ void CChildView::OnPaint()
 	int cx = rc.left + rc.Width() / 2;
 	int cy = rc.top + rc.Height() / 2;
 
-	auto &geod = GeographicLib::Geodesic::WGS84();
-	double lastLat, lastLon;
+	Math::real lastLat, lastLon;
 
 	size_t startIndex = mStartTurnPoint;
 	for (size_t i = 0; i < mTask.getTurnPointCount(); i++)
 	{
 		auto ptr = mTask.getTurnPoint(i);
-		double lat = ptr->getLatitude();
-		double lon = ptr->getLongitude();
-		double radius = ptr->getRadius();
-		double theta = ptr->getTheta();
+		Math::real lat = ptr->getLatitude();
+		Math::real lon = ptr->getLongitude();
+		Math::real radius = ptr->getRadius();
+		Math::real theta = ptr->getTheta();
 
 		CPen* pOldPen = nullptr;
 		if (i == 0)
@@ -121,8 +124,8 @@ void CChildView::OnPaint()
 			if (i > startIndex)
 			{
 				auto& proj = ptr->getProjection();
-				double lat_proj = proj.getLatitude();
-				double lon_proj = proj.getLongitude();
+				Math::real lat_proj = proj.getLatitude();
+				Math::real lon_proj = proj.getLongitude();
 
 				DrawLine(&dc, cx, cy, lastLat, lastLon, lat_proj, lon_proj);
 
@@ -162,13 +165,12 @@ void CChildView::OnPaint()
 	dc.RestoreDC(nSaveDC);
 }
 
-void CChildView::DrawCircle(CDC* pDC, int cx, int cy, double lat, double lon, double radius)
+void CChildView::DrawCircle(CDC* pDC, int cx, int cy, Math::real lat, Math::real lon, Math::real radius)
 {
-	auto &geod = GeographicLib::Geodesic::WGS84();
-	double geo_x, geo_y;
+	Math::real geo_x, geo_y;
 	
-	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon, geo_x);
-	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat, mCenterPos.getLongitude(), geo_y);
+	geod_inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon, geo_x);
+	geod_inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat, mCenterPos.getLongitude(), geo_y);
 
 	int x = (int)(geo_x * mZoomRatio) * (mCenterPos.getLongitude() < lon ? 1 : -1);
 	int y = (int)(geo_y * mZoomRatio) * (mCenterPos.getLatitude() < lat ? -1 : 1);
@@ -180,15 +182,14 @@ void CChildView::DrawCircle(CDC* pDC, int cx, int cy, double lat, double lon, do
 	pDC->Ellipse(cx - r, cy - r, cx + r, cy + r);
 }
 
-void CChildView::DrawLine(CDC* pDC, int cx, int cy, double lat1, double lon1, double lat2, double lon2)
+void CChildView::DrawLine(CDC* pDC, int cx, int cy, Math::real lat1, Math::real lon1, Math::real lat2, Math::real lon2)
 {
-	auto &geod = GeographicLib::Geodesic::WGS84();
-	double dx1, dx2, dy1, dy2;
+	Math::real dx1, dx2, dy1, dy2;
 
-	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon1, dx1);
-	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat1, mCenterPos.getLongitude(), dy1);
-	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon2, dx2);
-	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat2, mCenterPos.getLongitude(), dy2);
+	geod_inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon1, dx1);
+	geod_inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat1, mCenterPos.getLongitude(), dy1);
+	geod_inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon2, dx2);
+	geod_inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat2, mCenterPos.getLongitude(), dy2);
 
 	int x1 = (int)(dx1 * mZoomRatio) * (mCenterPos.getLongitude() < lon1 ? 1 : -1) + cx;
 	int y1 = (int)(dy1 * mZoomRatio) * (mCenterPos.getLatitude() < lat1 ? -1 : 1) + cy;
@@ -199,13 +200,12 @@ void CChildView::DrawLine(CDC* pDC, int cx, int cy, double lat1, double lon1, do
 	pDC->LineTo(x2, y2);
 }
 
-void CChildView::DrawPilot(CDC* pDC, int cx, int cy, double lat, double lon)
+void CChildView::DrawPilot(CDC* pDC, int cx, int cy, Math::real lat, Math::real lon)
 {
-	auto &geod = GeographicLib::Geodesic::WGS84();
-	double geo_x, geo_y;
+	Math::real geo_x, geo_y;
 
-	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon, geo_x);
-	geod.Inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat, mCenterPos.getLongitude(), geo_y);
+	geod_inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), mCenterPos.getLatitude(), lon, geo_x);
+	geod_inverse(mCenterPos.getLatitude(), mCenterPos.getLongitude(), lat, mCenterPos.getLongitude(), geo_y);
 
 	int x = (int)(geo_x * mZoomRatio) * (mCenterPos.getLongitude() < lon ? 1 : -1);
 	int y = (int)(geo_y * mZoomRatio) * (mCenterPos.getLatitude() < lat ? -1 : 1);
@@ -264,9 +264,11 @@ void CChildView::OnFileOpen()
 
 		if (fin.is_open() && mTask.load(fin))
 		{
+#if CALC_REPEATCOUNT
+			TRACE("OPTIMIZE repeat-count : %d\n", mTask.repeatCount);
+#endif
 			// calculate boundary
-			auto &geod = GeographicLib::Geodesic::WGS84();
-			double geo_N, geo_S, geo_W, geo_E;
+			Math::real geo_N, geo_S, geo_W, geo_E;
 
 			for (size_t i = 0; i < mTask.getTurnPointCount(); i++)
 			{
@@ -277,8 +279,8 @@ void CChildView::OnFileOpen()
 					geo_W = geo_E = ptr->getLongitude();
 				}
 
-				double lat, lon;
-				geod.Direct(ptr->getLatitude(), ptr->getLongitude(), 0, ptr->getRadius(), lat, lon);
+				Math::real lat, lon;
+				geod_direct(ptr->getLatitude(), ptr->getLongitude(), 0, ptr->getRadius(), lat, lon);
 				if (lat > geo_N)
 					geo_N = lat;
 				if (lat < geo_S)
@@ -287,7 +289,7 @@ void CChildView::OnFileOpen()
 					geo_E = lon;
 				if (lon < geo_W)
 					geo_W = lon;
-				geod.Direct(ptr->getLatitude(), ptr->getLongitude(), 90, ptr->getRadius(), lat, lon);
+				geod_direct(ptr->getLatitude(), ptr->getLongitude(), 90, ptr->getRadius(), lat, lon);
 				if (lat > geo_N)
 					geo_N = lat;
 				if (lat < geo_S)
@@ -296,7 +298,7 @@ void CChildView::OnFileOpen()
 					geo_E = lon;
 				if (lon < geo_W)
 					geo_W = lon;
-				geod.Direct(ptr->getLatitude(), ptr->getLongitude(), 180, ptr->getRadius(), lat, lon);
+				geod_direct(ptr->getLatitude(), ptr->getLongitude(), 180, ptr->getRadius(), lat, lon);
 				if (lat > geo_N)
 					geo_N = lat;
 				if (lat < geo_S)
@@ -305,7 +307,7 @@ void CChildView::OnFileOpen()
 					geo_E = lon;
 				if (lon < geo_W)
 					geo_W = lon;
-				geod.Direct(ptr->getLatitude(), ptr->getLongitude(), 270, ptr->getRadius(), lat, lon);
+				geod_direct(ptr->getLatitude(), ptr->getLongitude(), 270, ptr->getRadius(), lat, lon);
 				if (lat > geo_N)
 					geo_N = lat;
 				if (lat < geo_S)
@@ -328,72 +330,12 @@ void CChildView::OnFileOpen()
 			CRect rect;
 			GetClientRect(rect);
 			RecalcLayout(rect.Width(), rect.Height());
-			Invalidate();
-
-			// calculate optimized path
-#if 0
-			mTotalDist = mOptimizedDist = 0;
-
-			size_t points = route.getTurnPointCount();
-			Eigen::VectorXd mX(points), mY(points), mR(points);
-			for (size_t i = 0; i < points; i++)
-			{
-				auto ptr = route.getTurnPoint(i);
-				mX[i] = ptr->getLongitude();
-				mY[i] = ptr->getLatitude();
-				mR[i] = i == 0 ? 0 : ptr->getRadius();
-
-				if (i > 0)
-				{
-					double dist;
-					geod.Inverse(mY[i-1], mX[i-1], mY[i], mX[i], dist);
-					mTotalDist += dist;
-				}
-			}
-
-			Eigen::VectorXd theta = Eigen::VectorXd::Zero(points);
-			
-			auto totalLength = [&](const Eigen::VectorXd &theta) -> double {
-				//
-				Eigen::VectorXd x_proj = Eigen::VectorXd(mX.size());
-				Eigen::VectorXd y_proj = Eigen::VectorXd(mY.size());
-				auto &geod = GeographicLib::Geodesic::WGS84();
-
-				for (int i = 0; i < theta.size(); i++)
-				{
-					double lat, lon;
-					geod.Direct(mY[i], mX[i], theta[i], mR[i], lat, lon);
-					x_proj[i] = lon;
-					y_proj[i] = lat;
-				}
-
-				//
-				double totalDist = 0.0;
-
-				for (int i = 0; i < theta.size() - 1; i++)
-				{
-					double dist;
-					geod.Inverse(y_proj[i], x_proj[i], y_proj[i + 1], x_proj[i + 1], dist);
-					totalDist += dist;
-				}
-
-				return totalDist;				
-			};
-
-			bfgs::optimizer<decltype(totalLength)> o(totalLength, theta);
-			bfgs::result result = o.optimize();
-
-			mTheta = std::vector<double>(points);
-			for (size_t i = 0; i < mTheta.size(); i++)
-				mTheta[i] = result.x[i];
-
-			TRACE("Total Distance: %.1f Km, Optimized Distance: %.1f Km\n", mTotalDist / 1000.0, result.fval / 1000.0);
-#else
-			TRACE("Total Distance: %.1f Km, Optimized Distance: %.1f Km\n", mTask.getTotalDistance() / 1000.0, mTask.getOptimizedDistance() / 1000.0);
-#endif
 
 			mStartTurnPoint = 0;
 			mPilotPosPtr = nullptr;
+
+			TRACE("Total Distance: %.1f Km, Optimized Distance: %.1f Km\n", mTask.getTotalDistance() / 1000.0, mTask.getOptimizedDistance() / 1000.0);
+			Invalidate();
 		}
 		else
 		{
@@ -425,10 +367,7 @@ void CChildView::OnMoveNext()
 
 		if (startPoint != mStartTurnPoint)
 		{
-			mStartTurnPoint = startPoint;
-			mTask.optimize(mStartTurnPoint, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
-			TRACE("Optimized Distance: %.1f Km\n", mTask.getOptimizedDistance() / 1000.0);
-
+			Optimize(startPoint, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
 			Invalidate();
 		}
 	}
@@ -445,10 +384,7 @@ void CChildView::OnMovePrev()
 
 		if (startPoint != mStartTurnPoint)
 		{
-			mStartTurnPoint = startPoint;
-			mTask.optimize(mStartTurnPoint, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
-			TRACE("Optimized Distance: %.1f Km\n", mTask.getOptimizedDistance() / 1000.0);
-
+			Optimize(startPoint, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
 			Invalidate();
 		}
 	}
@@ -463,21 +399,19 @@ void CChildView::OnSize(UINT nType, int cx, int cy)
 
 void CChildView::RecalcLayout(int cx, int cy)
 {
-	auto &geod = GeographicLib::Geodesic::WGS84();
+	Math::real geo_w, geo_h;
+	geod_inverse(mCenterPos.getLatitude(), mBoundary[GEO_W], mCenterPos.getLatitude(), mBoundary[GEO_E], geo_w);
+	geod_inverse(mBoundary[GEO_N], mCenterPos.getLongitude(), mBoundary[GEO_S], mCenterPos.getLongitude(), geo_h);
 
-	double geo_w, geo_h;
-	geod.Inverse(mCenterPos.getLatitude(), mBoundary[GEO_W], mCenterPos.getLatitude(), mBoundary[GEO_E], geo_w);
-	geod.Inverse(mBoundary[GEO_N], mCenterPos.getLongitude(), mBoundary[GEO_S], mCenterPos.getLongitude(), geo_h);
+	Math::real w, h;
+	geod_inverse(mBoundary[GEO_N], mBoundary[GEO_W], mBoundary[GEO_N], mBoundary[GEO_E], w);
+	geod_inverse(mBoundary[GEO_N], mBoundary[GEO_W], mBoundary[GEO_S], mBoundary[GEO_W], h);
 
-	double w, h;
-	geod.Inverse(mBoundary[GEO_N], mBoundary[GEO_W], mBoundary[GEO_N], mBoundary[GEO_E], w);
-	geod.Inverse(mBoundary[GEO_N], mBoundary[GEO_W], mBoundary[GEO_S], mBoundary[GEO_W], h);
+	Math::real scrn_w = cx - 20; // client_width - margin
+	Math::real scrn_h = cy - 20; // client_height - margin
 
-	double scrn_w = cx - 20; // client_width - margin
-	double scrn_h = cy - 20; // client_height - margin
-
-	double ratio_1 = geo_h / geo_w;
-	double ratio_2 = scrn_h / scrn_w;
+	Math::real ratio_1 = geo_h / geo_w;
+	Math::real ratio_2 = scrn_h / scrn_w;
 
 	if (ratio_1 < ratio_2)
 		mZoomRatio = scrn_w / geo_w; // fit to screen-width: w * ratio = rect.Width()
@@ -494,8 +428,11 @@ void CChildView::RecalcLayout(int cx, int cy)
 
 void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point)
 {
+	if (mTask.getTurnPointCount() < 2)
+		return;
+
 	// hit-test: calculate geo-position
-	double lat, lon;
+	Math::real lat, lon;
 	{
 		CRect rect;
 		GetClientRect(rect);
@@ -503,13 +440,13 @@ void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point)
 		int cx = rect.left + rect.Width() / 2;
 		int cy = rect.top + rect.Height() / 2;
 
-		double dx = (double)point.x - (double)cx;
-		double dy = (double)point.y - (double)cy;
-		double dist = sqrt(dx * dx + dy * dy);
-		double angle = std::atan2<double>(dx, -dy);
+		Math::real dx = (Math::real)point.x - (Math::real)cx;
+		Math::real dy = (Math::real)point.y - (Math::real)cy;
+		Math::real dist = sqrt(dx * dx + dy * dy);
+		Math::real angle = std::atan2<Math::real>(dx, -dy);
 
 		// radian to degree
-		const double pi = 3.14159265359;
+		const Math::real pi = 3.14159265359;
 		angle = angle * 180.0 / pi;
 		if (angle < 0)
 			angle = 360 + angle;
@@ -517,8 +454,7 @@ void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point)
 		dist = dist / mZoomRatio;
 
 		// calculate pilot position
-		auto &geod = GeographicLib::Geodesic::WGS84();
-		geod.Direct(mCenterPos.getLatitude(), mCenterPos.getLongitude(), angle, dist, lat, lon);
+		geod_direct(mCenterPos.getLatitude(), mCenterPos.getLongitude(), angle, dist, lat, lon);
 	}
 
 
@@ -532,8 +468,15 @@ void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point)
 		if (!mPilotPosPtr)
 		{
 			mPilotPosPtr = std::make_shared<XcBasePoint>(lat, lon);
+
 			auto ptr = mTask.getTurnPoint(mStartTurnPoint + 1);
-			mPilotInCylinder = ptr->inside(lat, lon);
+			mPilotInCylinder = ptr->inside(lat, lon); // should I exit or enter ?
+
+			TRACE(">\n");
+			TRACE(">\n");
+			TRACE("> START %s (%f, %f)\n", ptr->getName(), ptr->getLatitude(), ptr->getLongitude());
+			TRACE(">\n");
+			TRACE(">\n");
 		}
 		else
 		{
@@ -541,25 +484,45 @@ void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point)
 			mPilotPosPtr->setLongitude(lon);
 		}
 
-		if (mPilotPosPtr)
+		if (mPilotPosPtr && mStartTurnPoint + 1 < mTask.getTurnPointCount())
 		{
-			// optimize from new pilot position
-			mTask.optimize(mStartTurnPoint, lat, lon);
-			TRACE("Optimized Distance: %.1f Km\n", mTask.getOptimizedDistance() / 1000.0);
-
 			// check cylinder hit
-			if (mStartTurnPoint + 1 < mTask.getTurnPointCount())
+			auto ptr = mTask.getTurnPoint(mStartTurnPoint + 1);
+			bool inside = ptr->inside(lat, lon);
+
+			if (mPilotInCylinder != inside) // case of inbound or outbound
 			{
-				auto ptr = mTask.getTurnPoint(mStartTurnPoint + 1);
-				bool inside = ptr->inside(lat, lon);
-				if (mPilotInCylinder != inside)
+				if (mStartTurnPoint + 2 == mTask.getTurnPointCount())
 				{
-					// case of inbound or outbound
+					// final
+					++mStartTurnPoint;
+
+					TRACE("*\n");
+					TRACE("*\n");
+					TRACE("* GOAL !!!!\n");
+					TRACE("*\n");
+					TRACE("*\n");
+				}
+				else
+				{
+					// move to next turn-point
 					OnMoveNext();
 
 					auto ptr = mTask.getTurnPoint(mStartTurnPoint + 1);
 					mPilotInCylinder = ptr->inside(lat, lon);
+
+					TRACE(">\n");
+					TRACE(">\n");
+					TRACE("> NEXT %s (%f, %f)\n", ptr->getName(), ptr->getLatitude(), ptr->getLongitude());
+					TRACE(">\n");
+					TRACE(">\n");
 				}
+			}
+
+			if (mStartTurnPoint + 1 < mTask.getTurnPointCount())
+			{
+				// optimize from new pilot position
+				Optimize(mStartTurnPoint, lat, lon);
 			}
 		}
 	}
@@ -567,37 +530,25 @@ void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point)
 	Invalidate();
 }
 
+void CChildView::OnLButtonDown(UINT nFlags, CPoint point)
+{
+}
+
+void CChildView::OnLButtonUp(UINT nFlags, CPoint point)
+{
+}
+
+void CChildView::OnMouseMove(UINT nFlags, CPoint point)
+{
+}
+
+void CChildView::OnMouseHWheel(UINT nFlags, short zDelta, CPoint pt)
+{
+}
+
 void CChildView::OnKeyDown(UINT nChar, UINT nRepCnt, UINT nFlags)
 {
 	CWnd::OnKeyDown(nChar, nRepCnt, nFlags);
-
-#if 0
-	if (mPilotPosPtr)
-	{
-		size_t startPoint = mStartTurnPoint;
-
-		if (nChar == '+')
-		{
-			if (startPoint + 2 < mTask.getTurnPointCount())
-				startPoint = startPoint + 1;
-		}
-		else if (nChar == '-')
-		{
-			if (startPoint > 0)
-				startPoint = startPoint - 1;
-		}
-
-		if (startPoint != mStartTurnPoint)
-		{
-			mStartTurnPoint = startPoint;
-			mTask.optimize(mStartTurnPoint, mPilotPosPtr->getLatitude(), mPilotPosPtr->getLongitude());
-			TRACE("Optimized Distance: %.1f Km\n", mTask.getOptimizedDistance() / 1000.0);
-
-			Invalidate();
-		}
-	}
-#else
-#endif
 }
 
 BOOL CChildView::PreTranslateMessage(MSG *pMsg)
@@ -622,4 +573,14 @@ BOOL CChildView::PreTranslateMessage(MSG *pMsg)
 	}
 
 	return CWnd::PreTranslateMessage(pMsg);
+}
+
+void CChildView::Optimize(size_t startPoint, Math::real lat, Math::real lon)
+{
+	mStartTurnPoint = startPoint;
+	mTask.optimize(mStartTurnPoint, lat, lon);
+	TRACE("Optimized Distance: %.1f Km\n", mTask.getOptimizedDistance() / 1000.0);
+#if CALC_REPEATCOUNT
+	TRACE("OPTIMIZE repeat-count : %d\n", mTask.repeatCount);
+#endif
 }
