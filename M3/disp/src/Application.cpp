@@ -954,8 +954,7 @@ void Application::ScreenTask()
                 continue;
             case MSG_SHOW_ROUTE:
                 LOGv("Activate window: Route Setting");
-                //Scrn.switchWindow(new RouteSettingWindow(&Display));
-                Scrn.fallbackWindow(RES_OK);
+                Scrn.switchWindow(new RouteSettingWindow(&Display));
                 continue;
             case MSG_SHOW_SETTINGS:
                 LOGv("Activate window: Device Setting");

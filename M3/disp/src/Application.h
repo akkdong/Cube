@@ -25,6 +25,8 @@
 #include "IGCSentence.h"
 #include "CaptivePortal.h"
 
+#include "Route.h"
+
 #include <memory>
 #include <algorithm>
 
@@ -142,8 +144,10 @@ protected:
     //
     TaskHandle_t taskScreen;
     TaskHandle_t taskDevice;
+    TaskHandle_t taskXc;
 
     QueueHandle_t msgQueue;
+    QueueHandle_t xcQueue;
 
     CriticalSection contextLock;
 };

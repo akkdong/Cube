@@ -6,6 +6,9 @@
 #include <WiFi.h>
 #include <WebServer.h>
 #include <Update.h>
+#include <ArduinoEigen.h>
+#include <ArduinoJson.h>
+#include <GeographicLib/Geodesic.hpp>
 
 #include "board.h"
 #include "utils.h"
@@ -21,8 +24,8 @@
 #include "VarioLogger.h"
 #include "Application.h"
 #include "BLEVario.h"
-#include "GeographicLib/Geodesic.hpp"
 #include "CaptivePortal.h"
+#include "Route.h"
 
 
 //
@@ -61,18 +64,6 @@ void setup()
     //
     //
     App.begin();
-
-    // test
-    {
-        double lat = 37.0;
-        double lon = 120.0;
-
-        GeographicLib::Geodesic geod = GeographicLib::Geodesic::WGS84();
-
-        double dist;
-        geod.Inverse(lat, lon, lat + 1, lon, dist);
-        LOGv("distance from(%f, %f) to(%f, %f) = %f", lat, lon, lat + 1, lon, dist);
-    }
 }
 
 void loop()
