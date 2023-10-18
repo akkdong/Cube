@@ -191,10 +191,22 @@ void RouteSettingWindow::onKeyReleased(uint32_t key)
     case KEY_RIGHT:
     case KEY_PUSH:
     case EXT_KEY_UP:
-        if (loadXcTask("/Tasks/sample1.xctsk"))
         {
-            this->recalcLayout();
-            this->draw();
+            static int i = 0;
+            uint32_t tick = millis();
+            const char * path = i == 0 ? "/Tasks/sample1.xctsk" : "/Tasks/sample2.xctsk";
+            i = 1 - i;
+            if (loadXcTask(path))
+            {
+                LOGi("1st Load & Optimize: %u ms", millis() - tick);
+
+                tick = millis();
+                this->taskPtr->optimize(0);
+                LOGi("2nd Optimize: %u ms", millis() - tick);
+
+                this->recalcLayout();
+                this->draw();
+            }
         }
         break;
     case EXT_KEY_LEFT:
@@ -217,6 +229,10 @@ bool RouteSettingWindow::loadXcTask(const char *path)
         {
             // save XcTask
             taskPtr = ptr;
+
+            LOGi("Load Task: %s", path);
+            LOGi("Total: %.1f Km, Optimized: %.1f Km", taskPtr->getTotalDistance() / 1000.0, taskPtr->getOptimizedDistance() / 1000.0);
+            LOGi("Repeat count: %d", taskPtr->repeatCount);
 
             return true;
         }

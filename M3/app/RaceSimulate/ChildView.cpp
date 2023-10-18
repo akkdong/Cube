@@ -268,6 +268,7 @@ void CChildView::OnFileOpen()
 			TRACE("OPTIMIZE repeat-count : %d\n", mTask.repeatCount);
 #endif
 			// calculate boundary
+#if 0
 			Math::real geo_N, geo_S, geo_W, geo_E;
 
 			for (size_t i = 0; i < mTask.getTurnPointCount(); i++)
@@ -322,9 +323,12 @@ void CChildView::OnFileOpen()
 			mBoundary[GEO_N] = geo_N; // top
 			mBoundary[GEO_E] = geo_E; // right
 			mBoundary[GEO_S] = geo_S; // bottom
+#else
+			FindBoundary(&mTask, mBoundary);
+#endif
 
-			mCenterPos.setLatitude(geo_S + (geo_N - geo_S) / 2.0);
-			mCenterPos.setLongitude(geo_W + (geo_E - geo_W) / 2.0);
+			mCenterPos.setLatitude(mBoundary[GEO_S] + (mBoundary[GEO_N] - mBoundary[GEO_S]) / 2.0);
+			mCenterPos.setLongitude(mBoundary[GEO_W] + (mBoundary[GEO_E] - mBoundary[GEO_W]) / 2.0);
 
 			// calcualte zoom-factor
 			CRect rect;
@@ -342,6 +346,51 @@ void CChildView::OnFileOpen()
 			AfxMessageBox(_T("Open or Load Failed!"), MB_ICONSTOP);
 		}
 	}
+}
+
+void CChildView::FindBoundary(XcTask *task, Math::real *border)
+{
+	Math::real N, S, E, W;
+	Math::real lat, lon;
+
+	for (size_t i = 0; i < task->getTurnPointCount(); i++)
+	{
+		auto ptr = task->getTurnPoint(i);
+		if (i == 0)
+		{
+			N = S = ptr->getLatitude();
+			E = W = ptr->getLongitude();
+		}
+
+		geod_direct(ptr->getLatitude(), ptr->getLongitude(), 0, ptr->getRadius(), lat, lon);
+		N = std::max<Math::real>(N, lat);
+		S = std::min<Math::real>(S, lat);
+		E = std::max<Math::real>(E, lon);
+		W = std::min<Math::real>(W, lon);
+
+		geod_direct(ptr->getLatitude(), ptr->getLongitude(), 90, ptr->getRadius(), lat, lon);
+		N = std::max<Math::real>(N, lat);
+		S = std::min<Math::real>(S, lat);
+		E = std::max<Math::real>(E, lon);
+		W = std::min<Math::real>(W, lon);
+
+		geod_direct(ptr->getLatitude(), ptr->getLongitude(), 180, ptr->getRadius(), lat, lon);
+		N = std::max<Math::real>(N, lat);
+		S = std::min<Math::real>(S, lat);
+		E = std::max<Math::real>(E, lon);
+		W = std::min<Math::real>(W, lon);
+
+		geod_direct(ptr->getLatitude(), ptr->getLongitude(), 270, ptr->getRadius(), lat, lon);
+		N = std::max<Math::real>(N, lat);
+		S = std::min<Math::real>(S, lat);
+		E = std::max<Math::real>(E, lon);
+		W = std::min<Math::real>(W, lon);
+	}
+
+	border[GEO_N] = N;
+	border[GEO_E] = E;
+	border[GEO_S] = S;
+	border[GEO_W] = W;
 }
 
 void CChildView::OnZoomIn()
