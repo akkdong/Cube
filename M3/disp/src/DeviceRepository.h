@@ -29,10 +29,7 @@ public:
 
     //
 	size_t                      updateVSpeedHistory(float speed);
-	size_t                      updateTrackHistory(float lat, float lon, float speedVert);
-    #if OBSOLETE
-    size_t                      updateTrackHistory();
-    #endif
+	size_t                      updateTrackHistory();
 
     size_t                      getVSpeedCount();
     size_t                      getTrackCount();

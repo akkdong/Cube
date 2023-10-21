@@ -175,7 +175,7 @@ void Application::begin()
     contextPtr = DeviceRepository::instance().getContext();
 
     //
-    setTimeZone(0 - contextPtr->deviceDefault.timezoneOffset, 0);
+    setTimeZone(0 - contextPtr->deviceState.timezoneOffset, 0);
     //
     disableCore0WDT();
 
@@ -209,9 +209,9 @@ void Application::begin()
     //
     deviceMode = MODE_INIT;
 
-    if (contextPtr->deviceDefault.enableBT)
+    if (contextPtr->deviceSettings.enableBT)
     {
-        BT.begin(0x03, contextPtr->deviceDefault.btName);
+        BT.begin(0x03, contextPtr->deviceSettings.btName);
         contextPtr->deviceState.statusBT = 1;
     }
 
@@ -272,9 +272,9 @@ void Application::update()
                     contextPtr->deviceState.statusBT = 0;
                 }
 
-                LOGv("Set Portal: SSID(%s), Password(%s)", contextPtr->deviceDefault.wifiSSID, contextPtr->deviceDefault.wifiPassword);
-                portalPtr->setSSID(contextPtr->deviceDefault.wifiSSID[0] ? contextPtr->deviceDefault.wifiSSID : "Cube-M3");
-                portalPtr->setPassword(contextPtr->deviceDefault.wifiPassword);
+                LOGv("Set Portal: SSID(%s), Password(%s)", contextPtr->deviceSettings.wifiSSID, contextPtr->deviceSettings.wifiPassword);
+                portalPtr->setSSID(contextPtr->deviceSettings.wifiSSID[0] ? contextPtr->deviceSettings.wifiSSID : "Cube-M3");
+                portalPtr->setPassword(contextPtr->deviceSettings.wifiPassword);
                 portalPtr->setAddress(IPAddress(172, 217, 28, 1));
                 portalPtr->start();
                 LOGi("Captive-portal started!");
@@ -291,11 +291,11 @@ void Application::update()
             portalPtr.reset();
 
             // chceck BT (was auto-enable?)
-            if (contextPtr->deviceDefault.enableBT)
+            if (contextPtr->deviceSettings.enableBT)
             {
                 LOGv("If autorun flag was turned on, restart BT now!");
 
-                BT.begin(0x03, contextPtr->deviceDefault.btName);
+                BT.begin(0x03, contextPtr->deviceSettings.btName);
                 contextPtr->deviceState.statusBT = 1;
             }
 
@@ -330,7 +330,7 @@ void Application::update()
                 contextPtr->varioState.altitudeGPS = NMEA.getAltitude();
                 contextPtr->varioState.speedGround = NMEA.getSpeed();
                 contextPtr->varioState.heading = NMEA.getTrack();
-                contextPtr->varioState.timeCurrent = NMEA.getDateTime() + contextPtr->deviceDefault.timezoneOffset;
+                contextPtr->varioState.timeCurrent = NMEA.getDateTime() + contextPtr->deviceState.timezoneOffset;
                 contextPtr->varioState.altitudeGround = getGroundLevel(contextPtr->varioState.latitude, contextPtr->varioState.longitude);
                 contextPtr->varioState.altitudeAGL = contextPtr->varioState.altitudeGPS - contextPtr->varioState.altitudeGround;
                 contextPtr->varioState.altitudeRef1 = contextPtr->varioState.altitudeGPS - contextPtr->varioSettings.altitudeRef1;
@@ -340,7 +340,7 @@ void Application::update()
 
                 if (Application::deviceMode == MODE_GROUND)
                 {
-                    if (contextPtr->varioState.speedGround > contextPtr->logger.takeoffSpeed)
+                    if (contextPtr->varioState.speedGround > contextPtr->deviceSettings.takeoffSpeed)
                     {
                         startFlight();
                         sendMessage(MSG_TAKEOFF, 0);
@@ -352,7 +352,7 @@ void Application::update()
                     {
                         // prepare sentence
                         igcSentence.begin(
-                            contextPtr->varioState.timeCurrent - contextPtr->deviceDefault.timezoneOffset,
+                            contextPtr->varioState.timeCurrent - contextPtr->deviceState.timezoneOffset,
                             contextPtr->varioState.latitude,
                             contextPtr->varioState.longitude,
                             contextPtr->varioState.altitudeBaro,
@@ -413,8 +413,8 @@ void Application::update()
             contextPtr->varioState.altitudeBaro = NMEA.getAltitudeBaro();
             contextPtr->varioState.speedVertActive = NMEA.getVerticalSpeed();
 
-            contextPtr->volume.vario = NMEA.isMuted() ? 0 : 100;
-            contextPtr->volume.effect = NMEA.isMuted() ? 0 : 100;
+            //contextPtr->volume.vario = NMEA.isMuted() ? 0 : 100;
+            //contextPtr->volume.effect = NMEA.isMuted() ? 0 : 100;
 
             //contextPtr->varioState.altitudeBaro = calculateAltitude(contextPtr->varioState.pressure);
             //contextPtr->varioState.altitudeCalibrated = contextPtr->varioState.altitudeBaro - contextPtr->varioState.altitudeDrift;
@@ -443,17 +443,22 @@ void Application::update()
                 varioNmea.begin(height, velocity, temperature, pressure, voltage);
 
                 //
-                if (Application::deviceMode != MODE_GROUND && contextPtr->deviceState.statusGPS == 0)
+                //if (Application::deviceMode != MODE_GROUND && contextPtr->deviceState.statusGPS == 0)
+                if (Application::deviceMode == MODE_GROUND)
                 {
                     uint32_t curTick = now; // millis()
 
                     if (velocity < STABLE_SINKING_THRESHOLD || STABLE_SINKING_THRESHOLD < velocity)
                         tick_silentBase = curTick;
 
-                    if (contextPtr->threshold.autoShutdownVario && ((curTick - tick_silentBase) > contextPtr->threshold.autoShutdownVario))
-                    {   
-                        stopFlight();                     
-                        sendMessage(MSG_LANDING);
+                    if (contextPtr->deviceSettings.shutdownTimeout && ((curTick - tick_silentBase) > contextPtr->deviceSettings.shutdownTimeout))
+                    {
+                        #if USE_METHOD1
+                        sendMessage(MSG_SHUTDOWN);
+                        while(1);
+                        #else
+                        prepareShutdown = true;
+                        #endif
                     }
                 }
             }
@@ -551,21 +556,21 @@ void Application::startVario()
 void Application::startFlight()
 {
     // turn on sound if auto-turn-on is setted
-    if (contextPtr->volume.autoTurnOn)
+    if (contextPtr->deviceSettings.autoSoundOn)
     {
         //contextPtr->volume.effect = contextPtr->volume.vario = 100;
         Serial1.println("MUTE 0");
     }
 
     // start bt-logging
-    if (contextPtr->deviceState.statusBT > 1 && contextPtr->deviceDefault.enableNmeaLogging)
+    if (contextPtr->deviceState.statusBT > 1 && contextPtr->deviceSettings.enableNmeaLogging)
         BT.startLogging(contextPtr->varioState.timeCurrent);
 
     // start igc-logging & update device-state
-    if (contextPtr->logger.enable)
+    if (contextPtr->deviceSettings.enableLogging)
     {
         // set pilot info
-        IGC.setPilotInfo(contextPtr->logger.pilot, contextPtr->gliderInfo.model, contextPtr->gliderInfo.manufacture);
+        IGC.setPilotInfo(contextPtr->userSettings.pilot, contextPtr->userSettings.gliderModel, contextPtr->userSettings.gliderManufacture);
 
         if (IGC.begin(contextPtr->varioState.timeCurrent))
             contextPtr->deviceState.statusSDCard = 2;
@@ -579,12 +584,12 @@ void Application::startFlight()
     DeviceRepository::instance().resetFlightStats();
 
     // init flight-state
-    contextPtr->flightState.takeOffTime = contextPtr->varioState.timeCurrent;
-    contextPtr->flightState.takeOffPos.lat = contextPtr->varioState.latitude;
-    contextPtr->flightState.takeOffPos.lon = contextPtr->varioState.longitude;
+    contextPtr->flightState.takeoffTime = contextPtr->varioState.timeCurrent;
+    contextPtr->flightState.takeoffPos.lat = contextPtr->varioState.latitude;
+    contextPtr->flightState.takeoffPos.lon = contextPtr->varioState.longitude;
     contextPtr->flightState.bearingTakeoff = -1;
     contextPtr->flightState.flightMode = FMODE_FLYING;
-    contextPtr->flightState.frontPoint = contextPtr->flightState.rearPoint = 0;
+    contextPtr->flightState.trackHistory.front = contextPtr->flightState.trackHistory.rear = 0;
     // init flight-stats
     contextPtr->flightStats.altitudeMax = contextPtr->varioState.altitudeGPS;
     contextPtr->flightStats.altitudeMin = contextPtr->varioState.altitudeGPS;
@@ -597,22 +602,18 @@ void Application::startFlight()
 void Application::updateFlightState()
 {
 	// update flight time
-	contextPtr->flightState.flightTime = contextPtr->varioState.timeCurrent - contextPtr->flightState.takeOffTime;
+	contextPtr->flightState.flightTime = contextPtr->varioState.timeCurrent - contextPtr->flightState.takeoffTime;
 	// update bearing & distance from takeoff
 	contextPtr->flightState.bearingTakeoff = GET_BEARING(contextPtr->varioState.latitude, contextPtr->varioState.longitude, 
-			contextPtr->flightState.takeOffPos.lat, contextPtr->flightState.takeOffPos.lon);
+			contextPtr->flightState.takeoffPos.lat, contextPtr->flightState.takeoffPos.lon);
 	contextPtr->flightState.distTakeoff = GET_DISTANCE(contextPtr->varioState.latitude, contextPtr->varioState.longitude, 
-			contextPtr->flightState.takeOffPos.lat, contextPtr->flightState.takeOffPos.lon);
+			contextPtr->flightState.takeoffPos.lat, contextPtr->flightState.takeoffPos.lon);
 	// and update total flight distance
-	contextPtr->flightState.distFlight = GET_DISTANCE(contextPtr->varioState.latitude, contextPtr->varioState.longitude, 
+	contextPtr->flightState.distFlightTerm = GET_DISTANCE(contextPtr->varioState.latitude, contextPtr->varioState.longitude, 
 			contextPtr->varioState.latitudeLast, contextPtr->varioState.longitudeLast);
-    contextPtr->flightState.distFlightAccum += contextPtr->flightState.distFlight;
+    contextPtr->flightState.distFlightTotal += contextPtr->flightState.distFlightTerm;
 	// add new track point & calculate relative distance
-    #if 1 // OLD METHOD
-	DeviceRepository::instance().updateTrackHistory(contextPtr->varioState.latitude, contextPtr->varioState.longitude, contextPtr->varioState.speedVertLazy);
-    #else // NEW BUT TRICKY METHOD
-    DeviceRepository::instance().updateTrackHistory();
-    #endif
+	DeviceRepository::instance().updateTrackHistory();
 
 	// update flight statistics
 	contextPtr->flightStats.altitudeMax = _MAX(contextPtr->flightStats.altitudeMax, contextPtr->varioState.altitudeGPS);
@@ -680,11 +681,11 @@ void Application::checkFlightMode()
 				if (contextPtr->flightState.glidingStartPos.alt > contextPtr->varioState.altitudeGPS)
 				{
 					float diff = contextPtr->flightState.glidingStartPos.alt - contextPtr->varioState.altitudeGPS;
-					contextPtr->flightState.glideRatio = dist / diff;
+					contextPtr->flightState.glidingRatio = dist / diff;
 				}
 				else
 				{
-					contextPtr->flightState.glideRatio = 0; // INF
+					contextPtr->flightState.glidingRatio = 0; // INF
 				}
 			}
 		}
@@ -698,11 +699,11 @@ void Application::checkFlightMode()
 		break;
 	}
 
-    if (/*deviceMode != MODE_GROUND &&*/ contextPtr->varioState.speedGround < contextPtr->logger.landingSpeed) // FLIGHT_START_MIN_SPEED
+    if (/*deviceMode != MODE_GROUND &&*/ contextPtr->varioState.speedGround < contextPtr->deviceSettings.landingSpeed) // FLIGHT_START_MIN_SPEED
     {
         uint32_t interval = millis() - this->tick_stopBase;
         //LOGv("stop interval: %u", interval);
-        if (interval > contextPtr->logger.landingTimeout) // FLIGHT_LANDING_THRESHOLD
+        if (interval > contextPtr->deviceSettings.landingTimeout) // FLIGHT_LANDING_THRESHOLD
         {
             stopFlight();
             sendMessage(MSG_LANDING, 0);
@@ -743,10 +744,10 @@ void Application::stopFlight()
     beeper.playMelody(melodyLanding, sizeof(melodyLanding) / sizeof(melodyLanding[0]));
     */
 
-    if (contextPtr->volume.autoTurnOn)
+    if (contextPtr->deviceSettings.autoSoundOn)
     {
-        //contextPtr->volume.vario = contextPtr->volume.varioDefault;
-        //contextPtr->volume.effect = contextPtr->volume.effectDefault;
+        contextPtr->deviceState.vario = contextPtr->deviceSettings.varioDefault;
+        contextPtr->deviceState.effect = contextPtr->deviceSettings.effectDefault;
 
         Serial1.println("MUTE 1");
     }
@@ -787,8 +788,8 @@ void Application::stopCircling()
 	// update flight-statistics : thermaling count, max-gain
 	if (contextPtr->flightState.circlingGain > 10 && contextPtr->flightState.circlingTime > 0)
 	{
-		contextPtr->flightStats.totalThermaling += 1;
-		contextPtr->flightStats.thermalingMaxGain = _MAX(contextPtr->flightStats.thermalingMaxGain, contextPtr->flightState.circlingGain);
+		contextPtr->flightStats.thermalingCount += 1;
+		contextPtr->flightStats.thermalingGainMax = _MAX(contextPtr->flightStats.thermalingGainMax, contextPtr->flightState.circlingGain);
 	}
 
 	contextPtr->flightState.deltaHeading_AVG = 0;
@@ -810,7 +811,7 @@ void Application::startGliding()
 	contextPtr->flightState.glidingStartPos.lat = contextPtr->varioState.latitude;
 	contextPtr->flightState.glidingStartPos.alt = contextPtr->varioState.altitudeGPS;
 
-	contextPtr->flightState.glideRatio = -1;
+	contextPtr->flightState.glidingRatio = -1;
 }
 
 void Application::stopGliding()
@@ -820,7 +821,7 @@ void Application::stopGliding()
     deviceMode = MODE_FLYING;
 
 	//
-	contextPtr->flightState.glideRatio = -1;
+	contextPtr->flightState.glidingRatio = -1;
 }
 
 void Application::sendMessage(uint32_t code, uint32_t data)

@@ -243,7 +243,7 @@ void MainWindow::onKeyLongPressed(uint32_t key)
         DeviceContext *contextPtr = DeviceRepository::instance().getContext();
         String muteCmd("MUTE x");
 
-        if (contextPtr->volume.vario > 0)
+        if (contextPtr->deviceState.mute == 0)
             muteCmd[5] = '1';
         else
             muteCmd[5] = '0';
@@ -258,9 +258,8 @@ void MainWindow::onKeyLongPressed(uint32_t key)
     }
     else if (key == KEY_RIGHT)
     {
-        // Toggle BT
-        //
-        // ....
+        // Save screen
+        saveScreen();
     }
     else if (key == EXT_KEY_LEFT)
     {
@@ -373,4 +372,80 @@ void MainWindow::changePage(int pageNum)
     this->setDirty(true);
     // refresh with no ghost
     m_refreshCount = -1;
+}
+
+static unsigned char BMP_Header[] =
+{
+	// BMP Header
+	0x42, 0x4D,				// ID field
+	0xF6, 0xF4, 0x03, 0x00, // Size of BMP file : 14 + 40 + 16*4 + 960/2 * 540 = 0x03F4F6
+	0x00, 0x00, 0x00, 0x00,	// unused
+	0x76, 0x00, 0x00, 0x00,	// Offset where bitmap data : 14 + 40 + 16*4 = 118 = 0x76
+	// DIB Header
+	0x28, 0x00, 0x00, 0x00, // IDB Header size
+	0xC0, 0x03, 0x00, 0x00,	// Width in pixels : 960
+	0x1C, 0x02, 0x00, 0x00, // Height in pixels : 540
+	0x01, 0x00,				// Number of color planes
+	0x04, 0x00,				// Number of bits per pixel
+	0x00, 0x00, 0x00, 0x00,	// BI_RGB
+	0x80, 0xF4, 0x03, 0x00, // Size of bitmap data : 960/2 * 540 = 259200, 0x03F480
+	0x00, 0x00, 0x00, 0x00,	// Print resolution : horizontal
+	0x00, 0x00, 0x00, 0x00,	// Print resolution : vertical
+	0x00, 0x00, 0x00, 0x00,	// Number of colors in the palette
+	0x00, 0x00, 0x00, 0x00,	// Number of important colors
+
+	0xFF, 0xFF, 0xFF, 0x00,	// 0x0F WHITE
+	0xEE, 0xEE, 0xEE, 0x00,	// 0x0E
+	0xDD, 0xDD, 0xDD, 0x00,	// 0x0D
+	0xBB, 0xBB, 0xBB, 0x00,	// 0x0C
+	0xAA, 0xAA, 0xAA, 0x00,	// 0x0B
+	0x99, 0x99, 0x99, 0x00,	// 0x0A
+	0x88, 0x88, 0x88, 0x00,	// 0x09
+	0x77, 0x77, 0x77, 0x00,	// 0x08
+	0x77, 0x77, 0x77, 0x00,	// 0x07
+	0x66, 0x66, 0x66, 0x00,	// 0x06
+	0x55, 0x55, 0x55, 0x00,	// 0x05
+	0x44, 0x44, 0x44, 0x00,	// 0x04
+	0x33, 0x33, 0x33, 0x00,	// 0x03
+	0x22, 0x22, 0x22, 0x00,	// 0x02
+	0x11, 0x11, 0x11, 0x00,	// 0x01
+	0x00, 0x00, 0x00, 0x00,	// 0x00 BLACK
+};
+
+
+void MainWindow::saveScreen()
+{
+	//
+	char name[32];
+
+	for (int i = 1; i < 50; i++)
+	{
+		//
+		sprintf(name, "/screen%02d.bmp", i);
+		if (! SD.exists(name))
+			break;
+	}
+
+	//
+	File file = SD.open(name, FILE_WRITE);
+	if (file)
+	{
+		//
+		file.write(BMP_Header, sizeof(BMP_Header));
+
+		//
+        uint8_t *frame = (uint8_t *)m_pRefCanvas->frameBuffer();
+        size_t scanLine = LCD_WIDTH / 2;
+        for (size_t row = 1; row <= LCD_HEIGHT; row++)
+        {
+            uint8_t *raster = frame + (LCD_HEIGHT - row) * scanLine;
+            file.write(raster, scanLine);
+        }
+
+		//
+		file.close();
+
+        showMessage(name);
+		LOGi("Save screenshot: %s\n", name);
+	}
 }

@@ -114,21 +114,20 @@ void DeviceRepository::reset()
 	memset(contextPtr, 0, sizeof(DeviceContext));
 	
 	//
-	contextPtr->gliderInfo.type = GTYPE_PARAGLIDER;
-	
-	memset(contextPtr->gliderInfo.manufacture, 0, sizeof(contextPtr->gliderInfo.manufacture));
-	memset(contextPtr->gliderInfo.model, 0, sizeof(contextPtr->gliderInfo.model));
+	contextPtr->userSettings.gliderType = GTYPE_PARAGLIDER;
+
+	memset(contextPtr->userSettings.gliderManufacture, 0, sizeof(contextPtr->userSettings.gliderManufacture));
+	memset(contextPtr->userSettings.gliderModel, 0, sizeof(contextPtr->userSettings.gliderModel));
 	
 	//
-	contextPtr->logger.enable = true;
+	contextPtr->deviceSettings.enableLogging = true;
 	
-	contextPtr->logger.takeoffSpeed = FLIGHT_START_MIN_SPEED;		// km/s
-	contextPtr->logger.landingSpeed = FLIGHT_STOP_MIN_SPEED;		// km/s
-	contextPtr->logger.landingTimeout = FLIGHT_LANDING_THRESHOLD;	// ms
-	contextPtr->logger.loggingInterval = FLIGHT_LOGGING_INTERVAL;	// ms
+	contextPtr->deviceSettings.takeoffSpeed = FLIGHT_START_MIN_SPEED;		// km/s
+	contextPtr->deviceSettings.landingSpeed = FLIGHT_STOP_MIN_SPEED;		// km/s
+	contextPtr->deviceSettings.landingTimeout = FLIGHT_LANDING_THRESHOLD;	// ms
+	contextPtr->deviceSettings.loggingInterval = FLIGHT_LOGGING_INTERVAL;	// ms
 	
-	memset(contextPtr->logger.pilot, 0, sizeof(contextPtr->logger.pilot));
-	//contextPtr->logger.timezone = VARIOMETER_TIME_ZONE; 			// GMT+9	
+	memset(contextPtr->userSettings.pilot, 0, sizeof(contextPtr->userSettings.pilot));
 	
 	//
 	contextPtr->varioSettings.sinkThreshold = VARIOMETER_SINKING_THRESHOLD; // -3.0
@@ -145,34 +144,34 @@ void DeviceRepository::reset()
 #endif
 	
 	//
-	contextPtr->volume.varioDefault = contextPtr->volume.vario = VARIOMETER_BEEP_VOLUME;
-	contextPtr->volume.effectDefault = contextPtr->volume.effect = VARIOMETER_EFFECT_VOLUME;
-	contextPtr->volume.autoTurnOn = 1;
+	contextPtr->deviceSettings.varioDefault = contextPtr->deviceState.vario = VARIOMETER_BEEP_VOLUME;
+	contextPtr->deviceSettings.effectDefault = contextPtr->deviceState.effect = VARIOMETER_EFFECT_VOLUME;
+	contextPtr->deviceSettings.autoSoundOn = 1;
 	
 	//
-	contextPtr->threshold.lowBattery = LOW_BATTERY_THRESHOLD;
-	contextPtr->threshold.shutdownHoldtime = SHUTDOWN_HOLD_TIME;
-	contextPtr->threshold.autoShutdownVario = AUTO_SHUTDOWN_THRESHOLD;
+	contextPtr->deviceSettings.lowBattery = LOW_BATTERY_THRESHOLD;
+	contextPtr->deviceSettings.shutdownHoldtime = SHUTDOWN_HOLD_TIME;
+	contextPtr->deviceSettings.shutdownTimeout = AUTO_SHUTDOWN_THRESHOLD;
 	
 	//
 #if OBSOLETE
 	contextPtr->kalman.varZMeas = KF_ZMEAS_VARIANCE;
 	contextPtr->kalman.varZAccel = KF_ZACCEL_VARIANCE;
 	contextPtr->kalman.varAccelBias = KF_ACCELBIAS_VARIANCE;
-#endif // OBSOLETE
+#endif
 
 	//
-	contextPtr->deviceDefault.enableBT = 1;
-	contextPtr->deviceDefault.enableSound = 1;
-	contextPtr->deviceDefault.enableSimulation = 0;
-	contextPtr->deviceDefault.enableNmeaLogging = 0;
+	contextPtr->deviceSettings.enableBT = 1;
+	contextPtr->deviceSettings.enableSound = 1;
+	contextPtr->deviceSettings.enableSimulation = 0;
+	contextPtr->deviceSettings.enableNmeaLogging = 0;
 
-    contextPtr->deviceDefault.timezone = VARIOMETER_TIME_ZONE; 			// GMT+9	
-	contextPtr->deviceDefault.timezoneOffset = (time_t)(VARIOMETER_TIME_ZONE * 3600.0f);
+    contextPtr->deviceSettings.timezone = VARIOMETER_TIME_ZONE; 			// GMT+9	
+	contextPtr->deviceState.timezoneOffset = (time_t)(VARIOMETER_TIME_ZONE * 3600.0f);
 
-	strcpy(contextPtr->deviceDefault.btName, "CubeM3-001");
-	strcpy(contextPtr->deviceDefault.wifiSSID, "CubeM3");
-	strcpy(contextPtr->deviceDefault.wifiPassword, "1234567890");
+	strcpy(contextPtr->deviceSettings.btName, "CubeM3-001");
+	strcpy(contextPtr->deviceSettings.wifiSSID, "CubeM3");
+	strcpy(contextPtr->deviceSettings.wifiPassword, "1234567890");
 
 	//
 	contextPtr->deviceState.batteryPower = 0;
@@ -183,12 +182,12 @@ void DeviceRepository::reset()
 	contextPtr->deviceState.statusBT = 0; // contextPtr->deviceDefault.enableBT ? 1 : 0;
 	contextPtr->deviceState.statusSDCard = 0;
 
-	contextPtr->deviceState.ipAddr[0] = '\0';
-	contextPtr->deviceState.wifiState = 0;
+	//contextPtr->deviceState.ipAddr[0] = '\0';
+	//contextPtr->deviceState.wifiState = 0;
 
 	//
 	contextPtr->flightState.bearingTakeoff = -1;
-	contextPtr->flightState.glideRatio = -1;
+	contextPtr->flightState.glidingRatio = -1;
 }
 
 
@@ -197,75 +196,61 @@ size_t DeviceRepository::updateVSpeedHistory(float speed)
 	VarioState& state = contextPtr->varioState;
 
 	// push to front
-	state.speedVertHistory[state.historyFront] = speed;
+	state.speedVertHistory.value[state.speedVertHistory.front] = speed;
 	// forward front-index
-	state.historyFront = (state.historyFront + 1) & (MAX_VARIO_HISTORY - 1); // % MAX_VARIO_HISTORY;
+	state.speedVertHistory.front = (state.speedVertHistory.front + 1) & (MAX_VARIO_HISTORY - 1); // % MAX_VARIO_HISTORY;
 	// check full
-	if (state.historyFront == state.historyRear)
-		state.historyRear = (state.historyRear + 1) & (MAX_VARIO_HISTORY - 1); // % MAX_VARIO_HISTORY;
+	if (state.speedVertHistory.front == state.speedVertHistory.rear)
+		state.speedVertHistory.rear = (state.speedVertHistory.rear + 1) & (MAX_VARIO_HISTORY - 1); // % MAX_VARIO_HISTORY;
 
-	return (state.historyFront - state.historyRear) & (MAX_VARIO_HISTORY - 1);
+	return (state.speedVertHistory.front - state.speedVertHistory.rear) & (MAX_VARIO_HISTORY - 1);
 }
 
-size_t DeviceRepository::updateTrackHistory(float lat, float lon, float speedVert) 
+size_t DeviceRepository::updateTrackHistory() 
 {
-	FlightState& state = contextPtr->flightState;
-	int16_t latest = state.frontPoint;
+	FlightState &state = contextPtr->flightState;
+	VarioState &vario = contextPtr->varioState;
+	int16_t latest = state.trackHistory.front;
 
-	// 
-	state.trackPoints[state.frontPoint] = TrackPoint(lat, lon, speedVert);
-	state.frontPoint = (state.frontPoint + 1) & (MAX_TRACK_HISTORY - 1);
+	//
+	TrackPoint &point = state.trackHistory.points[state.trackHistory.front];
+	point.lat = vario.latitude;
+	point.lon = vario.longitude;
+	point.alt = vario.altitudeGPS;
+	point.vario = vario.speedVertActive;
 
-	if (state.rearPoint == state.frontPoint)
-		state.rearPoint = (state.rearPoint + 1) & (MAX_TRACK_HISTORY - 1);
+	state.trackHistory.front = (state.trackHistory.front + 1) & (MAX_TRACK_HISTORY - 1);
+
+	if (state.trackHistory.rear == state.trackHistory.front) // full ? : drop oldest
+		state.trackHistory.rear = (state.trackHistory.rear + 1) & (MAX_TRACK_HISTORY - 1);
 
 	// calculate relative distance : distance from latest point to each point
-	//int latest = (state.frontPoint + MAX_TRACK_HISTORY - 1) % MAX_TRACK_HISTORY;
-	for (int i = state.rearPoint; i != latest; )
+	//int latest = (state.trackHistory.front + MAX_TRACK_HISTORY - 1) % MAX_TRACK_HISTORY;
+	for (int i = state.trackHistory.rear; i != latest; )
 	{
-		state.trackDistance[i].dx = -GET_DISTANCE(state.trackPoints[latest].lon - state.trackPoints[i].lon);
-		state.trackDistance[i].dy = GET_DISTANCE(state.trackPoints[latest].lat - state.trackPoints[i].lat);
+		state.trackHistory.dist[i].dx = -GET_DISTANCE(state.trackHistory.points[latest].lon - state.trackHistory.points[i].lon);
+		state.trackHistory.dist[i].dy = GET_DISTANCE(state.trackHistory.points[latest].lat - state.trackHistory.points[i].lat);
 
 		i = (i + 1) & (MAX_TRACK_HISTORY - 1);
 	}
 
-	state.trackDistance[latest].dx = 0;
-	state.trackDistance[latest].dy = 0;
+	state.trackHistory.dist[latest].dx = 0;
+	state.trackHistory.dist[latest].dy = 0;
 
 	//LOGv("TrackPoint(%f,%f,%f) [%d-%d]", lat, lon, speedVert, state.rearPoint, state.frontPoint);
-	return (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
+	return (state.trackHistory.front - state.trackHistory.rear) & (MAX_TRACK_HISTORY - 1);
 }
-
-#if OBSOLETE
-size_t DeviceRepository::updateTrackHistory()
-{
-	FlightState& state = contextPtr->flightState;
-	VarioState& vario = contextPtr->varioState;
-
-	// add new track-position
-	state.trackHistory[state.frontPoint] = TrackHistory(vario.latitude, vario.longitude, vario.heading, state.distFlight, vario.speedVertLazy);
-	//LOGv("Track: %f, %f, %d, %f, %f", vario.latitude, vario.longitude, vario.heading, state.distFlight, vario.speedVertLazy);
-
-	state.frontPoint = (state.frontPoint + 1) & (MAX_TRACK_HISTORY - 1);
-	if (state.frontPoint == state.rearPoint) // overflow
-		state.rearPoint = (state.rearPoint + 1) & (MAX_TRACK_HISTORY - 1);
-
-	int16_t size = (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
-	LOGv("track-history size: %d", size);
-	return size;
-}
-#endif
 
 size_t DeviceRepository::getVSpeedCount()
 {
 	VarioState& state = contextPtr->varioState;
-	return (state.historyFront - state.historyRear) & (MAX_VARIO_HISTORY - 1);
+	return (state.speedVertHistory.front - state.speedVertHistory.rear) & (MAX_VARIO_HISTORY - 1);
 }
 
 size_t DeviceRepository::getTrackCount()
 {
 	FlightState& state = contextPtr->flightState;
-	return (state.frontPoint - state.rearPoint) & (MAX_TRACK_HISTORY - 1);
+	return (state.trackHistory.front - state.trackHistory.rear) & (MAX_TRACK_HISTORY - 1);
 }
 
 void DeviceRepository::resetFlightState() 
@@ -297,33 +282,33 @@ void DeviceRepository::set(JsonDocument& doc)
 	if (! doc["vario_damping_factor"].isUnbound())
 		contextPtr->varioSettings.dampingFactor = doc["vario_damping_factor"]; // 0.05
 	if (! doc["glider_type"].isUnbound())
-		contextPtr->gliderInfo.type = doc["glider_type"]; // 1
+		contextPtr->userSettings.gliderType = doc["glider_type"]; // 1
 	if (! doc["glider_manufacture"].isUnbound())
-		strcpy(contextPtr->gliderInfo.manufacture, (const char *)doc["glider_manufacture"]); // "Ozone"
+		strcpy(contextPtr->userSettings.gliderManufacture, (const char *)doc["glider_manufacture"]); // "Ozone"
 	if (! doc["glider_model"].isUnbound())
-		strcpy(contextPtr->gliderInfo.model, (const char *)doc["glider_model"]); // "Zeno"
+		strcpy(contextPtr->userSettings.gliderModel, (const char *)doc["glider_model"]); // "Zeno"
 	if (! doc["igc_enable_logging"].isUnbound())
-		contextPtr->logger.enable = doc["igc_enable_logging"]; // true
+		contextPtr->deviceSettings.enableLogging = doc["igc_enable_logging"]; // true
 	if (! doc["igc_takeoff_speed"].isUnbound())
-		contextPtr->logger.takeoffSpeed = doc["igc_takeoff_speed"]; // 6
+		contextPtr->deviceSettings.takeoffSpeed = doc["igc_takeoff_speed"]; // 6
 	if (! doc["igc_landing_speed"].isUnbound())
-		contextPtr->logger.landingSpeed = doc["igc_landing_speed"]; // 2
+		contextPtr->deviceSettings.landingSpeed = doc["igc_landing_speed"]; // 2
 	if (! doc["igc_landing_timeout"].isUnbound())
-		contextPtr->logger.landingTimeout = doc["igc_landing_timeout"]; // 10000
+		contextPtr->deviceSettings.landingTimeout = doc["igc_landing_timeout"]; // 10000
 	if (! doc["igc_logging_interval"].isUnbound())
-		contextPtr->logger.loggingInterval = doc["igc_logging_interval"]; // 1000
+		contextPtr->deviceSettings.loggingInterval = doc["igc_logging_interval"]; // 1000
 	if (! doc["igc_pilot"].isUnbound())
-		strcpy(contextPtr->logger.pilot, (const char *)doc["igc_pilot"]); // "akkdong"
+		strcpy(contextPtr->userSettings.pilot, (const char *)doc["igc_pilot"]); // "akkdong"
 	if (! doc["volume_enable_vario"].isUnbound())
-		contextPtr->volume.varioDefault = contextPtr->volume.vario = doc["volume_enable_vario"] ? 100 : 0; // false
+		contextPtr->deviceSettings.varioDefault = contextPtr->deviceState.vario = doc["volume_enable_vario"] ? 100 : 0; // false
 	if (! doc["volume_enable_effect"].isUnbound())
-		contextPtr->volume.effectDefault = contextPtr->volume.effect = doc["volume_enable_effect"] ? 100 : 0; // false
+		contextPtr->deviceSettings.effectDefault = contextPtr->deviceState.effect = doc["volume_enable_effect"] ? 100 : 0; // false
 	if (! doc["volume_auto_turnon"].isUnbound())
-		contextPtr->volume.autoTurnOn = doc["volume_auto_turnon"]; // true
+		contextPtr->deviceSettings.autoSoundOn = doc["volume_auto_turnon"]; // true
 	if (! doc["threshold_low_battery"].isUnbound())
-		contextPtr->threshold.lowBattery = doc["threshold_low_battery"]; // 2.9
+		contextPtr->deviceSettings.lowBattery = doc["threshold_low_battery"]; // 2.9
 	if (! doc["threshold_auto_shutdown"].isUnbound())
-		contextPtr->threshold.autoShutdownVario = doc["threshold_auto_shutdown"]; // 600000
+		contextPtr->deviceSettings.shutdownTimeout = doc["threshold_auto_shutdown"]; // 600000
 #if OBSOLETE
 	if (! doc["kalman_var_zmeas"].isUnbound())
 		contextPtr->kalman.varZMeas = doc["kalman_var_zmeas"]; // 400
@@ -333,40 +318,39 @@ void DeviceRepository::set(JsonDocument& doc)
 		contextPtr->kalman.varAccelBias = doc["kalman_var_abias"]; // 1
 #endif
 	if (! doc["device_enable_bt"].isUnbound())
-		contextPtr->deviceDefault.enableBT = doc["device_enable_bt"]; // false
+		contextPtr->deviceSettings.enableBT = doc["device_enable_bt"]; // false
 	if (! doc["device_enable_sound"].isUnbound())
-		contextPtr->deviceDefault.enableSound = doc["device_enable_sound"]; // false
+		contextPtr->deviceSettings.enableSound = doc["device_enable_sound"]; // false
 	if (! doc["device_bt_name"].isUnbound())
-		strcpy(contextPtr->deviceDefault.btName, (const char *)doc["device_bt_name"]); // "MiniVario"
+		strcpy(contextPtr->deviceSettings.btName, (const char *)doc["device_bt_name"]); // "MiniVario"
 	if (! doc["device_enable_simulation"].isUnbound())
-		contextPtr->deviceDefault.enableSimulation = doc["device_enable_simulation"]; // false
+		contextPtr->deviceSettings.enableSimulation = doc["device_enable_simulation"]; // false
 	if (! doc["device_enable_nmea_logging"].isUnbound())
-		contextPtr->deviceDefault.enableNmeaLogging = doc["device_enable_nmea_logging"]; // false
+		contextPtr->deviceSettings.enableNmeaLogging = doc["device_enable_nmea_logging"]; // false
 	if (! doc["wifi_ssid"].isUnbound())
-		strcpy(contextPtr->deviceDefault.wifiSSID, (const char *)doc["wifi_ssid"]); // "MiniVario"
+		strcpy(contextPtr->deviceSettings.wifiSSID, (const char *)doc["wifi_ssid"]); // "MiniVario"
 	if (! doc["wifi_password"].isUnbound())
-		strcpy(contextPtr->deviceDefault.wifiPassword, (const char *)doc["wifi_password"]); // "123456789"
+		strcpy(contextPtr->deviceSettings.wifiPassword, (const char *)doc["wifi_password"]); // "123456789"
 	if (! doc["timezone"].isUnbound())
 	{
-		contextPtr->deviceDefault.timezone = doc["timezone"]; // 9
-		contextPtr->deviceDefault.timezoneOffset = (time_t)(contextPtr->deviceDefault.timezone * 3600.0f);
+		contextPtr->deviceSettings.timezone = doc["timezone"]; // 9
+		contextPtr->deviceState.timezoneOffset = (time_t)(contextPtr->deviceSettings.timezone * 3600.0f);
 	}
 }
 
 void DeviceRepository::dump()
 {
-	LOGv("DeviceDefault.enableBT = %d", contextPtr->deviceDefault.enableBT);
-	LOGv("DeviceDefault.enableSound = %d", contextPtr->deviceDefault.enableSound);
-	LOGv("DeviceDefault.enableSimulation = %d", contextPtr->deviceDefault.enableSimulation);
-	LOGv("DeviceDefault.enableNmeaLogging = %d", contextPtr->deviceDefault.enableNmeaLogging);
-	LOGv("DeviceDefault.btName = %s", contextPtr->deviceDefault.btName);
-	LOGv("DeviceDefault.wifiSSID = %s", contextPtr->deviceDefault.wifiSSID);
-	LOGv("DeviceDefault.wifiPassword = %s", contextPtr->deviceDefault.wifiPassword);
-	LOGv("DeviceDefault.timezone = %f", contextPtr->deviceDefault.timezone);
-
-	LOGv("VolumeSettings.vario = %d", contextPtr->volume.vario);
-	LOGv("VolumeSettings.effect = %d", contextPtr->volume.effect);
-	LOGv("VolumeSettings.autoTurnOn = %d", contextPtr->volume.autoTurnOn);
+	LOGv("DeviceDefault.enableBT = %d", contextPtr->deviceSettings.enableBT);
+	LOGv("DeviceDefault.enableSound = %d", contextPtr->deviceSettings.enableSound);
+	LOGv("DeviceDefault.enableSimulation = %d", contextPtr->deviceSettings.enableSimulation);
+	LOGv("DeviceDefault.enableNmeaLogging = %d", contextPtr->deviceSettings.enableNmeaLogging);
+	LOGv("DeviceDefault.btName = %s", contextPtr->deviceSettings.btName);
+	LOGv("DeviceDefault.wifiSSID = %s", contextPtr->deviceSettings.wifiSSID);
+	LOGv("DeviceDefault.wifiPassword = %s", contextPtr->deviceSettings.wifiPassword);
+	LOGv("DeviceDefault.timezone = %f", contextPtr->deviceSettings.timezone);
+	LOGv("VolumeSettings.autoSoundOn = %d", contextPtr->deviceSettings.autoSoundOn);
+	LOGv("VolumeSettings.vario = %d", contextPtr->deviceSettings.varioDefault);
+	LOGv("VolumeSettings.effect = %d", contextPtr->deviceSettings.effectDefault);
 
 	LOGv("VarioSettings.sinkThreshold = %f", contextPtr->varioSettings.sinkThreshold);
 	LOGv("VarioSettings.climbThreshold = %f", contextPtr->varioSettings.climbThreshold);
@@ -377,18 +361,20 @@ void DeviceRepository::dump()
 	LOGv("VarioSettings.altitudeRef3 = %f", contextPtr->varioSettings.altitudeRef3);
 	LOGv("VarioSettings.dampingFactor = %f", contextPtr->varioSettings.dampingFactor);
 
-	//LOGv("KalmanParameter.varZMeas = %f", contextPtr->kalman.varZMeas);
-	//LOGv("KalmanParameter.varZAccel = %f", contextPtr->kalman.varZAccel);
-	//LOGv("KalmanParameter.varAccelBias = %f", contextPtr->kalman.varAccelBias);
+#if OBSOLETE
+	LOGv("KalmanParameter.varZMeas = %f", contextPtr->kalman.varZMeas);
+	LOGv("KalmanParameter.varZAccel = %f", contextPtr->kalman.varZAccel);
+	LOGv("KalmanParameter.varAccelBias = %f", contextPtr->kalman.varAccelBias);
+#endif
 
-	LOGv("GliderInfo.type = %d", contextPtr->gliderInfo.type);
-	LOGv("GliderInfo.manufacture = %s", contextPtr->gliderInfo.manufacture);
-	LOGv("GliderInfo.model = %s", contextPtr->gliderInfo.model);
+	LOGv("GliderInfo.type = %d", contextPtr->userSettings.gliderType);
+	LOGv("GliderInfo.manufacture = %s", contextPtr->userSettings.gliderManufacture);
+	LOGv("GliderInfo.model = %s", contextPtr->userSettings.gliderModel);
 
-	LOGv("IGCLogger.enable = %d", contextPtr->logger.enable);
-	LOGv("IGCLogger.takeoffSpeed = %d", contextPtr->logger.takeoffSpeed);
-	LOGv("IGCLogger.landingSpeed = %d", contextPtr->logger.landingSpeed);
-	LOGv("IGCLogger.landingTimeout = %d", contextPtr->logger.landingTimeout);
-	LOGv("IGCLogger.loggingInterval = %d", contextPtr->logger.loggingInterval);
-	LOGv("IGCLogger.pilot = %s", contextPtr->logger.pilot);
+	LOGv("IGCLogger.enable = %d", contextPtr->deviceSettings.enableLogging);
+	LOGv("IGCLogger.takeoffSpeed = %d", contextPtr->deviceSettings.takeoffSpeed);
+	LOGv("IGCLogger.landingSpeed = %d", contextPtr->deviceSettings.landingSpeed);
+	LOGv("IGCLogger.landingTimeout = %d", contextPtr->deviceSettings.landingTimeout);
+	LOGv("IGCLogger.loggingInterval = %d", contextPtr->deviceSettings.loggingInterval);
+	LOGv("IGCLogger.pilot = %s", contextPtr->userSettings.pilot);
 }

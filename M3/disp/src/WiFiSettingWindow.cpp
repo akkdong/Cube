@@ -84,7 +84,7 @@ void WiFiSettingWindow::onDraw()
     m_pRefCanvas->setTextSize(32);
     m_pRefCanvas->drawString("1. Connect to WiFi", x, y);
     x = 110; y = 196;
-    sprintf(sz, "SSID: %s, Password: %s", contextPtr->deviceDefault.wifiSSID, contextPtr->deviceDefault.wifiPassword[0] ? contextPtr->deviceDefault.wifiPassword : "");
+    sprintf(sz, "SSID: %s, Password: %s", contextPtr->deviceSettings.wifiSSID, contextPtr->deviceSettings.wifiPassword[0] ? contextPtr->deviceSettings.wifiPassword : "");
     m_pRefCanvas->drawString(sz, x, y);
 
     x = 82; y = 280;

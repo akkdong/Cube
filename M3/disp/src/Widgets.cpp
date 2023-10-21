@@ -107,7 +107,7 @@ int Annunciator::update(DeviceContext* context, uint32_t updateHints)
     state |= (uint32_t)context->deviceState.statusBT << 10;
     state |= (uint32_t)context->deviceState.statusGPS << 8;
     state |= (uint32_t)context->deviceState.statusSDCard << 6;
-    state |= (uint32_t)(context->volume.vario > 0 ? 1 : 0) << 4;
+    state |= (uint32_t)(context->deviceState.mute == 0 ? 1 : 0) << 4;
     
     uint32_t bat = 4; // empty, 1/3, 1/2, full, charging
     if (context->deviceState.batteryPower < 4.28)
@@ -598,10 +598,10 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
         m_pValueProvider->setValue(context->flightState.distNextPoint / 1000.0f);
         break;
     case ValueBox::VType::DISTANCE_FLIGHT:
-        m_pValueProvider->setValue(context->flightState.distFlightAccum / 1000.0f);
+        m_pValueProvider->setValue(context->flightState.distFlightTotal / 1000.0f);
         break;
     case ValueBox::VType::GLIDE_RATIO:
-        m_pValueProvider->setValue(context->flightState.glideRatio);
+        m_pValueProvider->setValue(context->flightState.glidingRatio);
         break;
     case ValueBox::VType::SENSOR_PRESSURE:
         m_pValueProvider->setValue(context->varioState.pressure);
@@ -797,11 +797,12 @@ void ThermalAssist::onDraw()
     //
 	float theta = TO_RADIAN(180 - context->varioState.heading);
 
-	for (int i = context->flightState.rearPoint; i != context->flightState.frontPoint; )
+    const TrackHistory &trackHistory = context->flightState.trackHistory;
+	for (int i = trackHistory.rear; i != trackHistory.front; )
 	{
 #if 1 // 0 clock is heading
-		float x0 = context->flightState.trackDistance[i].dx * ZOOM_FACTOR;
-		float y0 = context->flightState.trackDistance[i].dy * ZOOM_FACTOR;
+		float x0 = trackHistory.dist[i].dx * ZOOM_FACTOR;
+		float y0 = trackHistory.dist[i].dy * ZOOM_FACTOR;
 
 		int16_t x = (m_x + m_w / 2) - (int16_t)(x0 * cos(theta) - y0 * sin(theta));
 		int16_t y = (m_y + m_h / 2) - (int16_t)(x0 * sin(theta) + y0 * cos(theta));
@@ -809,13 +810,13 @@ void ThermalAssist::onDraw()
 		int16_t x = m_x + m_w / 2;
 		int16_t y = m_y + m_h / 2;
 
-		x -= context->flightState.trackDistance[i].dx * ZOOM_FACTOR;
-		y += context->flightState.trackDistance[i].dy * ZOOM_FACTOR;
+		x -= trackHistory.dist[i].dx * ZOOM_FACTOR;
+		y += trackHistory.dist[i].dy * ZOOM_FACTOR;
 #endif
 
 		if (m_x + 2 < x && m_y + 2 < y && x < m_x + m_w - 2 && y < m_y + m_h - 2)
 		{
-			if (context->flightState.trackPoints[i].vario < 0)
+			if (trackHistory.points[i].vario < 0)
 			{
 				m_pRefCanvas->drawRect(x - 3, y - 3, 6, 6, M5EPD_Canvas::G15);
 			}
@@ -823,8 +824,8 @@ void ThermalAssist::onDraw()
 			{
 				int16_t r = 4;
 
-				if (context->flightState.trackPoints[i].vario > 1)
-					r = (context->flightState.trackPoints[i].vario > 2) ? 8 : 6;
+				if (trackHistory.points[i].vario > 1)
+					r = (trackHistory.points[i].vario > 2) ? 8 : 6;
 
 				m_pRefCanvas->drawCircle(x, y, r, M5EPD_Canvas::G15);
 			}

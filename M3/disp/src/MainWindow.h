@@ -70,6 +70,7 @@ protected:
     void showMessage(const char *msg);
 
     void changePage(int pageNum);
+    void saveScreen();
 
     //
     virtual void onActive();
