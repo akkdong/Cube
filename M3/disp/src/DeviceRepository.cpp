@@ -144,8 +144,8 @@ void DeviceRepository::reset()
 #endif
 	
 	//
-	contextPtr->deviceSettings.varioDefault = contextPtr->deviceState.vario = VARIOMETER_BEEP_VOLUME;
-	contextPtr->deviceSettings.effectDefault = contextPtr->deviceState.effect = VARIOMETER_EFFECT_VOLUME;
+	contextPtr->deviceSettings.varioDefault = contextPtr->deviceState.varioVolume = VARIOMETER_BEEP_VOLUME;
+	contextPtr->deviceSettings.effectDefault = contextPtr->deviceState.effectVolume = VARIOMETER_EFFECT_VOLUME;
 	contextPtr->deviceSettings.autoSoundOn = 1;
 	
 	//
@@ -300,9 +300,9 @@ void DeviceRepository::set(JsonDocument& doc)
 	if (! doc["igc_pilot"].isUnbound())
 		strcpy(contextPtr->userSettings.pilot, (const char *)doc["igc_pilot"]); // "akkdong"
 	if (! doc["volume_enable_vario"].isUnbound())
-		contextPtr->deviceSettings.varioDefault = contextPtr->deviceState.vario = doc["volume_enable_vario"] ? 100 : 0; // false
+		contextPtr->deviceSettings.varioDefault = contextPtr->deviceState.varioVolume = doc["volume_enable_vario"] ? 100 : 0; // false
 	if (! doc["volume_enable_effect"].isUnbound())
-		contextPtr->deviceSettings.effectDefault = contextPtr->deviceState.effect = doc["volume_enable_effect"] ? 100 : 0; // false
+		contextPtr->deviceSettings.effectDefault = contextPtr->deviceState.effectVolume = doc["volume_enable_effect"] ? 100 : 0; // false
 	if (! doc["volume_auto_turnon"].isUnbound())
 		contextPtr->deviceSettings.autoSoundOn = doc["volume_auto_turnon"]; // true
 	if (! doc["threshold_low_battery"].isUnbound())

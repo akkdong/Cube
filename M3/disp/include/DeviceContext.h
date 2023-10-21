@@ -195,8 +195,8 @@ struct DeviceState
 	float			humidity;
 
     // volumn
-	uint8_t			vario;
-	uint8_t			effect;  
+	uint8_t			varioVolume;
+	uint8_t			effectVolume;
     uint8_t         mute;               // 0: sound-on, 1: sound-off
 	
 	uint8_t			statusGPS;		    // 0: unfixed, 1: fixed

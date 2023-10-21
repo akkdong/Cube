@@ -252,9 +252,6 @@ void MainWindow::onKeyLongPressed(uint32_t key)
 
         // show command
         this->showMessage(muteCmd.c_str());
-
-        // ignore key-left
-        m_lastKey = 0;
     }
     else if (key == KEY_RIGHT)
     {
@@ -265,17 +262,11 @@ void MainWindow::onKeyLongPressed(uint32_t key)
     {
         // show top-menu
         Application::getApp()->sendMessage(MSG_SHOW_TOPMENU, 0);
-
-        // ignore key-up
-        m_lastKey = 0;
     }
     else if (key == EXT_KEY_RIGHT)
     {
         // show statistic
         Application::getApp()->sendMessage(MSG_SHOW_STATISTIC, 0);
-
-        // ignore key-up
-        m_lastKey = 0;
     }
     else if (key == EXT_KEY_UP)
     {
@@ -298,6 +289,9 @@ void MainWindow::onKeyLongPressed(uint32_t key)
         this->showMessage(str.c_str());
         */
     }
+
+    // ignore any-key
+    m_lastKey = 0;
 }
 
 void MainWindow::onKeyReleased(uint32_t key)

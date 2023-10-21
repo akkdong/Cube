@@ -413,8 +413,9 @@ void Application::update()
             contextPtr->varioState.altitudeBaro = NMEA.getAltitudeBaro();
             contextPtr->varioState.speedVertActive = NMEA.getVerticalSpeed();
 
-            //contextPtr->volume.vario = NMEA.isMuted() ? 0 : 100;
-            //contextPtr->volume.effect = NMEA.isMuted() ? 0 : 100;
+            contextPtr->deviceState.mute = NMEA.isMuted();
+            contextPtr->deviceState.varioVolume = contextPtr->deviceState.mute ? 0 : 100;
+            contextPtr->deviceState.effectVolume = contextPtr->deviceState.mute ? 0 : 100;
 
             //contextPtr->varioState.altitudeBaro = calculateAltitude(contextPtr->varioState.pressure);
             //contextPtr->varioState.altitudeCalibrated = contextPtr->varioState.altitudeBaro - contextPtr->varioState.altitudeDrift;
@@ -444,11 +445,11 @@ void Application::update()
 
                 //
                 //if (Application::deviceMode != MODE_GROUND && contextPtr->deviceState.statusGPS == 0)
-                if (Application::deviceMode == MODE_GROUND)
+                if (Application::deviceMode == MODE_GROUND && !portalPtr)
                 {
                     uint32_t curTick = now; // millis()
 
-                    if (velocity < STABLE_SINKING_THRESHOLD || STABLE_SINKING_THRESHOLD < velocity)
+                    if (velocity < STABLE_SINKING_THRESHOLD || STABLE_CLIMBING_THRESHOLD < velocity)
                         tick_silentBase = curTick;
 
                     if (contextPtr->deviceSettings.shutdownTimeout && ((curTick - tick_silentBase) > contextPtr->deviceSettings.shutdownTimeout))
@@ -551,6 +552,11 @@ void Application::startVario()
 
     vTaskResume(taskScreen);
     vTaskResume(taskDevice);
+
+    if (contextPtr->deviceState.varioVolume == 0)
+        Serial1.println("MUTE 1");
+    else
+        Serial1.println("MUTE 0");
 }
 
 void Application::startFlight()
@@ -746,10 +752,11 @@ void Application::stopFlight()
 
     if (contextPtr->deviceSettings.autoSoundOn)
     {
-        contextPtr->deviceState.vario = contextPtr->deviceSettings.varioDefault;
-        contextPtr->deviceState.effect = contextPtr->deviceSettings.effectDefault;
+        contextPtr->deviceState.varioVolume = contextPtr->deviceSettings.varioDefault;
+        contextPtr->deviceState.effectVolume = contextPtr->deviceSettings.effectDefault;
 
-        Serial1.println("MUTE 1");
+        if (contextPtr->deviceState.varioVolume == 0)
+            Serial1.println("MUTE 1");
     }
 
     LOGi("Stop Flight!");
