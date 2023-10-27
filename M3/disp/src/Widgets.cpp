@@ -76,6 +76,63 @@ void Widget::show(bool show)
 }
 
 
+void Widget::drawArrow1(int cx, int cy, int radius, int angle)
+{
+    Point points[4];
+
+    points[0].x = cx + (int)(radius * sin(angle * DEG_TO_RAD));
+    points[0].y = cy - (int)(radius * cos(angle * DEG_TO_RAD));
+    points[1].x = cx + (int)(radius / 3 * sin((angle + 180) * DEG_TO_RAD));
+    points[1].y = cy - (int)(radius / 3 * cos((angle + 180) * DEG_TO_RAD));
+    points[2].x = cx + (int)(radius * sin((angle - 140) * DEG_TO_RAD));
+    points[2].y = cy - (int)(radius * cos((angle - 140) * DEG_TO_RAD));
+    points[3].x = cx + (int)(radius * sin((angle + 140) * DEG_TO_RAD));
+    points[3].y = cy - (int)(radius * cos((angle + 140) * DEG_TO_RAD));
+
+    #if METHOD_1
+    m_pRefCanvas->drawTriangle(
+        points[0].x, points[0].y,
+        points[1].x, points[1].y,
+        points[2].x, points[2].y,
+        M5EPD_Canvas::G15);
+
+    m_pRefCanvas->drawTriangle(
+        points[0].x, points[0].y,
+        points[1].x, points[1].y,
+        points[2].x, points[2].y,
+        M5EPD_Canvas::G15);
+    #else
+    m_pRefCanvas->drawLine(points[0].x, points[0].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawLine(points[2].x, points[2].y, points[1].x, points[1].y, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawLine(points[1].x, points[1].y, points[3].x, points[3].y, M5EPD_Canvas::G15);
+    m_pRefCanvas->drawLine(points[3].x, points[3].y, points[0].x, points[0].y, M5EPD_Canvas::G15);
+    #endif
+}
+
+void Widget::drawArrow2(int cx, int cy, int radius, int angle, bool fill)
+{
+    Point points[4];
+
+    points[0].x = cx + (int)(radius * sin(angle * DEG_TO_RAD));
+    points[0].y = cy - (int)(radius * cos(angle * DEG_TO_RAD));
+    points[1].x = cx + (int)((radius - 16) * sin((angle + 12) * DEG_TO_RAD));
+    points[1].y = cy - (int)((radius - 16) * cos((angle + 12) * DEG_TO_RAD));
+    points[2].x = cx + (int)((radius - 16) * sin((angle - 12) * DEG_TO_RAD));
+    points[2].y = cy - (int)((radius - 16) * cos((angle - 12) * DEG_TO_RAD));
+
+    if (fill)
+    {
+        m_pRefCanvas->fillTriangle(points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
+    }
+    else
+    {
+        m_pRefCanvas->drawLine(points[0].x, points[0].y, points[1].x, points[1].y, M5EPD_Canvas::G15);
+        m_pRefCanvas->drawLine(points[1].x, points[1].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
+        m_pRefCanvas->drawLine(points[2].x, points[2].y, points[0].x, points[0].y, M5EPD_Canvas::G15);
+    }
+}
+
+
 
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -800,19 +857,25 @@ void ThermalAssist::onDraw()
     const TrackHistory &trackHistory = context->flightState.trackHistory;
 	for (int i = trackHistory.rear; i != trackHistory.front; )
 	{
-#if 1 // 0 clock is heading
-		float x0 = trackHistory.dist[i].dx * ZOOM_FACTOR;
-		float y0 = trackHistory.dist[i].dy * ZOOM_FACTOR;
-
-		int16_t x = (m_x + m_w / 2) - (int16_t)(x0 * cos(theta) - y0 * sin(theta));
-		int16_t y = (m_y + m_h / 2) - (int16_t)(x0 * sin(theta) + y0 * cos(theta));
-#else // 0 clock is north
 		int16_t x = m_x + m_w / 2;
 		int16_t y = m_y + m_h / 2;
 
-		x -= trackHistory.dist[i].dx * ZOOM_FACTOR;
-		y += trackHistory.dist[i].dy * ZOOM_FACTOR;
-#endif
+        float x0 = trackHistory.dist[i].dx * ZOOM_FACTOR;
+        float y0 = trackHistory.dist[i].dy * ZOOM_FACTOR;
+
+        if (context->deviceSettings.compassUpside == UP_NORTH)
+        {
+            // 0 clock is north
+            x += x0;
+            y += y0;
+        }
+        else /*if (context->deviceSettings.compassUpside == UP_HEADING)*/
+        {
+            // 0 clock is heading
+
+            x -= (int16_t)(x0 * cos(theta) - y0 * sin(theta));
+            y -= (int16_t)(x0 * sin(theta) + y0 * cos(theta));
+        }
 
 		if (m_x + 2 < x && m_y + 2 < y && x < m_x + m_w - 2 && y < m_y + m_h - 2)
 		{
@@ -836,15 +899,33 @@ void ThermalAssist::onDraw()
 
 	// draw glider
 	{
+        int16_t heading = context->varioState.heading;
+        int16_t bearing = -1;
+        uint8_t method = context->deviceSettings.compassUpside;
+
+        int angle, up = 0;
+        int radius = this->m_w / 2 - 4;
+
+        if (method == UP_TARGET && bearing < 0) // bearing < 0 : n/a
+            method = UP_HEADING;    
+        if (method == UP_HEADING)
+            up = heading;
+        else if (method == UP_TARGET) 
+            up = bearing;
+        // else up = 0
+
 		int16_t cx = m_x + m_w / 2;
 		int16_t cy = m_y + m_h / 2;
 
-        #if METHOD_1
-		m_pRefCanvas->drawLine(cx - 18, cy, cx, cy - 28, M5EPD_Canvas::G15);
-		m_pRefCanvas->drawLine(cx, cy - 28, cx + 18, cy, M5EPD_Canvas::G15);
-        #else
-        m_pRefCanvas->fillTriangle(cx - 18, cy + 16, cx, cy - 16, cx + 18, cy + 16, M5EPD_Canvas::G15);
-        #endif
+        int angle = heading - up;
+        drawArrow2(cx, cy, 20, angle);
+
+        //#if METHOD_1
+		//m_pRefCanvas->drawLine(cx - 18, cy, cx, cy - 28, M5EPD_Canvas::G15);
+		//m_pRefCanvas->drawLine(cx, cy - 28, cx + 18, cy, M5EPD_Canvas::G15);
+        //#else
+        //m_pRefCanvas->fillTriangle(cx - 18, cy + 16, cx, cy - 16, cx + 18, cy + 16, M5EPD_Canvas::G15);
+        //#endif
 	}
 }
 
@@ -866,7 +947,7 @@ Compass::Compass(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
     : Widget(pRefCanvas, x, y, w, h)
     , m_heading(0)
     , m_bearing(-1)
-    , m_method(1)
+    , m_method(UP_HEADING)
 {
 }
 
@@ -875,6 +956,8 @@ int Compass::update(DeviceContext* context, uint32_t updateHints)
     m_heading = context->varioState.heading;
 //  m_bearing = context->flightState.bearingNextPoint;
     m_bearing = context->flightState.bearingTakeoff;
+
+    m_method = context->deviceSettings.compassUpside;
 
     return 0;
 }
@@ -886,12 +969,12 @@ void Compass::onDraw()
     int angle, up = 0;
     int radius = this->m_w / 2 - 4;
 
-    if (m_method == 2 && m_bearing < 0) // bearing < 0 : n/a
-        m_method = 1;
+    if (m_method == UP_TARGET && m_bearing < 0) // bearing < 0 : n/a
+        m_method = UP_HEADING;
 
-    if (m_method == 1)
+    if (m_method == UP_HEADING)
         up = m_heading;
-    else if (m_method == 2) 
+    else if (m_method == UP_TARGET) 
         up = m_bearing;
     // else up = 0
 
@@ -914,7 +997,7 @@ void Compass::onDraw()
 
     // draw heading
     angle = m_heading - up; // rotate counterclockwise
-    drawArrow(base_x, base_y, radius - 40, angle);
+    drawArrow1(base_x, base_y, radius - 40, angle);
 
     // draw bearing
     if (m_bearing >= 0)
@@ -922,66 +1005,13 @@ void Compass::onDraw()
         angle = m_bearing - up; // rotate counterclockwise
         drawArrow2(base_x, base_y, radius - 20, angle);
     }
-}
 
-void Compass::drawArrow(int cx, int cy, int radius, int angle)
-{
-    Point points[4];
-
-    points[0].x = cx + (int)(radius * sin(angle * DEG_TO_RAD));
-    points[0].y = cy - (int)(radius * cos(angle * DEG_TO_RAD));
-    points[1].x = cx + (int)(radius / 3 * sin((angle + 180) * DEG_TO_RAD));
-    points[1].y = cy - (int)(radius / 3 * cos((angle + 180) * DEG_TO_RAD));
-    points[2].x = cx + (int)(radius * sin((angle - 140) * DEG_TO_RAD));
-    points[2].y = cy - (int)(radius * cos((angle - 140) * DEG_TO_RAD));
-    points[3].x = cx + (int)(radius * sin((angle + 140) * DEG_TO_RAD));
-    points[3].y = cy - (int)(radius * cos((angle + 140) * DEG_TO_RAD));
-
-    #if METHOD_1
-    m_pRefCanvas->drawTriangle(
-        points[0].x, points[0].y,
-        points[1].x, points[1].y,
-        points[2].x, points[2].y,
-        M5EPD_Canvas::G15);
-
-    m_pRefCanvas->drawTriangle(
-        points[0].x, points[0].y,
-        points[1].x, points[1].y,
-        points[2].x, points[2].y,
-        M5EPD_Canvas::G15);
-    #else
-    m_pRefCanvas->drawLine(points[0].x, points[0].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
-    m_pRefCanvas->drawLine(points[2].x, points[2].y, points[1].x, points[1].y, M5EPD_Canvas::G15);
-    m_pRefCanvas->drawLine(points[1].x, points[1].y, points[3].x, points[3].y, M5EPD_Canvas::G15);
-    m_pRefCanvas->drawLine(points[3].x, points[3].y, points[0].x, points[0].y, M5EPD_Canvas::G15);
-    #endif
-}
-
-void Compass::drawArrow2(int cx, int cy, int radius, int angle)
-{
-    Point points[4];
-
-    points[0].x = cx + (int)(radius * sin(angle * DEG_TO_RAD));
-    points[0].y = cy - (int)(radius * cos(angle * DEG_TO_RAD));
-    points[1].x = cx + (int)((radius - 16) * sin((angle + 12) * DEG_TO_RAD));
-    points[1].y = cy - (int)((radius - 16) * cos((angle + 12) * DEG_TO_RAD));
-    points[2].x = cx + (int)((radius - 16) * sin((angle - 12) * DEG_TO_RAD));
-    points[2].y = cy - (int)((radius - 16) * cos((angle - 12) * DEG_TO_RAD));
-    points[3].x = cx + (int)((radius - 6) * sin((angle + 180) * DEG_TO_RAD));
-    points[3].y = cy - (int)((radius - 6) * cos((angle + 180) * DEG_TO_RAD));
-
-    #if METHOD_1
-    m_pRefCanvas->drawLine(points[0].x, points[0].y, points[1].x, points[1].y, M5EPD_Canvas::G15);
-    m_pRefCanvas->drawLine(points[0].x, points[0].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
-    m_pRefCanvas->drawLine(points[0].x, points[0].y, points[3].x, points[3].y, M5EPD_Canvas::G15);
-
-    m_pRefCanvas->drawCircle(points[3].x, points[3].y, 6, M5EPD_Canvas::G15);
-    #else
-    //m_pRefCanvas->drawLine(points[0].x, points[0].y, points[1].x, points[1].y, M5EPD_Canvas::G15);
-    //m_pRefCanvas->drawLine(points[1].x, points[1].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
-    //m_pRefCanvas->drawLine(points[2].x, points[2].y, points[0].x, points[0].y, M5EPD_Canvas::G15);
-    m_pRefCanvas->fillTriangle(points[0].x, points[0].y, points[1].x, points[1].y, points[2].x, points[2].y, M5EPD_Canvas::G15);
-    #endif
+    // draw next
+    //if (m_nextBearing >= 0)
+    //{
+    //    angle = m_nextBearing - up; // rotate counterclockwise
+    //    drawArrow2(base_x, base_y, radius - 20, angle, false);
+    //}
 }
 
 

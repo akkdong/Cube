@@ -49,30 +49,6 @@
                 "min": 0.0,
                 "max": 2000.0,
                 "step": 1
-            },
-            {
-                "type": "number",
-                "name": "Damping Factor",
-                "key": "vario_damping_factor",
-                "min": 0.0,
-                "max": 1.0,
-                "step": 0.01
-            },
-            {
-                "type": "number",
-                "name": "Kalman Variance ZMeans",
-                "key": "kalman_var_zmeas",
-                "min": 100.0,
-                "max": 500.0,
-                "step": 10.0
-            },
-            {
-                "type": "number",
-                "name": "Kalman Variance ZAccel",
-                "key": "kalman_var_zaccel",
-                "min": 10000.0,
-                "max": 100000.0,
-                "step": 1000.0
             }
         ]
     },
@@ -232,6 +208,16 @@
                     { "value": 11.0, "name": "GMT + 11" },
                     { "value": 11.5, "name": "GMT + 11.5" },
                     { "value": 12.0, "name": "GMT + 12" }
+                ]
+            },
+            {
+                "type": "select-inline",
+                "name": "Compass Up",
+                "key": "compass_up",
+                "options": [
+                    { "value": 0, "name": "North" },
+                    { "value": 1, "name": "Heading" },
+                    { "value": 2, "name": "Target" }
                 ]
             }
 		]

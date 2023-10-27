@@ -144,8 +144,7 @@ void DeviceRepository::reset()
 #endif
 	
 	//
-	contextPtr->deviceSettings.varioDefault = contextPtr->deviceState.varioVolume = VARIOMETER_BEEP_VOLUME;
-	contextPtr->deviceSettings.effectDefault = contextPtr->deviceState.effectVolume = VARIOMETER_EFFECT_VOLUME;
+	contextPtr->deviceSettings.volume = contextPtr->deviceState.volume = VARIOMETER_BEEP_VOLUME;
 	contextPtr->deviceSettings.autoSoundOn = 1;
 	
 	//
@@ -168,6 +167,7 @@ void DeviceRepository::reset()
 
     contextPtr->deviceSettings.timezone = VARIOMETER_TIME_ZONE; 			// GMT+9	
 	contextPtr->deviceState.timezoneOffset = (time_t)(VARIOMETER_TIME_ZONE * 3600.0f);
+	contextPtr->deviceSettings.compassUpside = CompassUpside::UP_HEADING;
 
 	strcpy(contextPtr->deviceSettings.btName, "CubeM3-001");
 	strcpy(contextPtr->deviceSettings.wifiSSID, "CubeM3");
@@ -300,9 +300,11 @@ void DeviceRepository::set(JsonDocument& doc)
 	if (! doc["igc_pilot"].isUnbound())
 		strcpy(contextPtr->userSettings.pilot, (const char *)doc["igc_pilot"]); // "akkdong"
 	if (! doc["volume_enable_vario"].isUnbound())
-		contextPtr->deviceSettings.varioDefault = contextPtr->deviceState.varioVolume = doc["volume_enable_vario"] ? 100 : 0; // false
+		contextPtr->deviceSettings.volume = contextPtr->deviceState.volume = doc["volume_enable_vario"] ? 100 : 0; // false
+	#if OBSOLETE
 	if (! doc["volume_enable_effect"].isUnbound())
-		contextPtr->deviceSettings.effectDefault = contextPtr->deviceState.effectVolume = doc["volume_enable_effect"] ? 100 : 0; // false
+		contextPtr->deviceSettings.effect = contextPtr->deviceState.effect = doc["volume_enable_effect"] ? 100 : 0; // false
+	#endif
 	if (! doc["volume_auto_turnon"].isUnbound())
 		contextPtr->deviceSettings.autoSoundOn = doc["volume_auto_turnon"]; // true
 	if (! doc["threshold_low_battery"].isUnbound())
@@ -336,6 +338,8 @@ void DeviceRepository::set(JsonDocument& doc)
 		contextPtr->deviceSettings.timezone = doc["timezone"]; // 9
 		contextPtr->deviceState.timezoneOffset = (time_t)(contextPtr->deviceSettings.timezone * 3600.0f);
 	}
+	if (! doc["compass_up"].isUnbound())
+		contextPtr->deviceSettings.compassUpside = doc["compass_up"];
 }
 
 void DeviceRepository::dump()
@@ -349,8 +353,7 @@ void DeviceRepository::dump()
 	LOGv("DeviceDefault.wifiPassword = %s", contextPtr->deviceSettings.wifiPassword);
 	LOGv("DeviceDefault.timezone = %f", contextPtr->deviceSettings.timezone);
 	LOGv("VolumeSettings.autoSoundOn = %d", contextPtr->deviceSettings.autoSoundOn);
-	LOGv("VolumeSettings.vario = %d", contextPtr->deviceSettings.varioDefault);
-	LOGv("VolumeSettings.effect = %d", contextPtr->deviceSettings.effectDefault);
+	LOGv("VolumeSettings.vario = %d", contextPtr->deviceSettings.volume);
 
 	LOGv("VarioSettings.sinkThreshold = %f", contextPtr->varioSettings.sinkThreshold);
 	LOGv("VarioSettings.climbThreshold = %f", contextPtr->varioSettings.climbThreshold);

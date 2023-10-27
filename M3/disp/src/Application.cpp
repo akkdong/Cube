@@ -414,8 +414,7 @@ void Application::update()
             contextPtr->varioState.speedVertActive = NMEA.getVerticalSpeed();
 
             contextPtr->deviceState.mute = NMEA.isMuted();
-            contextPtr->deviceState.varioVolume = contextPtr->deviceState.mute ? 0 : 100;
-            contextPtr->deviceState.effectVolume = contextPtr->deviceState.mute ? 0 : 100;
+            contextPtr->deviceState.volume = contextPtr->deviceState.mute ? 0 : 100;
 
             //contextPtr->varioState.altitudeBaro = calculateAltitude(contextPtr->varioState.pressure);
             //contextPtr->varioState.altitudeCalibrated = contextPtr->varioState.altitudeBaro - contextPtr->varioState.altitudeDrift;
@@ -553,10 +552,15 @@ void Application::startVario()
     vTaskResume(taskScreen);
     vTaskResume(taskDevice);
 
-    if (contextPtr->deviceState.varioVolume == 0)
+    if (contextPtr->deviceState.volume == 0)
+    {
         Serial1.println("MUTE 1");
+    }
     else
+    {
         Serial1.println("MUTE 0");
+        Serial1.println("PLAY WELCOME");
+    }
 }
 
 void Application::startFlight()
@@ -564,8 +568,8 @@ void Application::startFlight()
     // turn on sound if auto-turn-on is setted
     if (contextPtr->deviceSettings.autoSoundOn)
     {
-        //contextPtr->volume.effect = contextPtr->volume.vario = 100;
         Serial1.println("MUTE 0");
+        Serial1.println("PLAY TAKEOFF");
     }
 
     // start bt-logging
@@ -752,10 +756,9 @@ void Application::stopFlight()
 
     if (contextPtr->deviceSettings.autoSoundOn)
     {
-        contextPtr->deviceState.varioVolume = contextPtr->deviceSettings.varioDefault;
-        contextPtr->deviceState.effectVolume = contextPtr->deviceSettings.effectDefault;
+        contextPtr->deviceState.volume = contextPtr->deviceSettings.volume;
 
-        if (contextPtr->deviceState.varioVolume == 0)
+        if (contextPtr->deviceState.volume == 0)
             Serial1.println("MUTE 1");
     }
 

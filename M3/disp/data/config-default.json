@@ -31,5 +31,6 @@
     "device_enable_nmea_logging": false,
     "wifi_ssid": "Cube-M3",
     "wifi_password": "1234567890",
-    "timezone": 9
+    "timezone": 9,
+    "compass_up": 1
 }

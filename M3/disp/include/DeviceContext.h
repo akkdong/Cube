@@ -37,6 +37,12 @@ enum GliderType
 	GTYPE_PPG_WHEEL
 };
 
+enum CompassUpside
+{
+	UP_NORTH,
+	UP_HEADING,
+	UP_TARGET
+};
 
 struct VarioTone
 {
@@ -143,9 +149,8 @@ struct DeviceSettings
     int             landingTimeout; // flight
     int             loggingInterval;// logging
 
-    // volumn-settings
-	uint8_t			varioDefault;
-	uint8_t			effectDefault;
+    // volume-settings
+	uint8_t			volume;
 
 	//
 	char			wifiSSID[MAX_STRING_SIZE];
@@ -195,8 +200,7 @@ struct DeviceState
 	float			humidity;
 
     // volumn
-	uint8_t			varioVolume;
-	uint8_t			effectVolume;
+	uint8_t			volume;
     uint8_t         mute;               // 0: sound-on, 1: sound-off
 	
 	uint8_t			statusGPS;		    // 0: unfixed, 1: fixed

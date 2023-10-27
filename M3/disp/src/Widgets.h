@@ -46,6 +46,10 @@ public:
     Widget(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
     virtual ~Widget() {}
 
+    struct Point {
+        int x, y;
+    };
+
     //
     void setDirty(bool dirty);
     void setActive(bool active);
@@ -79,6 +83,11 @@ public:
     virtual int update(DeviceContext* context, uint32_t updateHints) { return 0; }
 
 protected:
+    //
+    void drawArrow1(int cx, int cy, int radius, int angle);
+    void drawArrow2(int cx, int cy, int radius, int angle, bool fill = true);
+
+
     //
     virtual void onDraw() {}
 
@@ -338,18 +347,10 @@ public:
     Compass(M5EPD_Canvas* pRefCanvas);
     Compass(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h);
 
-    struct Point {
-        int x, y;
-    };
-
     //
     virtual int update(DeviceContext* context, uint32_t updateHints);
 
 protected:
-    //
-    void drawArrow(int cx, int cy, int radius, int angle);
-    void drawArrow2(int cx, int cy, int radius, int angle);
-
     //
     virtual void onDraw();
 
