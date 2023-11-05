@@ -18,6 +18,7 @@
 #include "logger.h"
 
 #include "DeviceRepository.h"
+#include "Route.h"
 
 
 #define RADIUS 					(6371000) // 6371e3
@@ -188,6 +189,9 @@ void DeviceRepository::reset()
 	//
 	contextPtr->flightState.bearingTakeoff = -1;
 	contextPtr->flightState.glidingRatio = -1;
+
+	contextPtr->flightState.bearingTarget = -1;
+	contextPtr->flightState.bearingNextTarget = -1;
 }
 
 

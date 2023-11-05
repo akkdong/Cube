@@ -494,7 +494,7 @@ void ValueBox::init(uint32_t flag)
         title = "Bearing Takeoff";
         desc = "DEG";
         break;
-    case TARCK_BEARING_NEXT:
+    case TARCK_BEARING_NEXT_TARGET:
         title = "Bearing Next";
         desc = "DEG";
         break;
@@ -510,8 +510,12 @@ void ValueBox::init(uint32_t flag)
         title = "Time";
         desc = "hh:mm:ss";
         break;
-    case TIME_TO_NEXT_WAYPOINT:
-        title = "Time Next";
+    case TIME_TO_TARGET:
+        title = "Time Target";
+        desc = "mm:ss";
+        break;
+    case TIME_TO_NEXT_TARGET:
+        title = "Time N.Target";
         desc = "mm:ss";
         break;
     case TIME_REMAIN:
@@ -528,8 +532,12 @@ void ValueBox::init(uint32_t flag)
         desc = "km";
         decimalPlaces = 1;
         break;
-    case DISTANCE_NEXT_WAYPOINT:
-        title = "Dist. Next";
+    case DISTANCE_TARGET:
+        title = "Dist. Target";
+        desc = "km";
+        decimalPlaces = 1;
+    case DISTANCE_NEXT_TARGET:
+        title = "Dist. N.Target";
         desc = "km";
         decimalPlaces = 1;
         break;
@@ -574,7 +582,8 @@ void ValueBox::init(uint32_t flag)
     case TIME_CURRENT:
         m_pValueProvider = new TimeStringData(false);
         break;
-    case TIME_TO_NEXT_WAYPOINT:
+    case TIME_TO_TARGET:
+    case TIME_TO_NEXT_TARGET:
     case TIME_REMAIN:
         m_pValueProvider = new TimeStringData(true);
         break;
@@ -630,9 +639,10 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
     case ValueBox::VType::TARCK_BEARING_TAKEOFF:
         m_pValueProvider->setValue(context->flightState.bearingTakeoff);
         return 0;
-    case ValueBox::VType::TARCK_BEARING_NEXT:
-        m_pValueProvider->setValue(context->flightState.bearingNextPoint);
+    case ValueBox::VType::TARCK_BEARING_TARGET:
+        m_pValueProvider->setValue(context->flightState.bearingTarget);
         return 0;
+    // TARCK_BEARING_NEXT_TARGET
 //  case ValueBox::VType::TARCK_BEARING_LANDING:
 //      m_pValueProvider->setValue(context->flightState.beaaringLanding);
 //      return 0;
@@ -642,7 +652,9 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
     case ValueBox::VType::TIME_CURRENT:
         m_pValueProvider->setValue(context->varioState.timeCurrent);
         break;
-    case ValueBox::VType::TIME_TO_NEXT_WAYPOINT:
+    case ValueBox::VType::TIME_TO_TARGET:
+        break;
+    case ValueBox::VType::TIME_TO_NEXT_TARGET:
         return 0;
     case ValueBox::VType::TIME_REMAIN:
         return 0;
@@ -651,8 +663,11 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
         break;
     case ValueBox::VType::DISTANCE_LANDING:
         return 0;
-    case ValueBox::VType::DISTANCE_NEXT_WAYPOINT:
-        m_pValueProvider->setValue(context->flightState.distNextPoint / 1000.0f);
+    case ValueBox::VType::DISTANCE_TARGET:
+        m_pValueProvider->setValue(context->flightState.distTarget / 1000.0f);
+        return 0;
+    case ValueBox::VType::DISTANCE_NEXT_TARGET:
+        m_pValueProvider->setValue(context->flightState.distNextTarget / 1000.0f);
         break;
     case ValueBox::VType::DISTANCE_FLIGHT:
         m_pValueProvider->setValue(context->flightState.distFlightTotal / 1000.0f);
@@ -900,11 +915,9 @@ void ThermalAssist::onDraw()
 	// draw glider
 	{
         int16_t heading = context->varioState.heading;
-        int16_t bearing = -1;
+        int16_t bearing = context->flightState.bearingTarget;
         uint8_t method = context->deviceSettings.compassUpside;
-
-        int angle, up = 0;
-        int radius = this->m_w / 2 - 4;
+        int up = 0;
 
         if (method == UP_TARGET && bearing < 0) // bearing < 0 : n/a
             method = UP_HEADING;    
@@ -954,8 +967,7 @@ Compass::Compass(M5EPD_Canvas* pRefCanvas, int x, int y, int w, int h)
 int Compass::update(DeviceContext* context, uint32_t updateHints)
 {
     m_heading = context->varioState.heading;
-//  m_bearing = context->flightState.bearingNextPoint;
-    m_bearing = context->flightState.bearingTakeoff;
+    m_bearing = context->flightState.bearingTakeoff; // or bearingTarget, bearingNextTarget
 
     m_method = context->deviceSettings.compassUpside;
 

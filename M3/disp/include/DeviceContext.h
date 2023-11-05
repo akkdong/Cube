@@ -4,6 +4,7 @@
 #ifndef __DEVICE_CONTEXT_H__
 #define __DEVICE_CONTEXT_H__
 
+#include <memory>
 #include <time.h>
 
 #define MAX_STRING_SIZE					(16)
@@ -123,6 +124,9 @@ struct TrackHistory
 };
 */
 
+class XcTask;
+
+typedef std::shared_ptr<XcTask> XcTaskPtr;
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
@@ -273,8 +277,6 @@ struct VarioState // VarioDeviceState
 	int16_t			heading;
 	int16_t			headingLast;
 
-//	int16_t			bearing;
-	
 	//
 	float			pressure;
 	float			pressureLazy;
@@ -327,16 +329,19 @@ struct FlightState
 	float			distFlightTerm; // distFlight
 	float			distFlightTotal; // distFlightAccum
 
-
+	float			distTarget;
+	float			distNextTarget;
 
 	//
 	int16_t			bearingTakeoff;
 	int16_t			bearingNextPoint;
-    
-	float			distNextPoint;
+	int16_t			bearingTarget;
+	int16_t			bearingNextTarget;
 
 	//
 	FlightMode		flightMode;
+
+	XcTaskPtr		xcTaskPtr;
 };
 
 

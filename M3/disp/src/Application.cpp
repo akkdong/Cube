@@ -613,11 +613,14 @@ void Application::updateFlightState()
 {
 	// update flight time
 	contextPtr->flightState.flightTime = contextPtr->varioState.timeCurrent - contextPtr->flightState.takeoffTime;
-	// update bearing & distance from takeoff
+	// update target & distance from takeoff
 	contextPtr->flightState.bearingTakeoff = GET_BEARING(contextPtr->varioState.latitude, contextPtr->varioState.longitude, 
 			contextPtr->flightState.takeoffPos.lat, contextPtr->flightState.takeoffPos.lon);
 	contextPtr->flightState.distTakeoff = GET_DISTANCE(contextPtr->varioState.latitude, contextPtr->varioState.longitude, 
 			contextPtr->flightState.takeoffPos.lat, contextPtr->flightState.takeoffPos.lon);
+    //contextPtr->flightState.bearingTarget = xxx;
+    //contextPtr->flightState.bearingNextTarget = xxx;
+
 	// and update total flight distance
 	contextPtr->flightState.distFlightTerm = GET_DISTANCE(contextPtr->varioState.latitude, contextPtr->varioState.longitude, 
 			contextPtr->varioState.latitudeLast, contextPtr->varioState.longitudeLast);

@@ -10,13 +10,21 @@
 #include <numeric>
 #include <vector>
 
+#if GEOGRAPHICLIB_PRECISION == 1
+typedef float Float;
+#elif GEOGRAPHICLIB_PRECISION == 2
+typedef double Float;
+#else
+typedef double Float;
+#endif
+
 namespace bfgs {
 
 class result {
 public:
   result() = delete;
-  result(bool success, const Eigen::VectorXd &x, double fval, double nfev,
-         double njev, double nit, const std::vector<Eigen::VectorXd> &path)
+  result(bool success, const Eigen::VectorXd &x, Float fval, Float nfev,
+         Float njev, Float nit, const std::vector<Eigen::VectorXd> &path)
       : success(success), x(x), fval(fval), nfev(nfev), njev(njev), nit(nit),
         path(path) {}
   friend std::ostream &operator<<(std::ostream &os, const result &r) {
@@ -48,14 +56,14 @@ public:
   }
   bool success;
   Eigen::VectorXd x;
-  double fval;
-  double nfev;
-  double njev;
-  double nit;
+  Float fval;
+  Float nfev;
+  Float njev;
+  Float nit;
   std::vector<Eigen::VectorXd> path;
 };
 
-const double epsilon = std::sqrt(std::numeric_limits<double>::epsilon());
+const Float epsilon = std::sqrt(std::numeric_limits<Float>::epsilon());
 template <typename T> class optimizer {
 public:
   optimizer() = delete;
@@ -80,18 +88,18 @@ public:
   // set maximum iterations
   void max_iter(unsigned int iter) { _max_iter = iter; }
   // set gradient tolerance for termination
-  void max_iter(double tol) { _gtol = tol; }
+  void max_iter(Float tol) { _gtol = tol; }
 
   // bfgs algorithm
   result optimize() {
     // objective function value at starting point
-    double old_fval = _f(_x0);
+    Float old_fval = _f(_x0);
     // gradient at starting point
     auto gfk = _fprime(_x0);
     // infinite norm of gradient
-    double gnorm = gfk.cwiseAbs().maxCoeff();
+    Float gnorm = gfk.cwiseAbs().maxCoeff();
     // initial step guess to dx ~ 1
-    double old_old_fval = old_fval + gfk.norm() / 2;
+    Float old_old_fval = old_fval + gfk.norm() / 2;
 
     Eigen::MatrixXd I = Eigen::MatrixXd::Identity(_n_params, _n_params);
     // hessian matrix at starting point
@@ -111,9 +119,9 @@ public:
     Eigen::VectorXd sk(_n_params);
     Eigen::VectorXd yk(_n_params);
     // step size
-    double alpha_k;
+    Float alpha_k;
     //?
-    double rhok;
+    Float rhok;
     bool status = false;
     // number of iterations
     unsigned int k = 0;
@@ -158,28 +166,28 @@ public:
   }
 
 private:
-  void dcstep(double &stx, double &fx, double &dx, double &sty, double &fy,
-              double &dy, double &stp, double const &fp, double const &dp,
-              bool &brackt, double const &stpmin, double const &stpmax) {
+  void dcstep(Float &stx, Float &fx, Float &dx, Float &sty, Float &fy,
+              Float &dy, Float &stp, Float const &fp, Float const &dp,
+              bool &brackt, Float const &stpmin, Float const &stpmax) {
 
-    double sgnd = dp * (dx / std::abs(dx));
+    Float sgnd = dp * (dx / std::abs(dx));
     // First case: A higher function value. The minimum is bracketed.
     // If the cubic step is closer to stx than the quadratic step, the
     // cubic step is taken, otherwise the average of the cubic and
     // quadratic steps is taken.
 
-    const double three = 3.0;
-    double theta = 0.0;
-    double s = 0.0;
-    double gamma = 0.0;
-    double p = 0.0;
-    double q = 0.0;
-    double r = 0.0;
-    double stpc = 0.0;
-    const double two = 2.0;
-    double stpq = 0.0;
-    double stpf = 0.0;
-    const double p66 = 0.66e0;
+    const Float three = 3.0;
+    Float theta = 0.0;
+    Float s = 0.0;
+    Float gamma = 0.0;
+    Float p = 0.0;
+    Float q = 0.0;
+    Float r = 0.0;
+    Float stpc = 0.0;
+    const Float two = 2.0;
+    Float stpq = 0.0;
+    Float stpf = 0.0;
+    const Float p66 = 0.66e0;
     if (fp > fx) {
       theta = three * (fx - fp) / (stp - stx) + dx + dp;
       s = std::max(std::abs(theta), std::abs(dx));
@@ -330,33 +338,33 @@ private:
       Search direction
   gfk : array
       Gradient of f at point xk
-  old_fval : double
+  old_fval : Float
       Value of f at point xk
-  old_old_fval : double
+  old_old_fval : Float
       Value of f at point preceding xk
 
   Returns
   -------
-  alpha : double
+  alpha : Float
       Step size, trow if no suitable step was found
   Updates
   -------
-  old_fval : double
+  old_fval : Float
       fval at step size
-  old_old_fval : double
+  old_old_fval : Float
       initial old_fval
   gfk : array
       Gradient of f at the final point
   gfkp1 : array
       Gradient of f at the final point
   */
-  bool _line_search(double &stp, const Eigen::VectorXd &xk,
+  bool _line_search(Float &stp, const Eigen::VectorXd &xk,
                     const Eigen::VectorXd &pk, const Eigen::VectorXd &gfk,
-                    Eigen::VectorXd &gfkp1, double &old_fval,
-                    double &old_old_fval) {
+                    Eigen::VectorXd &gfkp1, Float &old_fval,
+                    Float &old_old_fval) {
 
-    auto phi = [&](double s) { return _f(xk + s * pk); };
-    auto derphi = [&](double s) {
+    auto phi = [&](Float s) { return _f(xk + s * pk); };
+    auto derphi = [&](Float s) {
       gfkp1 = _fprime(xk + s * pk);
       return gfkp1.dot(pk);
     };
@@ -366,16 +374,16 @@ private:
     alpha > 0 is assumed to be a descent direction.
     */
 
-    double c1 = 1e-4;
-    double c2 = 0.9;
-    double stpmax = 1e100;
-    double stpmin = 1e-100;
-    double xtol = 1e-14;
+    Float c1 = 1e-4;
+    Float c2 = 0.9;
+    Float stpmax = 1e100;
+    Float stpmin = 1e-100;
+    Float xtol = 1e-14;
 
-    double phi0 = old_fval;
-    double old_phi0 = old_old_fval;
+    Float phi0 = old_fval;
+    Float old_phi0 = old_old_fval;
     old_old_fval = phi0;
-    double derphi0 = gfk.dot(pk);
+    Float derphi0 = gfk.dot(pk);
     if (derphi0 != 0.0) {
       stp = std::min(1.0, 1.01 * 2 * (phi0 - old_phi0) / derphi0);
       if (stp < 0.0) {
@@ -385,40 +393,40 @@ private:
       stp = 1.0;
     }
 
-    double f = phi0;
-    double g = derphi0;
-    double ftol = c1;
-    double gtol = c2;
+    Float f = phi0;
+    Float g = derphi0;
+    Float ftol = c1;
+    Float gtol = c2;
 
     // fortran initialization
     unsigned int stage = 1;
-    double xtrapu = 4.0;
-    double xtrapl = 0.66;
-    double p66 = 0.66;
-    double p5 = 0.5;
+    Float xtrapu = 4.0;
+    Float xtrapl = 0.66;
+    Float p66 = 0.66;
+    Float p5 = 0.5;
     bool brackt = false;
-    double finit = phi0;
-    double ginit = derphi0;
-    double gtest = ftol * ginit;
-    double width = stpmax - stpmin;
-    double width1 = width / p5;
+    Float finit = phi0;
+    Float ginit = derphi0;
+    Float gtest = ftol * ginit;
+    Float width = stpmax - stpmin;
+    Float width1 = width / p5;
     // The variables stx, fx, gx contain the values of the step,
     // function, and derivative at the best step.
     // The variables sty, fy, gy contain the value of the step,
     // function, and derivative at sty.
     // The variables stp, f, g contain the values of the step,
     // function, and derivative at stp.
-    double stx = 0;
-    double sty = 0;
-    double fx = finit;
-    double fy = finit;
-    double gx = ginit;
-    double gy = ginit;
-    double stmin = 0;
-    double stmax = stp + xtrapu * stp;
-    double ftest, fm, fxm, fym, gm, gxm, gym;
+    Float stx = 0;
+    Float sty = 0;
+    Float fx = finit;
+    Float fy = finit;
+    Float gx = ginit;
+    Float gy = ginit;
+    Float stmin = 0;
+    Float stmax = stp + xtrapu * stp;
+    Float ftest, fm, fxm, fym, gm, gxm, gym;
     // used for debugging fortran code
-    // double res[] = {ginit, gtest, gx,    gy,    finit, fx,    fy,
+    // Float res[] = {ginit, gtest, gx,    gy,    finit, fx,    fy,
     //                stx,   sty,   stmin, stmax, width, width1};
     unsigned int maxiter = 100;
     for (unsigned int i = 0; i < maxiter; ++i) {
@@ -510,7 +518,7 @@ private:
   }
 
   // wrapper around the objective function counting calls
-  double _f(const Eigen::VectorXd &xk) {
+  Float _f(const Eigen::VectorXd &xk) {
     ++_nfev;
     return _objective(xk);
   }
@@ -521,7 +529,7 @@ private:
     ++_njev;
     Eigen::VectorXd grad = Eigen::VectorXd::Zero(_n_params);
     Eigen::VectorXd dx = Eigen::VectorXd::Zero(_n_params);
-    double yk = _f(xk);
+    Float yk = _f(xk);
     for (unsigned int k = 0; k < _n_params; ++k) {
       dx(k) = epsilon;
       grad(k) = (_f(xk + dx) - yk) / epsilon;
@@ -540,7 +548,7 @@ private:
   Eigen::VectorXd _x0;
 
   // minimum infinite norm of gradient
-  double _gtol;
+  Float _gtol;
 
   // number of evaluations of the objective function
   unsigned int _nfev;
