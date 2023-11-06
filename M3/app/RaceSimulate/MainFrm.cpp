@@ -4,7 +4,7 @@
 
 #include "pch.h"
 #include "framework.h"
-#include "RaceSimulate.h"
+#include "RaceSimulator.h"
 
 #include "MainFrm.h"
 

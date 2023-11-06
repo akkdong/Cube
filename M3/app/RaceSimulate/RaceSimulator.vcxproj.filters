@@ -15,7 +15,7 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="RaceSimulate.h">
+    <ClInclude Include="RaceSimulator.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="framework.h">
@@ -50,7 +50,7 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="RaceSimulate.cpp">
+    <ClCompile Include="RaceSimulator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="MainFrm.cpp">
@@ -73,17 +73,17 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="RaceSimulate.rc">
+    <ResourceCompile Include="RaceSimulator.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\RaceSimulate.rc2">
+    <None Include="res\RaceSimulator.rc2">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>
   <ItemGroup>
-    <Image Include="res\RaceSimulate.ico">
+    <Image Include="res\RaceSimulator.ico">
       <Filter>Resource Files</Filter>
     </Image>
   </ItemGroup>
