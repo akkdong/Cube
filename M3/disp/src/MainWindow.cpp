@@ -43,7 +43,7 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
                 { 640, 300, 320, 120, true, ValueBox::SPEED_VERTICAL | ValueBox::BORDER_LEFT|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_3
                 { 0, 420, 320, 120, true, ValueBox::ALTITUDE_BARO | ValueBox::BORDER_RIGHT|ValueBox::BORDER_TOP|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_4
                 { 320, 420, 320, 120, true, ValueBox::ALTITUDE_AGL | ValueBox::BORDER_RIGHT|ValueBox::BORDER_TOP|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_5
-                { 640, 420, 320, 120, true, ValueBox::TRACK_HEADING | ValueBox::BORDER_TOP|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_6
+                { 640, 420, 320, 120, true, ValueBox::BEARING_HEADING | ValueBox::BORDER_TOP|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_6
             },
             32, 76
         },
@@ -55,7 +55,7 @@ MainWindow::MainWindow(M5EPD_Canvas *pRefCanvas)
                 { 400, 260, 160, 240, true, 0 }, // WID_VARIOMETER
                 { 0, 60, 380, 160, true, ValueBox::ALTITUDE_GROUND | ValueBox::BORDER_RIGHT|ValueBox::BORDER_BOTTOM|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_1
                 { 0, 220, 380, 160, true, ValueBox::SPEED_GROUND | ValueBox::BORDER_RIGHT|ValueBox::BORDER_BOTTOM|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_2
-                { 0, 380, 380, 160, true, ValueBox::TRACK_HEADING | ValueBox::BORDER_RIGHT|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_3
+                { 0, 380, 380, 160, true, ValueBox::BEARING_HEADING | ValueBox::BORDER_RIGHT|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_3
                 { 580, 60, 380, 160, true, ValueBox::SPEED_VERTICAL | ValueBox::BORDER_LEFT|ValueBox::BORDER_BOTTOM|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_4
                 { 580, 220, 380, 160, true, ValueBox::GLIDE_RATIO | ValueBox::BORDER_LEFT|ValueBox::BORDER_BOTTOM|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_5
                 { 580, 380, 380, 160, true, ValueBox::DISTANCE_TAKEOFF | ValueBox::BORDER_LEFT|ValueBox::ALIGN_LABEL_TL|ValueBox::ALIGN_UNIT_TR|ValueBox::ALIGN_VALUE_BR }, // WID_VALUEBOX_6

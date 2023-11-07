@@ -334,7 +334,6 @@ struct FlightState
 
 	//
 	int16_t			bearingTakeoff;
-	int16_t			bearingNextPoint;
 	int16_t			bearingTarget;
 	int16_t			bearingNextTarget;
 

@@ -486,19 +486,19 @@ void ValueBox::init(uint32_t flag)
 //      desc = "m/s";
 //      decimalPlaces = 2;
 //      break;
-    case TRACK_HEADING:
+    case BEARING_HEADING:
         title = "Heading";
         desc = "DEG";
         break;
-    case TARCK_BEARING_TAKEOFF:
+    case BEARING_TAKEOFF:
         title = "Bearing Takeoff";
         desc = "DEG";
         break;
-    case TARCK_BEARING_NEXT_TARGET:
+    case BEARING_NEXT_TARGET:
         title = "Bearing Next";
         desc = "DEG";
         break;
-//  case TARCK_BEARING_LANDING:
+//  case BEARING_LANDING:
 //      title = "Bearing Landing";
 //      desc = "DEG";
 //      break;
@@ -633,17 +633,19 @@ int ValueBox::update(DeviceContext* context, uint32_t updateHints)
 //  case ValueBox::VType::SPEED_VERTICAL_LAZY:
 //      m_pValueProvider->setValue(context->varioState.speedVertLazy);
 //      break;
-    case ValueBox::VType::TRACK_HEADING:
+    case ValueBox::VType::BEARING_HEADING:
         m_pValueProvider->setValue(context->varioState.heading);
         break;
-    case ValueBox::VType::TARCK_BEARING_TAKEOFF:
+    case ValueBox::VType::BEARING_TAKEOFF:
         m_pValueProvider->setValue(context->flightState.bearingTakeoff);
         return 0;
-    case ValueBox::VType::TARCK_BEARING_TARGET:
+    case ValueBox::VType::BEARING_TARGET:
         m_pValueProvider->setValue(context->flightState.bearingTarget);
         return 0;
-    // TARCK_BEARING_NEXT_TARGET
-//  case ValueBox::VType::TARCK_BEARING_LANDING:
+    case ValueBox::VType::BEARING_NEXT_TARGET:
+        m_pValueProvider->setValue(context->flightState.bearingNextTarget);
+        return 0;
+//  case ValueBox::VType::BEARING_LANDING:
 //      m_pValueProvider->setValue(context->flightState.beaaringLanding);
 //      return 0;
     case ValueBox::VType::TIME_FLIGHT:
