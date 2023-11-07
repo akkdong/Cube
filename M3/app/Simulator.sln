@@ -10,7 +10,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GpsSimulator", "Simulator\G
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Serial", "Serial\Serial.vcxproj", "{BDCD0825-F7AC-4B44-B9D0-B013E7BF64CF}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RaceSimulate", "RaceSimulate\RaceSimulate.vcxproj", "{E0F64C47-DE9F-44D2-A14E-0B74C0F510B4}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RaceSimulator", "RaceSimulator\RaceSimulator.vcxproj", "{E0F64C47-DE9F-44D2-A14E-0B74C0F510B4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

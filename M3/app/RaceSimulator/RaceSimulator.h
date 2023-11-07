@@ -1,5 +1,5 @@
 
-// RaceSimulate.h : main header file for the RaceSimulate application
+// RaceSimulator.h : main header file for the RaceSimulator application
 //
 #pragma once
 
@@ -10,14 +10,14 @@
 #include "resource.h"       // main symbols
 
 
-// CRaceSimulateApp:
-// See RaceSimulate.cpp for the implementation of this class
+// CRaceSimulatorApp:
+// See RaceSimulator.cpp for the implementation of this class
 //
 
-class CRaceSimulateApp : public CWinApp
+class CRaceSimulatorApp : public CWinApp
 {
 public:
-	CRaceSimulateApp() noexcept;
+	CRaceSimulatorApp() noexcept;
 
 
 // Overrides
@@ -32,4 +32,4 @@ public:
 	DECLARE_MESSAGE_MAP()
 };
 
-extern CRaceSimulateApp theApp;
+extern CRaceSimulatorApp theApp;

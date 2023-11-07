@@ -1,12 +1,12 @@
 
-// RaceSimulate.cpp : Defines the class behaviors for the application.
+// RaceSimulator.cpp : Defines the class behaviors for the application.
 //
 
 #include "pch.h"
 #include "framework.h"
 #include "afxwinappex.h"
 #include "afxdialogex.h"
-#include "RaceSimulate.h"
+#include "RaceSimulator.h"
 #include "MainFrm.h"
 
 
@@ -15,16 +15,16 @@
 #endif
 
 
-// CRaceSimulateApp
+// CRaceSimulatorApp
 
-BEGIN_MESSAGE_MAP(CRaceSimulateApp, CWinApp)
-	ON_COMMAND(ID_APP_ABOUT, &CRaceSimulateApp::OnAppAbout)
+BEGIN_MESSAGE_MAP(CRaceSimulatorApp, CWinApp)
+	ON_COMMAND(ID_APP_ABOUT, &CRaceSimulatorApp::OnAppAbout)
 END_MESSAGE_MAP()
 
 
-// CRaceSimulateApp construction
+// CRaceSimulatorApp construction
 
-CRaceSimulateApp::CRaceSimulateApp() noexcept
+CRaceSimulatorApp::CRaceSimulatorApp() noexcept
 {
 	// support Restart Manager
 	m_dwRestartManagerSupportFlags = AFX_RESTART_MANAGER_SUPPORT_ALL_ASPECTS;
@@ -37,20 +37,20 @@ CRaceSimulateApp::CRaceSimulateApp() noexcept
 
 	// TODO: replace application ID string below with unique ID string; recommended
 	// format for string is CompanyName.ProductName.SubProduct.VersionInformation
-	SetAppID(_T("RaceSimulate.AppID.NoVersion"));
+	SetAppID(_T("RaceSimulator.AppID.NoVersion"));
 
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
 }
 
-// The one and only CRaceSimulateApp object
+// The one and only CRaceSimulatorApp object
 
-CRaceSimulateApp theApp;
+CRaceSimulatorApp theApp;
 
 
-// CRaceSimulateApp initialization
+// CRaceSimulatorApp initialization
 
-BOOL CRaceSimulateApp::InitInstance()
+BOOL CRaceSimulatorApp::InitInstance()
 {
 	// InitCommonControlsEx() is required on Windows XP if an application
 	// manifest specifies use of ComCtl32.dll version 6 or later to enable
@@ -110,7 +110,7 @@ BOOL CRaceSimulateApp::InitInstance()
 	return TRUE;
 }
 
-int CRaceSimulateApp::ExitInstance()
+int CRaceSimulatorApp::ExitInstance()
 {
 	//TODO: handle additional resources you may have added
 	AfxOleTerm(FALSE);
@@ -118,7 +118,7 @@ int CRaceSimulateApp::ExitInstance()
 	return CWinApp::ExitInstance();
 }
 
-// CRaceSimulateApp message handlers
+// CRaceSimulatorApp message handlers
 
 
 // CAboutDlg dialog used for App About
@@ -154,13 +154,13 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CDialogEx)
 END_MESSAGE_MAP()
 
 // App command to run the dialog
-void CRaceSimulateApp::OnAppAbout()
+void CRaceSimulatorApp::OnAppAbout()
 {
 	CAboutDlg aboutDlg;
 	aboutDlg.DoModal();
 }
 
-// CRaceSimulateApp message handlers
+// CRaceSimulatorApp message handlers
 
 
 
