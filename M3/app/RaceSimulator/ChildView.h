@@ -80,6 +80,8 @@ public:
 	void DrawLine(CDC* pDC, int cx, int cy, Math::real lat1, Math::real lon1, Math::real lat2, Math::real lon2);
 	void DrawPilot(CDC* pDC, int cx, int cy, Math::real lat, Math::real lon);
 
+	void DrawIntersectLine(CDC *pDC, int cx, int cy, Math::real lat1, Math::real lon1, Math::real lat2, Math::real lon2, Math::real lat3, Math::real lon3);
+
 	void FindBoundary(XcTask *task, Math::real *border);
 	void Optimize(size_t startPoint, Math::real lat, Math::real lon);
 
