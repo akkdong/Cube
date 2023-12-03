@@ -449,8 +449,8 @@ void CChildView::OnFileOpen()
 			FindBoundary(&mTask, mBoundary);
 #endif
 
-			mCenterPos.setLatitude(mBoundary[GEO_S] + (mBoundary[GEO_N] - mBoundary[GEO_S]) / 2.0f);
-			mCenterPos.setLongitude(mBoundary[GEO_W] + (mBoundary[GEO_E] - mBoundary[GEO_W]) / 2.0f);
+			mCenterPos.setLatitude(mBoundary[GEO_S] + (mBoundary[GEO_N] - mBoundary[GEO_S]) / 2.0);
+			mCenterPos.setLongitude(mBoundary[GEO_W] + (mBoundary[GEO_E] - mBoundary[GEO_W]) / 2.0);
 
 			// calcualte zoom-factor
 			CRect rect;
@@ -517,13 +517,13 @@ void CChildView::FindBoundary(XcTask *task, Math::real *border)
 
 void CChildView::OnZoomIn()
 {
-	mZoomRatio += mZoomRatio * 0.1f;
+	mZoomRatio += mZoomRatio * 0.1;
 	Invalidate();
 }
 
 void CChildView::OnZoomOut()
 {
-	mZoomRatio -= mZoomRatio * 0.1f;
+	mZoomRatio -= mZoomRatio * 0.1;
 	Invalidate();
 }
 
@@ -617,8 +617,8 @@ void CChildView::OnLButtonDblClk(UINT nFlags, CPoint point)
 		Math::real angle = std::atan2<Math::real>(dx, -dy);
 
 		// radian to degree
-		const Math::real pi = 3.14159265359f;
-		angle = angle * 180.0f / pi;
+		const Math::real pi = 3.14159265359;
+		angle = angle * 180.0 / pi;
 		if (angle < 0)
 			angle = 360 + angle;
 		// screen to geo
@@ -857,4 +857,4 @@ public:
 		TRACE("Azimuths on line B %f %f\n", azi2, azi1);
 	}
 
-} _t;
+} /*_t*/;
